@@ -11,14 +11,14 @@ import requests
 from mpetk import limstk, mpeconfig, zro
 from wfltk import middleware_messages_pb2 as messages
 
-from model import DynamicRouting  # It can make sense to have a class to store experiment data.
-from mvr import MVRConnector  # This will eventually get incorporated into the workflow launcher
+from . model import DynamicRouting  # It can make sense to have a class to store experiment data.
+from . mvr import MVRConnector  # This will eventually get incorporated into the workflow launcher
 
 # Setup your typical components; the config, services, and perhaps some typical models for an experiment.
 # An alternative is to store these in the state.  However, this is one of those times that globals are ok because
 # these values are "read only" and used ubiquitously.
 
-config: dict = mpeconfig.source_configuration("dynamic_routing", use_local_config=True)
+config: dict = mpeconfig.source_configuration("dynamic_routing")
 experiment = DynamicRouting()
 mvr: MVRConnector
 camstim_agent: zro.Proxy
@@ -45,11 +45,12 @@ def fail_state(message: str, state: dict):
     state['external']['alert'] = True
     state["external"]["transition_result"] = False
     state["external"]["next_state"] = state_name
+    print("Transitioning to", state_name)
     state["external"]["msg_text"] = message
-    #  logging.warning(f"{state_name} failed: {message}")
+    logging.info(f"{state_name} failed: {message}")
 
 
-def init_enter(state):
+def init_input(state):
     """
     Since this is the first state, you might do some basic startup functionality in the enter state.
     The expectation is these services are on (i.e., you have started them with RSC).  If the connection fails you can
@@ -60,14 +61,28 @@ def init_enter(state):
         mvr = MVRConnector(args=config['MVR'])
     except Exception as e:
         fail_state(f"Failed to connect to MVR on {config['MVR']}", state)
+        return
 
     global camstim_agent
-    camstim_agent = zro.Proxy("stim_pc:6000", timeout=1.0)  # or some config value
+    service = config['camstim_agent']
+    camstim_agent = zro.Proxy(f"{service['host']}:{service['port']}", timeout=service['timeout'])
+    try:
+        logging.info(f'Camstim Agent Uptime: {camstim_agent.uptime}')
+    except Exception:
+        fail_state(f"Failed to connect to Camstim Agent.", state)
+        return
 
     global sync
-    sync = zro.Proxy("sync_pc:5001", timeout=1.0)  # or some config value
+    service = config['sync']
+    sync = zro.Proxy(f"{service['host']}:{service['port']}", timeout=service['timeout'])
+    try:
+        logging.info(f'Camstim Agent Uptime: {camstim_agent.uptime}')
+    except Exception:
+        fail_state(f"Failed to connect to Camstim Agent.", state)
+        return
 
     # At this point, if there was more than one state a user could go to you would do the following
+    # Note that fail_state also changes this value.
     state["external"]["next_state"] = "get_user_id"
 
 
