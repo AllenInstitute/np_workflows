@@ -24,7 +24,9 @@ mvr: MVRConnector
 camstim_agent: zro.Proxy
 sync: zro.Proxy
 
-
+# TODO:  connect to open ephys
+#        check drive space
+#
 def fail_state(message: str, state: dict):
     """
     This is an example of how to create a single failure reporting function.  It inspects the stack to figure out which
@@ -44,12 +46,14 @@ def fail_state(message: str, state: dict):
     state["external"]["transition_result"] = False
     state["external"]["next_state"] = state_name
     state["external"]["msg_text"] = message
-    logging.warning(f"{state_name} failed: {message}")
+    #  logging.warning(f"{state_name} failed: {message}")
 
 
 def init_enter(state):
     """
     Since this is the first state, you might do some basic startup functionality in the enter state.
+    The expectation is these services are on (i.e., you have started them with RSC).  If the connection fails you can
+    send a message to the user with the fail_state() function above.
     """
     global mvr
     try:
@@ -62,6 +66,10 @@ def init_enter(state):
 
     global sync
     sync = zro.Proxy("sync_pc:5001", timeout=1.0)  # or some config value
+
+    # At this point, if there was more than one state a user could go to you would do the following
+    state["external"]["next_state"] = "get_user_id"
+
 
 def get_user_id_input(state):
     """
@@ -109,17 +117,31 @@ def get_mouse_id_input(state):
     )
     logging.info(log_message, extra={"weblog": True})
 
-    # At this point, if there was more than one state a user could go to you would do the following
-    state["external"]["next_state"] = "run_stimulus_enter"
+
+def flush_water_lines_input(state):
+    ...
+
+
+
 
 def run_stimulus_enter(state):
+    """
+    This is a typical method to start recordings and stimulus but is also a model of how to handle user events.
+    Note that this is the "enter" function and not the "input" function.  This executes before the screen is presented
+    to the user.  The green arrow will not be available to them as a result of the state_busy message.
+    """
+
     #  This is in the enter state because we want to do things before the user sees the screen (like turn off arrow)
     state["resources"]["io"].write(messages.state_busy(message="Waiting for stimulus script to complete."))
 
     #  Normally, we want to start the recording devices just before camstim
     sync.start()
     mvr.start_record(file_name_prefix=experiment.experiment_id)
+
+    #  If you are using the start session api (usually with mtrain, you would do the following.
     camstim_agent.start_session(experiment.mouse_id, experiment.user_name)
+
+    #  TODO:  Add an example of start_script
 
     #  The following technique for turning off the next arrow and calling a "is ready" function is applicable for
     #  any user event. (timers, waiting on services, etc)
@@ -140,8 +162,14 @@ def run_stimulus_enter(state):
         sync.stop()
         io.write(messages.state_ready(message="Stimulus complete."))  # re-enables the arrow
 
+    #  Because the next arrow is disabled, we can wait on this thread to re-enable it without the user being able to
+    #  progress the workflow.
     t = threading.Thread(target=check_stimulus)
     t.start()
 
 
+def wait_on_sync_enter(state):
+    ...
 
+def wait_on_timer_enter(state):
+    ...
