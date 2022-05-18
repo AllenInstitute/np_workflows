@@ -11,8 +11,8 @@ import requests
 from mpetk import limstk, mpeconfig, zro
 from wfltk import middleware_messages_pb2 as messages
 
-from .model import DynamicRouting  # It can make sense to have a class to store experiment data.
-from .mvr import MVRConnector  # This will eventually get incorporated into the workflow launcher
+from . model import DynamicRouting  # It can make sense to have a class to store experiment data.
+from . mvr import MVRConnector  # This will eventually get incorporated into the workflow launcher
 
 # Setup your typical components; the config, services, and perhaps some typical models for an experiment.
 # An alternative is to store these in the state.  However, this is one of those times that globals are ok because
@@ -20,10 +20,11 @@ from .mvr import MVRConnector  # This will eventually get incorporated into the 
 
 config: dict = mpeconfig.source_configuration("dynamic_routing")
 experiment = DynamicRouting()
+
 mvr: MVRConnector
 camstim_agent: zro.Proxy
 sync: zro.Proxy
-
+mouse_director: zro.Proxy
 
 # TODO:  connect to open ephys
 #        check drive space
@@ -46,7 +47,6 @@ def fail_state(message: str, state: dict):
     state['external']['alert'] = True
     state["external"]["transition_result"] = False
     state["external"]["next_state"] = state_name
-    print("Transitioning to", state_name)
     state["external"]["msg_text"] = message
     logging.info(f"{state_name} failed: {message}")
 
@@ -77,7 +77,7 @@ def init_input(state):
     service = config['sync']
     sync = zro.Proxy(f"{service['host']}:{service['port']}", timeout=service['timeout'])
     try:
-        logging.info(f'Camstim Agent Uptime: {sync.uptime}')
+        logging.info(f'Sync Uptime: {sync.uptime}')
     except Exception:
         component_errors.append(f"Failed to connect to Sync.")
 
@@ -165,6 +165,7 @@ def run_stimulus_enter(state):
         io = state['resources']['io']
         sleep(5.0)  # gives camstim agent a chance to get started
         while True:
+
             try:
                 if not camstim_agent.is_running():
                     break
@@ -199,7 +200,7 @@ def wait_on_sync_enter(state):
     t.start()
 
 
-def wait_on_timer_enter(state):
+def settle_timer_enter(state):
     #  This is in the enter state because we want to do things before the user sees the screen (like turn off arrow)
     state["resources"]["io"].write(messages.state_busy(message="Waiting for stimulus script to complete."))
 
