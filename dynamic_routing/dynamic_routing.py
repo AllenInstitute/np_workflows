@@ -11,8 +11,8 @@ import requests
 from mpetk import limstk, mpeconfig, zro
 from wfltk import middleware_messages_pb2 as messages
 
-from . model import DynamicRouting  # It can make sense to have a class to store experiment data.
-from . mvr import MVRConnector  # This will eventually get incorporated into the workflow launcher
+from .model import DynamicRouting  # It can make sense to have a class to store experiment data.
+from .mvr import MVRConnector  # This will eventually get incorporated into the workflow launcher
 
 # Setup your typical components; the config, services, and perhaps some typical models for an experiment.
 # An alternative is to store these in the state.  However, this is one of those times that globals are ok because
@@ -23,6 +23,7 @@ experiment = DynamicRouting()
 mvr: MVRConnector
 camstim_agent: zro.Proxy
 sync: zro.Proxy
+
 
 # TODO:  connect to open ephys
 #        check drive space
@@ -56,12 +57,13 @@ def init_input(state):
     The expectation is these services are on (i.e., you have started them with RSC).  If the connection fails you can
     send a message to the user with the fail_state() function above.
     """
+
+    component_errors = []
     global mvr
     try:
         mvr = MVRConnector(args=config['MVR'])
     except Exception as e:
-        fail_state(f"Failed to connect to MVR on {config['MVR']}", state)
-        return
+        component_errors.append(f"Failed to connect to MVR on {config['MVR']}")
 
     global camstim_agent
     service = config['camstim_agent']
@@ -69,21 +71,21 @@ def init_input(state):
     try:
         logging.info(f'Camstim Agent Uptime: {camstim_agent.uptime}')
     except Exception:
-        fail_state(f"Failed to connect to Camstim Agent.", state)
-        return
+        component_errors.append(f"Failed to connect to Camstim Agent.")
 
     global sync
     service = config['sync']
     sync = zro.Proxy(f"{service['host']}:{service['port']}", timeout=service['timeout'])
     try:
-        logging.info(f'Camstim Agent Uptime: {camstim_agent.uptime}')
+        logging.info(f'Camstim Agent Uptime: {sync.uptime}')
     except Exception:
-        fail_state(f"Failed to connect to Camstim Agent.", state)
-        return
+        component_errors.append(f"Failed to connect to Sync.")
 
-    # At this point, if there was more than one state a user could go to you would do the following
-    # Note that fail_state also changes this value.
-    state["external"]["next_state"] = "get_user_id"
+    #  At this point, You could send the user to an informative state to repair the remote services.
+    if component_errors:
+        fail_state('\n'.join(component_errors), state)
+    else:
+        state["external"]["next_state"] = "get_user_id"
 
 
 def get_user_id_input(state):
@@ -137,8 +139,6 @@ def flush_water_lines_input(state):
     ...
 
 
-
-
 def run_stimulus_enter(state):
     """
     This is a typical method to start recordings and stimulus but is also a model of how to handle user events.
@@ -184,7 +184,39 @@ def run_stimulus_enter(state):
 
 
 def wait_on_sync_enter(state):
-    ...
+    #  This is in the enter state because we want to do things before the user sees the screen (like turn off arrow)
+    state["resources"]["io"].write(messages.state_busy(message="Waiting for sync to complete."))
+
+    def wait_on_sync():  # you could define this outside of the state of course.
+        io = state['resources']['io']
+        while "READY" not in sync.get_state():
+            sleep(3)
+        io.write(messages.state_ready(message="Stimulus complete."))  # re-enables the arrow
+
+    #  Because the next arrow is disabled, we can wait on this thread to re-enable it without the user being able to
+    #  progress the workflow.
+    t = threading.Thread(target=wait_on_sync)
+    t.start()
+
 
 def wait_on_timer_enter(state):
-    ...
+    #  This is in the enter state because we want to do things before the user sees the screen (like turn off arrow)
+    state["resources"]["io"].write(messages.state_busy(message="Waiting for stimulus script to complete."))
+
+    def wait_on_timer():  # you could define this outside of the state of course.
+        io = state['resources']['io']
+        sleep(5.0)  # gives camstim agent a chance to get started
+        io.write(messages.state_ready(message="Stimulus complete."))  # re-enables the arrow
+
+    #  Because the next arrow is disabled, we can wait on this thread to re-enable it without the user being able to
+    #  progress the workflow.
+    t = threading.Thread(target=wait_on_timer)
+    t.start()
+
+
+def write_manifest():
+    lims_session = limstk.Session("neuropixel", "neuropixels", id=experiment.session_id)
+    lims_session.trigger_data["sessionid"] = experiment.session_id
+    lims_session.trigger_data["location"] = lims_session.path_data["location"]
+    # ims_session.add_to_manifest(platform_file_path)
+    # lims_session.write_manifest(trigger_filename=trigger_file_name)

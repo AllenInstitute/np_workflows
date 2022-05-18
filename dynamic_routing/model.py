@@ -30,3 +30,5 @@ class DynamicRouting:
     @experiment_id.setter
     def experiment_id(self, value):
         self._experiment_id = value
+
+    def platform_json(self):
