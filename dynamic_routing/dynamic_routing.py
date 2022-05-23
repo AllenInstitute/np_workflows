@@ -11,8 +11,8 @@ import requests
 from mpetk import limstk, mpeconfig, zro
 from wfltk import middleware_messages_pb2 as messages
 
-from . model import DynamicRouting  # It can make sense to have a class to store experiment data.
-from . mvr import MVRConnector  # This will eventually get incorporated into the workflow launcher
+from .model import DynamicRouting  # It can make sense to have a class to store experiment data.
+from .mvr import MVRConnector  # This will eventually get incorporated into the workflow launcher
 
 # Setup your typical components; the config, services, and perhaps some typical models for an experiment.
 # An alternative is to store these in the state.  However, this is one of those times that globals are ok because
@@ -25,6 +25,7 @@ mvr: MVRConnector
 camstim_agent: zro.Proxy
 sync: zro.Proxy
 mouse_director: zro.Proxy
+
 
 # TODO:  connect to open ephys
 #        check drive space
@@ -96,7 +97,9 @@ def get_user_id_input(state):
     # external contains values coming from the UI.  "user_id" is a key specified in the wfl file.
     user_name = state["external"]["user_id"]
     if not limstk.user_details(user_name):
-        fail_state(f"Could not validate user {user_name} in LIMS.", state)
+        fail_state(
+            f"Could not find user {user_name} in LIMS.  You might get this error if you have never logged into LIMS",
+            state)
     state["user_name"] = user_name  # It is ok to save data into the state.
 
 
@@ -133,6 +136,16 @@ def get_mouse_id_input(state):
         f"Received\n"
     )
     logging.info(log_message, extra={"weblog": True})
+
+# {"mvr_request":"take_snapshot"}
+def pre_brain_surface_photo_doc_exit(state):
+    filename = mvr.take_photo()
+    experiment.platform_json.add_file(filename)
+
+
+def probe_insertion_instructions_exit(state):
+    filename = mvr.take_photo()
+    experiment.platform_json.add_file(filename)
 
 
 def flush_water_lines_input(state):
