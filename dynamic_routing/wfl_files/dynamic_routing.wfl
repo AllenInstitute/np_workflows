@@ -1,0 +1,101 @@
+---
+wfl_version: 1.0
+
+# This is the module that will be imported for this files workflow
+import: dynamic_routing.dynamic_routing
+
+# Define the first / entry state
+entry_state: init
+
+#  Enter each phase of the workflow as a state
+states:
+  init:
+    description: Experiment Initialization
+    display:
+      - type: note
+        desc: Preparing the "Dynamic Routing" experiment.  Press next to continue
+    inputs:
+      - state: get_user_id
+
+  get_user_id:
+    description: User ID
+    display:
+      - field: user_id
+        type: text_entry
+        desc: Enter your user ID, then click the right arrow to continue.
+    inputs:
+      - state: get_mouse_id
+
+  get_mouse_id:
+    description: Enter Mouse ID
+    display:
+      - field: mouse_id
+        type: text_entry
+        desc: Enter mouse LabTracks ID, then click the right arrow to continue.
+    inputs:
+        - state: load_mouse
+
+  load_mouse:
+    description:  Load Mouse Onto Stage
+    display:
+      - field: None
+        type: note
+        desc: Load Mouse Onto The Stage
+    inputs:
+      - state: pre_brain_surface_photo_doc
+
+  pre_brain_surface_photo_doc:
+    description:  Pre lowering brain surface photo doc
+    display:
+      - field: None
+        type: note
+        description:  Click next to take photo.
+    inputs:
+      - state: probe_insertion_instructions
+
+  probe_insertion_instructions:
+    description:  Probe insertion instructions
+    display:
+      - field: None
+        type: Note
+        description:  Some instructions here?
+
+probe insertion notes
+	Record notes
+	update platform json?
+probes inserted photo doc
+	Instructions to open MVR?
+	Take MVR photo on advance
+	Add MVR photo to manifest (change name?)
+	update platform json
+
+
+  settle_timer:
+    description:  Timer Example
+    display:
+      - field: None
+        type: note
+        desc: Settle Timer waiting.  Press the green "next" arrow when it becomes available.
+    inputs:
+      - state: run_stimulus
+
+
+  # brain_surface_photodoc:
+  #  description: pre-lowering brain surface photo doc
+
+  # probe_insertion_instruction:
+  #  description:  Probe Lowering Instructions
+  #  display:
+  #      hi res image
+
+  run_stimulus:
+    description:  Run CAMStim Stimulus
+    display:
+        - type: note
+          desc: Agent is currently running.  Press the green "next" arrow when it becomes available.
+    inputs:
+        - state: workflow_complete
+
+  workflow_complete:
+    description: Workflow Complete!
+    inputs: []
