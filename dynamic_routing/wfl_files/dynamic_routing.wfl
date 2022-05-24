@@ -59,16 +59,8 @@ states:
       - field: None
         type: Note
         description:  Some instructions here?
-
-probe insertion notes
-	Record notes
-	update platform json?
-probes inserted photo doc
-	Instructions to open MVR?
-	Take MVR photo on advance
-	Add MVR photo to manifest (change name?)
-	update platform json
-
+    inputs:
+      - state: settle_timer
 
   settle_timer:
     description:  Timer Example

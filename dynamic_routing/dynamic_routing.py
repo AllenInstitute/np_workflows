@@ -137,15 +137,38 @@ def get_mouse_id_input(state):
     )
     logging.info(log_message, extra={"weblog": True})
 
-# {"mvr_request":"take_snapshot"}
-def pre_brain_surface_photo_doc_exit(state):
-    filename = mvr.take_photo()
-    experiment.platform_json.add_file(filename)
+
+def pre_brain_surface_photo_doc_enter(state):
+    state["resources"]["io"].write(messages.state_busy(message="Waiting for MVR to take snapshot."))
+
+    def wait_on_snapshot():  # you could define this outside of the state of course.
+        io = state['resources']['io']
+
+        message_received = False
+        logging.info("entering while loop")
+        while not message_received:
+            for message in mvr.read():
+                if message.get('mvr_broadcast', False) == "snapshot_taken":
+                    experiment.pre_brain_surface_photo = message['snapshot_filepath']
+                    logging.info("Snapshot taken")
+                    message_received = True
+                    break
+                elif message.get('mvr_broadcast', False) == "snapshot_failed":
+                    logging.info("Snapshot failed")
+                    fail_state(f"Error taking snapshot: {message['error_message']}", state)
+                    message_received = True
+                    break
+        io.write(messages.state_ready(message="Snapshot Handled."))
+
+    t = threading.Thread(target=wait_on_snapshot)
+    t.start()
 
 
+"""
 def probe_insertion_instructions_exit(state):
     filename = mvr.take_photo()
     experiment.platform_json.add_file(filename)
+"""
 
 
 def flush_water_lines_input(state):
