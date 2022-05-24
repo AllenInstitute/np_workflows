@@ -29,3 +29,10 @@
 run `install.bat` 
 
 launch `C:\Program Files\AIBS_MPE\workflow_launcher\workflow_launcher.exe`
+
+# notes
+
+- if 'C:\ProgramData\AIBS_MPE\wfltk\workflows\' can't be reached, try running `workflow_launcher` as admin
+
+- TextValue error displayed in WSE GUI cmay indicate an accidental capitalization, ie `type: Note` should be `type: note`
+
