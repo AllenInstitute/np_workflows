@@ -4,6 +4,7 @@ import logging
 import os
 
 # limstk functions are auto-generated so the ide might warn it can't see them.
+import shutil
 import threading
 from time import sleep
 
@@ -49,7 +50,20 @@ def fail_state(message: str, state: dict):
     state["external"]["transition_result"] = False
     state["external"]["next_state"] = state_name
     state["external"]["msg_text"] = message
-    logging.info(f"{state_name} failed: {message}")
+    logging.warning(f"{state_name} failed: {message}")
+
+def wait_on_snapshot():  # you could define this outside of the state of course.
+    while True:
+        for message in mvr.read():
+            if message.get('mvr_broadcast', False) == "snapshot_taken":
+                drive, filepath = os.path.splitdrive(message['snapshot_filepath'])
+                experiment.pre_brain_surface_photo = f"\\\\{config['MVR']['host']}\\{drive[0]}${filepath}"
+                sleep(1)  # MVR has responded too quickly.  It hasn't let go of the file so we must wait.
+                dest = shutil.copy(experiment.pre_brain_surface_photo, "C:/ProgramData/AIBS_MPE/dynamic_routing")
+                logging.info(f"Copied: {experiment.pre_brain_surface_photo} -> {dest}")
+                return True, dest
+            elif message.get('mvr_broadcast', False) == "snapshot_failed":
+                return False, message['error_message']
 
 
 def init_input(state):
@@ -88,7 +102,7 @@ def init_input(state):
         fail_state('\n'.join(component_errors), state)
     else:
         state["external"]["next_state"] = "get_user_id"
-        
+
 
 def get_user_id_input(state):
     """
@@ -102,6 +116,9 @@ def get_user_id_input(state):
             f"Could not find user {user_name} in LIMS.  You might get this error if you have never logged into LIMS",
             state)
     state["user_name"] = user_name  # It is ok to save data into the state.
+
+
+
 
 
 def get_mouse_id_input(state):
@@ -138,32 +155,24 @@ def get_mouse_id_input(state):
     )
     logging.info(log_message, extra={"weblog": True})
 
-
 def pre_brain_surface_photo_doc_enter(state):
-    state["resources"]["io"].write(messages.state_busy(message="Waiting for MVR to take snapshot."))
-
-    def wait_on_snapshot():  # you could define this outside of the state of course.
-        io = state['resources']['io']
-
-        message_received = False
-
-        while not message_received:
-            for message in mvr.read():
-                if message.get('mvr_broadcast', False) == "snapshot_taken":
-                    experiment.pre_brain_surface_photo = message['snapshot_filepath']
-                    logging.info("Snapshot taken")
-                    message_received = True
-                    break
-                elif message.get('mvr_broadcast', False) == "snapshot_failed":
-                    logging.info("Snapshot failed")
-                    fail_state(f"Error taking snapshot: {message['error_message']}", state)
-                    message_received = True
-                    break
-        io.write(messages.state_ready(message="Snapshot Handled."))
-
-    t = threading.Thread(target=wait_on_snapshot)
-    t.start()
     mvr.take_snapshot()
+    success, mesg = wait_on_snapshot()
+    if not success:
+        fail_state("Error taking snapshot: {mesg}")
+    else:
+        state['external']['pre_insertion_image'] = mesg
+
+def pre_brain_surface_photo_doc_input(state):
+    """
+    In this state, the next transition depends on user input.  The fields snapshot_retry and snapshot_continue are
+    defined in the wfl file.  The item the user selected will be true, the others will be false.
+    Here, we just evaluate the user choice and set the next state as desired.
+    """
+    if state['external'].get('snapshot_retry', False):
+        state["external"]["next_state"] = "pre_brain_surface_photo_doc"
+    else:
+        state["external"]["next_state"] = "probe_insertion_instructions"
 
 """
 def probe_insertion_instructions_exit(state):
