@@ -1,7 +1,7 @@
 import argparse
 import json
 import logging
-import mpeconfig
+from mpetk import mpeconfig
 import sys
 from pprint import pprint, pformat
 from socket import *
@@ -33,6 +33,7 @@ class ResponseBuffer:
 
             if read_bracket_count == 0:  # a full JSON string is available
                 try:
+
                     messages.append(json.loads(''.join(self.read_buffer[i - count + 1: i + 1])))
                 except TypeError:
                     logging.warning('Error parsing MVR message:', self.read_buffer)

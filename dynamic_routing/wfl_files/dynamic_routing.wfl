@@ -15,8 +15,7 @@ states:
       - type: note
         desc: Preparing the "Dynamic Routing" experiment.  Press next to continue
     inputs:
-    - state: get_user_id 
-    #- state: run_stimulus # enter directly into run_stimulus screen
+      - state: get_user_id
 
   get_user_id:
     description: User ID
@@ -63,15 +62,6 @@ states:
     inputs:
       - state: settle_timer
 
-# probe insertion notes
-# Record notes
-# update platform json?
-# probes inserted photo doc
-# Instructions to open MVR?
-# Take MVR photo on advance
-# Add MVR photo to manifest (change name?)
-# update platform json
-
   settle_timer:
     description:  Timer Example
     display:
@@ -80,6 +70,15 @@ states:
         desc: Settle Timer waiting.  Press the green "next" arrow when it becomes available.
     inputs:
       - state: run_stimulus
+
+
+  # brain_surface_photodoc:
+  #  description: pre-lowering brain surface photo doc
+
+  # probe_insertion_instruction:
+  #  description:  Probe Lowering Instructions
+  #  display:
+  #      hi res image
 
   run_stimulus:
     description:  Run CAMStim Stimulus
