@@ -28,7 +28,10 @@ states:
 
   get_mouse_id:
     description: Enter Mouse ID
-    display:
+    display:   # This sticky widget will persist through state screens.
+      - field: user_id
+        type: sticky_value
+        desc: User ID
       - field: mouse_id
         type: text_entry
         desc: Enter mouse LabTracks ID, then click the right arrow to continue.
@@ -38,19 +41,39 @@ states:
   load_mouse:
     description:  Load Mouse Onto Stage
     display:
+      - field: mouse_id
+        type: sticky_value
+        desc: Mouse ID
+      - field: none
+        type: check_box
+        desc: Load mouse onto the stage.
       - field: None
         type: note
-        desc: Load Mouse Onto The Stage
+        desc: Clicking next will take a snapshot with MVR.  Please ensure the auxiliary camera is visible.
+      - field: None
+        type: note
+        desc: It may take several seconds to copy the image to display.
     inputs:
       - state: pre_brain_surface_photo_doc
 
   pre_brain_surface_photo_doc:
     description:  Pre lowering brain surface photo doc
     display:
-      - field: None
-        type: note
-        description:  Click next to take photo.
+      - field: pre_insertion_image
+        type: high_res_image
+        desc: Pre-insertion photo doc
+      - field: snapshot_ok  # This is apparently unused
+        type: branch_radio_button
+        desc: Is this snapshot acceptable?
+        options:
+              - field: snapshot_retry
+                desc: Retake snapshot.
+                next: pre_brain_surface_photo_doc  # This is unused, but i guess useful for a note
+              - field: snapshot_continue
+                desc: Accept snapshot and continue.
+                next: probe_insertion_instructions   # This is unused, but i guess useful for a note
     inputs:
+      - state: pre_brain_surface_photo_doc
       - state: probe_insertion_instructions
 
   probe_insertion_instructions:
