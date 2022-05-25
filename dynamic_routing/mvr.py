@@ -1,19 +1,56 @@
 import argparse
 import json
 import logging
-import os
-import sys
-from pprint import pformat
-from socket import *
-
 from mpetk import mpeconfig
+import sys
+from pprint import pprint, pformat
+from socket import *
+import os
 
 R = {'mvr_request': ''}
 encoding = 'utf-8'
 
 
+class ResponseBuffer:
+    def __init__(self):
+        self.read_buffer = []
+
+    def parse_buffer(self, buf):
+        if not buf:
+            return []
+        buf = buf.decode()
+        read_bracket_count = 0
+        self.read_buffer.extend(buf)
+        count = 0
+        messages = []
+        for i, c in enumerate(self.read_buffer):  # should maintain an internal pointer so it doesn't redo the list
+            count += 1
+            # update the "bracket stack"
+            if c == '{':
+                read_bracket_count += 1
+            elif c == '}':
+                read_bracket_count -= 1
+
+            if read_bracket_count == 0:  # a full JSON string is available
+                try:
+                    messages.append(json.loads(''.join(self.read_buffer[i - count + 1: i + 1])))
+                except TypeError:
+                    logging.warning('Error parsing MVR message:', self.read_buffer)
+                count = 0
+
+        # strip prior json messages off the buffer
+        if count == 0 and read_bracket_count == 0:  # There must be a better way
+            self.read_buffer = []
+        else:
+            self.read_buffer = self.read_buffer[-count:]
+
+        return messages
+
+
 class MVRConnector:
     def __init__(self, args=None):
+        self.response_buffer = ResponseBuffer()
+        self.device_index_map = {}
         self._errors_since_last_success: int = 0
         self._delete_on_copy: bool = True
         self._recording: bool = False
@@ -21,42 +58,50 @@ class MVRConnector:
         self._mvr_sock = None
         self._host_to_camera_map = {}
         self._mvr_connected = False
-        self.connect_to_mvr()
+        self.comp_ids = []  # temporary to allow for some debugging
+        try:
+            self.connect_to_mvr()
+            logging.info("Connected to mvr")
+        except Exception as err:
+            logging.error('failed to connect to mvr:', err)
+            exit()
 
     def _recv(self):
         if not self._mvr_connected:
             self.connect_to_mvr()
-            # logging.warning('Cannot receive because the MVR Reader is not connected to MVR')
             return
+
         try:
             ret_val = self._mvr_sock.recv(1024)
-        except:
+        except ConnectionResetError as e:
             # logging.error('Error receiving response from MVR.  An attempt to connect will be made on the next write.')
-            # self._mvr_connected = False
+            logging.info('MVR Connection Reset Error')
+            self._mvr_connected = False
             return []
-        else:
-            return ret_val
-            ret_val = json.loads(ret_val)
-            logging.info(f'Receiving: {pformat(ret_val)}')
-            return ret_val
+        except:
+            return []
+        return ret_val
+
+    def read(self):
+        buf = self._recv()
+        return self.response_buffer.parse_buffer(buf)
 
     def _send(self, msg):
         """
         msg is a dictionary.
         _send creates json from the dictionary and sends it as a byte object
         """
-        try:  # hackneyed attempt to proof the connection on every write b/c there is no read cycle in NP Workflow
-            vers = self.get_version()
-        except Exception:
-            self.connect_to_mvr()
-
         msg = json.dumps(msg).encode()
         logging.info(f'Sending: {pformat(msg)}')
         if not self._mvr_connected:
+            logging.info("Connecting to MVR")
             self.connect_to_mvr()
         if not self._mvr_connected:
             return
-        self._mvr_sock.send(msg)
+        try:
+            self._mvr_sock.send(msg)
+        except (ConnectionResetError, ConnectionRefusedError):
+            self._mvr_connected = False
 
     def connect_to_mvr(self):
         """
@@ -75,22 +120,22 @@ class MVRConnector:
             self._errors_since_last_success += 1
         else:
             self._errors_since_last_success = 0
-            logging.info(self._recv())
+            logging.info(self.read())
 
     def get_version(self):
         msg = {'mvr_request': 'get_version'}
         self._send(msg)
-        return self._recv()
+        return self.read()
 
     def start_display(self):
         msg = {'mvr_request': 'start_display'}
         self._send(msg)
-        return self._recv()
+        return self.read()
 
     def stop_display(self):
         msg = {'mvr_request': 'stop_display'}
         self._send(msg)
-        return self._recv()
+        return self.read()
 
     def start_record(self, file_name_prefix='', sub_folder='.', record_time=4800):
         self._send({"mvr_request": "start_record",
@@ -100,8 +145,10 @@ class MVRConnector:
                     })
 
     def start_single_record(self, host, file_name_prefix='', sub_folder='.', record_time=4800):
+        print(f'start single record on {host}')
         if host not in self._host_to_camera_map:
-            logging.warning(f'Can not find host {host} associated with a camera.')
+            comp = self.host_to_comp['host']
+            logging.warning(f'Start Single Record: Can not find host {host} ({comp}) associated with a camera.')
             return
 
         self._send({"mvr_request": "start_record",
@@ -119,16 +166,17 @@ class MVRConnector:
             message = {"mvr_request": "set_unautomated_ui"}
 
         self._send(message)
-        return self._recv()
+        return self.read()
 
     def stop_record(self):
         msg = {'mvr_request': 'stop_record'}
         self._send(msg)
-        # return self._recv()
+        # return self.read()
 
     def stop_single_record(self, host):
         if host not in self._host_to_camera_map:
-            logging.warning(f'Can not find host {host} associated with a camera.')
+            comp = self.host_to_comp['host']
+            logging.warning(f'Stop Single Record: Can not find host {host} ({comp}) associated with a camera.')
             return
 
         cam_id = self._host_to_camera_map[host]
@@ -138,35 +186,32 @@ class MVRConnector:
                    }
         self._send(message)
 
+    def take_snapshot(self):
+        self._send({"mvr_request": "take_snapshot"})
+
     def define_hosts(self, hosts):
         self._host_to_camera_map = {}
         for idx, host in enumerate(hosts):
             self._host_to_camera_map[host] = idx + 1
 
-    def highlight_camera(self, col, row):
-        cam_map = {(0, 0): 1,
-                   (0, 1): 2,
-                   (0, 2): 3,
-                   (1, 0): 4,
-                   (1, 1): 5,
-                   (1, 2): 6
-                   }
+        # print(f'Host To Camera Map: {pformat(self._host_to_camera_map)}')
+        self.host_to_comp = list(zip(hosts, self.comp_ids))
 
-        camera = cam_map[(row, col)]
+    def request_camera_ids(self):
+        self._send({"mvr_request": "get_camera_ids"})
+
+    def highlight_camera(self, device_name):
+        print(self.device_index_map)
+        index = self.device_index_map[device_name]
         msg = {'mvr_request': 'toggle_highlight_camera',
-               'camera': f'Camera {camera}'
+               'camera': index
                }
         self._send(msg)
-        try:
-            x = self._recv()
-        except Exception:
-            x = None
-        # return x
 
     def unhighlight_camera(self, panel):
         msg = {'mvr_request': 'unhighlight_panel'}
         self._send(msg)
-        return self._recv()
+        return self.read()
 
     def get_state(self):
         if self._recording:
@@ -192,7 +237,7 @@ def resource_path(relative_path):
         # PyInstaller creates a temp folder and stores path in _MEIPASS
         base_path = sys._MEIPASS
     except Exception:
-        base_path = os.path.abspath("../..")
+        base_path = os.path.abspath(".")
 
     return os.path.join(base_path, relative_path)
 
