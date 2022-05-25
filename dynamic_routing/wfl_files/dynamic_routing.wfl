@@ -57,7 +57,7 @@ states:
     description:  Probe insertion instructions
     display:
       - field: None
-        type: Note
+        type: note
         description:  Some instructions here?
     inputs:
       - state: settle_timer

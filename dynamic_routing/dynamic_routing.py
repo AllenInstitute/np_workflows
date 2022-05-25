@@ -58,15 +58,14 @@ def init_input(state):
     The expectation is these services are on (i.e., you have started them with RSC).  If the connection fails you can
     send a message to the user with the fail_state() function above.
     """
-
+    import os
+    logging.info(f"PYTHON PATH={os.getenv('PYTHON_PATH', default='NA')}")
     component_errors = []
     global mvr
     mvr = MVRConnector(args=config['MVR'])
     if not mvr._mvr_connected:
         logging.info("Failed to connect to mvr")
         component_errors.append(f"Failed to connect to MVR on {config['MVR']}")
-
-    breakpoint()
 
     global camstim_agent
     service = config['camstim_agent']
@@ -89,7 +88,7 @@ def init_input(state):
         fail_state('\n'.join(component_errors), state)
     else:
         state["external"]["next_state"] = "get_user_id"
-
+        
 
 def get_user_id_input(state):
     """
@@ -147,7 +146,7 @@ def pre_brain_surface_photo_doc_enter(state):
         io = state['resources']['io']
 
         message_received = False
-        logging.info("entering while loop")
+
         while not message_received:
             for message in mvr.read():
                 if message.get('mvr_broadcast', False) == "snapshot_taken":
@@ -164,7 +163,7 @@ def pre_brain_surface_photo_doc_enter(state):
 
     t = threading.Thread(target=wait_on_snapshot)
     t.start()
-
+    mvr.take_snapshot()
 
 """
 def probe_insertion_instructions_exit(state):
