@@ -68,7 +68,7 @@ def init_input(state):
 
     global camstim_agent
     service = config['camstim_agent']
-    camstim_agent = zro.Proxy(f"{service['host']}:{service['port']}", timeout=service['timeout'])
+    camstim_agent = zro.Proxy(f"{service['host']}:{service['port']}", timeout=service['timeout'], serialization="json")
     try:
         logging.info(f'Camstim Agent Uptime: {camstim_agent.uptime}')
     except Exception:
@@ -85,8 +85,8 @@ def init_input(state):
     #  At this point, You could send the user to an informative state to repair the remote services.
     if component_errors:
         fail_state('\n'.join(component_errors), state)
-    else:
-        state["external"]["next_state"] = "get_user_id"
+    # else:
+    #     state["external"]["next_state"] = "get_user_id"
 
 
 def get_user_id_input(state):
@@ -137,38 +137,17 @@ def get_mouse_id_input(state):
     )
     logging.info(log_message, extra={"weblog": True})
 
-
-def pre_brain_surface_photo_doc_enter(state):
-    state["resources"]["io"].write(messages.state_busy(message="Waiting for MVR to take snapshot."))
-
-    def wait_on_snapshot():  # you could define this outside of the state of course.
-        io = state['resources']['io']
-
-        message_received = False
-        logging.info("entering while loop")
-        while not message_received:
-            for message in mvr.read():
-                if message.get('mvr_broadcast', False) == "snapshot_taken":
-                    experiment.pre_brain_surface_photo = message['snapshot_filepath']
-                    logging.info("Snapshot taken")
-                    message_received = True
-                    break
-                elif message.get('mvr_broadcast', False) == "snapshot_failed":
-                    logging.info("Snapshot failed")
-                    fail_state(f"Error taking snapshot: {message['error_message']}", state)
-                    message_received = True
-                    break
-        io.write(messages.state_ready(message="Snapshot Handled."))
-
-    t = threading.Thread(target=wait_on_snapshot)
-    t.start()
+# {"mvr_request":"take_snapshot"}
+def pre_brain_surface_photo_doc_exit(state):
+    pass
+    # filename = mvr.take_photo()
+    # experiment.platform_json.add_file(filename)
 
 
-"""
 def probe_insertion_instructions_exit(state):
-    filename = mvr.take_photo()
-    experiment.platform_json.add_file(filename)
-"""
+    pass
+    # filename = mvr.take_photo()
+    # experiment.platform_json.add_file(filename)
 
 
 def flush_water_lines_input(state):
@@ -181,44 +160,45 @@ def run_stimulus_enter(state):
     Note that this is the "enter" function and not the "input" function.  This executes before the screen is presented
     to the user.  The green arrow will not be available to them as a result of the state_busy message.
     """
+    try:
+        #  This is in the enter state because we want to do things before the user sees the screen (like turn off arrow)
+        state["resources"]["io"].write(messages.state_busy(message="Waiting for stimulus script to complete."))
 
-    #  This is in the enter state because we want to do things before the user sees the screen (like turn off arrow)
-    state["resources"]["io"].write(messages.state_busy(message="Waiting for stimulus script to complete."))
+        #  Normally, we want to start the recording devices just before camstim
+        sync.start()
+        mvr.start_record(file_name_prefix=experiment.experiment_id)
 
-    #  Normally, we want to start the recording devices just before camstim
-    sync.start()
-    mvr.start_record(file_name_prefix=experiment.experiment_id)
+        #  If you are using the start session api (usually with mtrain, you would do the following.
+        # camstim_agent.start_session(experiment.mouse_id, experiment.user_name)
 
-    #  If you are using the start session api (usually with mtrain, you would do the following.
-    camstim_agent.start_session(experiment.mouse_id, experiment.user_name)
+        #  TODO:  Add an example of start_script
 
-    #  TODO:  Add an example of start_script
+        #  The following technique for turning off the next arrow and calling a "is ready" function is applicable for
+        #  any user event. (timers, waiting on services, etc)
 
-    #  The following technique for turning off the next arrow and calling a "is ready" function is applicable for
-    #  any user event. (timers, waiting on services, etc)
+        def check_stimulus():  # you could define this outside of the state of course.
+            io = state['resources']['io']
+            sleep(5.0)  # gives camstim agent a chance to get started
+            while True:
 
-    def check_stimulus():  # you could define this outside of the state of course.
-        io = state['resources']['io']
-        sleep(5.0)  # gives camstim agent a chance to get started
-        while True:
+                try:
+                    if not camstim_agent.is_running():
+                        break
+                    sleep(3.0)
+                except Exception as err:
+                    pass  # time outs are possible depending on the script.  Maybe implement a max retry
 
-            try:
-                if not camstim_agent.is_running():
-                    break
-                sleep(3.0)
-            except Exception as err:
-                pass  # time outs are possible depending on the script.  Maybe implement a max retry
+            #  It is possible here to check camstim agent for an error and take some action.
+            mvr.stop_record()
+            sync.stop()
+            io.write(messages.state_ready(message="Stimulus complete."))  # re-enables the arrow
 
-        #  It is possible here to check camstim agent for an error and take some action.
-        mvr.stop_record()
-        sync.stop()
-        io.write(messages.state_ready(message="Stimulus complete."))  # re-enables the arrow
-
-    #  Because the next arrow is disabled, we can wait on this thread to re-enable it without the user being able to
-    #  progress the workflow.
-    t = threading.Thread(target=check_stimulus)
-    t.start()
-
+        #  Because the next arrow is disabled, we can wait on this thread to re-enable it without the user being able to
+        #  progress the workflow.
+        t = threading.Thread(target=check_stimulus)
+        t.start()
+    except Exception as e:
+        fail_state(e, state)        
 
 def wait_on_sync_enter(state):
     #  This is in the enter state because we want to do things before the user sees the screen (like turn off arrow)
