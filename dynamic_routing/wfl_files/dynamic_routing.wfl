@@ -5,18 +5,22 @@ wfl_version: 1.0
 import: dynamic_routing.dynamic_routing
 
 # Define the first / entry state
-entry_state: init
+entry_state: flush_lines
 
 #  Enter each phase of the workflow as a state
 states:
+
+# 2) check components: MVR, OpenEphys, Stim, Sync, MouseDirector
   init:
     description: Experiment Initialization
     display:
       - type: note
         desc: Preparing the "Dynamic Routing" experiment.  Press next to continue
+        # can this be auto-advanced w/out pressing button?
     inputs:
       - state: get_user_id
 
+# 1) Get user id
   get_user_id:
     description: User ID
     display:
@@ -26,6 +30,7 @@ states:
     inputs:
       - state: get_mouse_id
 
+# 3) get mouseID
   get_mouse_id:
     description: Enter Mouse ID
     display:   # This sticky widget will persist through state screens.
@@ -36,8 +41,75 @@ states:
         type: text_entry
         desc: Enter mouse LabTracks ID, then click the right arrow to continue.
     inputs:
-        - state: load_mouse
+        - state: flush_lines #load_mouse
 
+# 4) *stretch goal: query mTrain for mouse Regimen, set mouse stage
+
+# 5) Flush water lines 
+  flush_lines:
+    description: Flush water lines
+    display:
+      - type: note
+        desc: Flush water lines
+    inputs:
+      - state: check_openephys
+
+# configure openephys in background
+
+# 6) Configure Hardware Openephys: check openephys connection, reminder to check tip referencing
+  check_openephys:
+    description: Openephys
+    display:
+     - field: none
+        type: check_box
+        desc: Checked all probes are connected
+     - field: none
+        type: check_box
+        desc: Checked all probes are set to tip referencing
+    inputs:
+      - state: pretest
+
+# 7) pretest (remove current check boxes, check laser)
+  pretest:
+    description: Pretest
+    display:
+      - type: note
+        desc: Check laser #! 
+    inputs:
+      - state: align_probes
+
+# 8) align probes: reminder to move probes to target coords
+  align_probes: 
+    description: align probes
+    display: 
+      - type: note
+        desc: move probes to target coords
+    inputs:
+      - state: dip_probes
+
+# 9) DiI application; check bumping, photodoc, confirm dye
+  probe_dye_photo_doc:
+    description:  Probes in dye photo doc
+    display:
+      - field: pre_insertion_image
+        type: high_res_image
+        desc: Take a photo
+      - field: snapshot_ok  # This is apparently unused
+        type: branch_radio_button
+        desc: Is this snapshot acceptable?
+        options:
+              - field: snapshot_retry
+                desc: Retake snapshot.
+                next: probe_dye_photo_doc  # This is unused, but i guess useful for a note
+              - field: snapshot_continue
+                desc: Accept snapshot and begin countdown timer.
+                next: load_mouse   # This is unused, but i guess useful for a note
+    inputs:
+      - state: probe_dye_photo_doc
+      - state: load_mouse
+# settle timer 
+
+# 10) Load Mouse: no pre weight
   load_mouse:
     description:  Load Mouse Onto Stage
     display:
@@ -56,6 +128,7 @@ states:
     inputs:
       - state: pre_brain_surface_photo_doc
 
+# 11) pre lowering brain surface photo doc
   pre_brain_surface_photo_doc:
     description:  Pre lowering brain surface photo doc
     display:
@@ -76,15 +149,69 @@ states:
       - state: pre_brain_surface_photo_doc
       - state: probe_insertion_instructions
 
+# 12)
   probe_insertion_instructions:
     description:  Probe insertion instructions
     display:
       - field: None
         type: note
-        description:  Some instructions here?
+        description: consult probe gui for guidance. Note targets missed
+      - field: notes_A
+        type: text_entry
+        desc: notes on A
+      - field: notes_B
+        type: text_entry
+        desc: notes on B
+      - field: notes_C
+        type: text_entry
+        desc: notes on C
+    inputs:
+      - state: probe_surface_photo_doc
+
+# 13) probes at surface
+  probe_surface_photo_doc:
+    description:
+    display: Probes at brain surface photo doc
+    display:
+      - field: pre_insertion_image
+        type: high_res_image
+        desc: Pre-insertion photo doc
+      - field: snapshot_ok  # This is apparently unused
+        type: branch_radio_button
+        desc: Is this snapshot acceptable?
+        options:
+              - field: snapshot_retry
+                desc: Retake snapshot.
+                next: probe_surface_photo_doc  # This is unused, but i guess useful for a note
+              - field: snapshot_continue
+                desc: Accept snapshot and continue.
+                next: probe_insertion   # This is unused, but i guess useful for a note
+    inputs:
+      - state: probe_surface_photo_doc
+      - state: probe_insertion
+
+# 14) probe insertion notes
+probe_insertion:
+    description:  Probe insertion
+    display:
+      - field: None
+        type: note
+        description: advance probes. note observations
+      - field: notes_A
+        type: text_entry
+        desc: notes on A
+      - field: notes_B
+        type: text_entry
+        desc: notes on B
+      - field: notes_C
+        type: text_entry
+        desc: notes on C
+      - type: note
+        desc: at final depth, click arrow to start settle-timer
     inputs:
       - state: settle_timer
 
+# run settle_timer in background instead of a wait screen
   settle_timer:
     description:  Timer Example
     display:
@@ -94,14 +221,19 @@ states:
     inputs:
       - state: run_stimulus
 
-
   # brain_surface_photodoc:
   #  description: pre-lowering brain surface photo doc
-
+  
+# 15) probes inserted photo doc
   # probe_insertion_instruction:
   #  description:  Probe Lowering Instructions
   #  display:
   #      hi res image
+
+# 16) Check Data Dirs: check acquisition drive space
+# 17) pre-stimulus timer #! minus time elapsed since probes reached final depth?
+# 18) prime lick spout/move lick spout/confirm
+# 19) Initiate behavior experiment (data streams but not stimulus)
 
   run_stimulus:
     description:  Run CAMStim Stimulus
