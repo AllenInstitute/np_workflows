@@ -5,7 +5,7 @@ wfl_version: 1.0
 import: dynamic_routing.dynamic_routing
 
 # Define the first / entry state
-entry_state: flush_lines
+entry_state: init #flush_lines
 
 #  Enter each phase of the workflow as a state
 states:
@@ -209,29 +209,50 @@ probe_insertion:
       - type: note
         desc: at final depth, click arrow to start settle-timer
     inputs:
-      - state: settle_timer
+      - state: probe_inserted_photo_doc
+  
+# 15) probes inserted photo doc
+  probe_inserted_photo_doc:
+    description:
+    display: Probes inserted photo doc
+    display:
+      - field: full_insertion_image
+        type: high_res_image
+        desc: Insertion photo doc
+      - field: snapshot_ok  # This is apparently unused
+        type: branch_radio_button
+        desc: Is this snapshot acceptable?
+        options:
+              - field: snapshot_retry
+                desc: Retake snapshot.
+                next: probe_inserted_photo_doc  # This is unused, but i guess useful for a note
+              - field: snapshot_continue
+                desc: Accept snapshot and continue.
+                next: probe_insertion   # This is unused, but i guess useful for a note
+    inputs:
+      - state: probe_inserted_photo_doc
+      - state: check_acq_drives
 
+# 16) Check Data Dirs: check acquisition drive space
+  check_acq_drives:
+    description: Checking space on acquisition drives
+    display:
+      # - field: None
+      - type: note
+        desc: Press the green "next" arrow when it becomes available. #! can we auto-advance or do this in the background?
+    inputs: settle_timer
+
+# 17) pre-stimulus timer #! minus time elapsed since probes reached final depth?
 # run settle_timer in background instead of a wait screen
   settle_timer:
-    description:  Timer Example
+    description:  Pre-stimulus timer
     display:
       - field: None
         type: note
-        desc: Settle Timer waiting.  Press the green "next" arrow when it becomes available.
+        desc: Settle Timer waiting.  Press the green "next" arrow when it becomes available. #! when waiting, is it easier to spot the green arrow when it appears, or the 'new' screen? could we change the arrow to another color to indicate waiting?
     inputs:
       - state: run_stimulus
-
-  # brain_surface_photodoc:
-  #  description: pre-lowering brain surface photo doc
-  
-# 15) probes inserted photo doc
-  # probe_insertion_instruction:
-  #  description:  Probe Lowering Instructions
-  #  display:
-  #      hi res image
-
-# 16) Check Data Dirs: check acquisition drive space
-# 17) pre-stimulus timer #! minus time elapsed since probes reached final depth?
+      
 # 18) prime lick spout/move lick spout/confirm
 # 19) Initiate behavior experiment (data streams but not stimulus)
 
