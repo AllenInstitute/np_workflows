@@ -60,10 +60,10 @@ states:
   check_openephys:
     description: Openephys
     display:
-     - field: none
+     - field: None
         type: check_box
         desc: Checked all probes are connected
-     - field: none
+     - field: None
         type: check_box
         desc: Checked all probes are set to tip referencing
     inputs:
@@ -116,7 +116,7 @@ states:
       - field: mouse_id
         type: sticky_value
         desc: Mouse ID
-      - field: none
+      - field: None
         type: check_box
         desc: Load mouse onto the stage.
       - field: None
