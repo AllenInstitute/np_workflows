@@ -56,17 +56,17 @@ states:
   # configure openephys in background
 
   # 6) Configure Hardware Openephys: check openephys connection, reminder to check tip referencing
-  check_openephys:
-    description: Openephys
-    display:
-      - field: None
-        type: check_box
-        desc: Checked all probes are connected
-      - field: None
-        type: check_box
-        desc: Checked all probes are set to tip referencing
-    inputs:
-      - state: pretest
+  # check_openephys:
+  #   description: Openephys
+  #   display:
+  #     - field: None
+  #       type: check_box
+  #       desc: Checked all probes are connected
+  #     - field: None
+  #       type: check_box
+  #       desc: Checked all probes are set to tip referencing
+  #   inputs:
+  #     - state: pretest
 
   # 7) pretest (remove current check boxes, check laser)
   pretest:
@@ -234,8 +234,8 @@ states:
   check_acq_drives:
     description: Checking space on acquisition drives
     display:
-      # - field: None
-      - type: note
+      - field: None
+        type: note
         desc: Press the green "next" arrow when it becomes available. #! can we auto-advance or do this in the background?
     inputs: settle_timer
 
@@ -251,15 +251,81 @@ states:
       - state: run_stimulus
 
   # 18) prime lick spout/move lick spout/confirm
-  # 19) Initiate behavior experiment (data streams but not stimulus)
+  lick_spout:
+    description: Check lick spout/confirm
+    display:
+      - field: None
+        type: note
+        desc: reminders for priming lick spout
+      - field: None
+        type: check_box
+        desc: lick spout primed
+      - field: None
+        type: check_box
+        desc: lick spout moves freely #! ?
+      - field: notes on lick spoutm adjustments made
+        type: note
+        desc: Add any notes on the lick spout, including adjustments
+    inputs:
+      - state: start_behavior_streams
 
+  # 19) Initiate behavior experiment (data streams but not stimulus)
+  start_behavior_streams:
+    inputs:
+      - state: run_stimulus
+
+  # 20) Initiate stimulus
   run_stimulus:
     description: Run CAMStim Stimulus
     display:
       - type: note
         desc: Agent is currently running.  Press the green "next" arrow when it becomes available.
     inputs:
+      - state: monitor_exp
+
+  # 21) Monitor experiment (just check MVR, sync, camstim, openephys)
+  monitor_exp:
+    inputs:
+      - state: exp_end
+
+  # 22) End experiment
+  exp_end:
+    inputs:
+      - state: exp_end_probe_inserted_photo_doc
+
+  # 23) end of experiment photodoc
+  exp_end_probe_inserted_photo_doc:
+  description: exp end, probes inserted photo doc
+  display:
+    - field: full_insertion_image
+      type: high_res_image
+      desc: Insertion photo doc
+    - field: snapshot_ok # This is apparently unused
+      type: branch_radio_button
+      desc: Is this snapshot acceptable?
+      options:
+        - field: snapshot_retry
+          desc: Retake snapshot.
+          next: probe_inserted_photo_doc # This is unused, but i guess useful for a note
+        - field: snapshot_continue
+          desc: Accept snapshot and continue.
+          next: probe_insertion # This is unused, but i guess useful for a note
+  inputs:
+    - state: exp_end_probe_inserted_photo_doc
+    - state: exp_end_post_removal_photo_doc
+
+  # 24) post-removal photodoc
+  # 25) Move files (collect files listed below into the Sync computer neuropixels data directory)
+  # 26) water mouse
+  # 27) check files
+  # 28) make manifest and platform json (note: manifest should be created after platform json is finalized)
+
+  # 30) network backup
+  network_backup:
+    inputs:
       - state: workflow_complete
+
+  # 29) *stretch goal: kick off data joint processing
 
   workflow_complete:
     description: Workflow Complete!
