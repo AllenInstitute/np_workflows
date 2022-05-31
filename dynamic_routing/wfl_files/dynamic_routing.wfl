@@ -9,8 +9,7 @@ entry_state: init #flush_lines
 
 #  Enter each phase of the workflow as a state
 states:
-
-# 2) check components: MVR, OpenEphys, Stim, Sync, MouseDirector
+  # 2) check components: MVR, OpenEphys, Stim, Sync, MouseDirector
   init:
     description: Experiment Initialization
     display:
@@ -20,7 +19,7 @@ states:
     inputs:
       - state: get_user_id
 
-# 1) Get user id
+  # 1) Get user id
   get_user_id:
     description: User ID
     display:
@@ -30,10 +29,10 @@ states:
     inputs:
       - state: get_mouse_id
 
-# 3) get mouseID
+  # 3) get mouseID
   get_mouse_id:
     description: Enter Mouse ID
-    display:   # This sticky widget will persist through state screens.
+    display: # This sticky widget will persist through state screens.
       - field: user_id
         type: sticky_value
         desc: User ID
@@ -41,11 +40,11 @@ states:
         type: text_entry
         desc: Enter mouse LabTracks ID, then click the right arrow to continue.
     inputs:
-        - state: flush_lines #load_mouse
+      - state: flush_lines #load_mouse
 
-# 4) *stretch goal: query mTrain for mouse Regimen, set mouse stage
+  # 4) *stretch goal: query mTrain for mouse Regimen, set mouse stage
 
-# 5) Flush water lines 
+  # 5) Flush water lines
   flush_lines:
     description: Flush water lines
     display:
@@ -54,64 +53,64 @@ states:
     inputs:
       - state: check_openephys
 
-# configure openephys in background
+  # configure openephys in background
 
-# 6) Configure Hardware Openephys: check openephys connection, reminder to check tip referencing
+  # 6) Configure Hardware Openephys: check openephys connection, reminder to check tip referencing
   check_openephys:
     description: Openephys
     display:
-     - field: None
+      - field: None
         type: check_box
         desc: Checked all probes are connected
-     - field: None
+      - field: None
         type: check_box
         desc: Checked all probes are set to tip referencing
     inputs:
       - state: pretest
 
-# 7) pretest (remove current check boxes, check laser)
+  # 7) pretest (remove current check boxes, check laser)
   pretest:
     description: Pretest
     display:
       - type: note
-        desc: Check laser #! 
+        desc: Check laser #!
     inputs:
       - state: align_probes
 
-# 8) align probes: reminder to move probes to target coords
-  align_probes: 
+  # 8) align probes: reminder to move probes to target coords
+  align_probes:
     description: align probes
-    display: 
+    display:
       - type: note
         desc: move probes to target coords
     inputs:
       - state: dip_probes
 
-# 9) DiI application; check bumping, photodoc, confirm dye
+  # 9) DiI application; check bumping, photodoc, confirm dye
   probe_dye_photo_doc:
-    description:  Probes in dye photo doc
+    description: Probes in dye photo doc
     display:
       - field: pre_insertion_image
         type: high_res_image
         desc: Take a photo
-      - field: snapshot_ok  # This is apparently unused
+      - field: snapshot_ok # This is apparently unused
         type: branch_radio_button
         desc: Is this snapshot acceptable?
         options:
-              - field: snapshot_retry
-                desc: Retake snapshot.
-                next: probe_dye_photo_doc  # This is unused, but i guess useful for a note
-              - field: snapshot_continue
-                desc: Accept snapshot and begin countdown timer.
-                next: load_mouse   # This is unused, but i guess useful for a note
+          - field: snapshot_retry
+            desc: Retake snapshot.
+            next: probe_dye_photo_doc # This is unused, but i guess useful for a note
+          - field: snapshot_continue
+            desc: Accept snapshot and begin countdown timer.
+            next: load_mouse # This is unused, but i guess useful for a note
     inputs:
       - state: probe_dye_photo_doc
       - state: load_mouse
-# settle timer 
+  # settle timer
 
-# 10) Load Mouse: no pre weight
+  # 10) Load Mouse: no pre weight
   load_mouse:
-    description:  Load Mouse Onto Stage
+    description: Load Mouse Onto Stage
     display:
       - field: mouse_id
         type: sticky_value
@@ -128,30 +127,30 @@ states:
     inputs:
       - state: pre_brain_surface_photo_doc
 
-# 11) pre lowering brain surface photo doc
+  # 11) pre lowering brain surface photo doc
   pre_brain_surface_photo_doc:
-    description:  Pre lowering brain surface photo doc
+    description: Pre lowering brain surface photo doc
     display:
       - field: pre_insertion_image
         type: high_res_image
         desc: Pre-insertion photo doc
-      - field: snapshot_ok  # This is apparently unused
+      - field: snapshot_ok # This is apparently unused
         type: branch_radio_button
         desc: Is this snapshot acceptable?
         options:
-              - field: snapshot_retry
-                desc: Retake snapshot.
-                next: pre_brain_surface_photo_doc  # This is unused, but i guess useful for a note
-              - field: snapshot_continue
-                desc: Accept snapshot and continue.
-                next: probe_insertion_instructions   # This is unused, but i guess useful for a note
+          - field: snapshot_retry
+            desc: Retake snapshot.
+            next: pre_brain_surface_photo_doc # This is unused, but i guess useful for a note
+          - field: snapshot_continue
+            desc: Accept snapshot and continue.
+            next: probe_insertion_instructions # This is unused, but i guess useful for a note
     inputs:
       - state: pre_brain_surface_photo_doc
       - state: probe_insertion_instructions
 
-# 12)
+  # 12)
   probe_insertion_instructions:
-    description:  Probe insertion instructions
+    description: Probe insertion instructions
     display:
       - field: None
         type: note
@@ -168,31 +167,30 @@ states:
     inputs:
       - state: probe_surface_photo_doc
 
-# 13) probes at surface
+  # 13) probes at surface
   probe_surface_photo_doc:
-    description:
-    display: Probes at brain surface photo doc
+    description: Probes at brain surface photo doc
     display:
       - field: pre_insertion_image
         type: high_res_image
         desc: Pre-insertion photo doc
-      - field: snapshot_ok  # This is apparently unused
+      - field: snapshot_ok # This is apparently unused
         type: branch_radio_button
         desc: Is this snapshot acceptable?
         options:
-              - field: snapshot_retry
-                desc: Retake snapshot.
-                next: probe_surface_photo_doc  # This is unused, but i guess useful for a note
-              - field: snapshot_continue
-                desc: Accept snapshot and continue.
-                next: probe_insertion   # This is unused, but i guess useful for a note
+          - field: snapshot_retry
+            desc: Retake snapshot.
+            next: probe_surface_photo_doc # This is unused, but i guess useful for a note
+          - field: snapshot_continue
+            desc: Accept snapshot and continue.
+            next: probe_insertion # This is unused, but i guess useful for a note
     inputs:
       - state: probe_surface_photo_doc
       - state: probe_insertion
 
-# 14) probe insertion notes
-probe_insertion:
-    description:  Probe insertion
+  # 14) probe insertion notes
+  probe_insertion:
+    description: Probe insertion
     display:
       - field: None
         type: note
@@ -210,30 +208,29 @@ probe_insertion:
         desc: at final depth, click arrow to start settle-timer
     inputs:
       - state: probe_inserted_photo_doc
-  
-# 15) probes inserted photo doc
+
+  # 15) probes inserted photo doc
   probe_inserted_photo_doc:
-    description:
-    display: Probes inserted photo doc
+    description: Probes inserted photo doc
     display:
       - field: full_insertion_image
         type: high_res_image
         desc: Insertion photo doc
-      - field: snapshot_ok  # This is apparently unused
+      - field: snapshot_ok # This is apparently unused
         type: branch_radio_button
         desc: Is this snapshot acceptable?
         options:
-              - field: snapshot_retry
-                desc: Retake snapshot.
-                next: probe_inserted_photo_doc  # This is unused, but i guess useful for a note
-              - field: snapshot_continue
-                desc: Accept snapshot and continue.
-                next: probe_insertion   # This is unused, but i guess useful for a note
+          - field: snapshot_retry
+            desc: Retake snapshot.
+            next: probe_inserted_photo_doc # This is unused, but i guess useful for a note
+          - field: snapshot_continue
+            desc: Accept snapshot and continue.
+            next: probe_insertion # This is unused, but i guess useful for a note
     inputs:
       - state: probe_inserted_photo_doc
       - state: check_acq_drives
 
-# 16) Check Data Dirs: check acquisition drive space
+  # 16) Check Data Dirs: check acquisition drive space
   check_acq_drives:
     description: Checking space on acquisition drives
     display:
@@ -242,27 +239,27 @@ probe_insertion:
         desc: Press the green "next" arrow when it becomes available. #! can we auto-advance or do this in the background?
     inputs: settle_timer
 
-# 17) pre-stimulus timer #! minus time elapsed since probes reached final depth?
-# run settle_timer in background instead of a wait screen
+  # 17) pre-stimulus timer #! minus time elapsed since probes reached final depth?
+  # run settle_timer in background instead of a wait screen
   settle_timer:
-    description:  Pre-stimulus timer
+    description: Pre-stimulus timer
     display:
       - field: None
         type: note
         desc: Settle Timer waiting.  Press the green "next" arrow when it becomes available. #! when waiting, is it easier to spot the green arrow when it appears, or the 'new' screen? could we change the arrow to another color to indicate waiting?
     inputs:
       - state: run_stimulus
-      
-# 18) prime lick spout/move lick spout/confirm
-# 19) Initiate behavior experiment (data streams but not stimulus)
+
+  # 18) prime lick spout/move lick spout/confirm
+  # 19) Initiate behavior experiment (data streams but not stimulus)
 
   run_stimulus:
-    description:  Run CAMStim Stimulus
+    description: Run CAMStim Stimulus
     display:
-        - type: note
-          desc: Agent is currently running.  Press the green "next" arrow when it becomes available.
+      - type: note
+        desc: Agent is currently running.  Press the green "next" arrow when it becomes available.
     inputs:
-        - state: workflow_complete
+      - state: workflow_complete
 
   workflow_complete:
     description: Workflow Complete!
