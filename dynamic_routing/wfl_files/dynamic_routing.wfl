@@ -5,14 +5,18 @@ wfl_version: 1.0
 import: dynamic_routing.dynamic_routing
 
 # Define the first / entry state
-entry_state: init #flush_lines
+entry_state: init #! init
 
 #  Enter each phase of the workflow as a state
 states:
+  
   # 2) check components: MVR, OpenEphys, Stim, Sync, MouseDirector
   init:
     description: Experiment Initialization
     display:
+      - field: exp_logo
+        type: image
+        desc: logo
       - type: note
         desc: Preparing the "Dynamic Routing" experiment.  Press next to continue
         # can this be auto-advanced w/out pressing button?
@@ -40,7 +44,7 @@ states:
         type: text_entry
         desc: Enter mouse LabTracks ID, then click the right arrow to continue.
     inputs:
-      - state: flush_lines #load_mouse
+      - state: pre_brain_surface_photo_doc #load_mouse
 
   # 4) *stretch goal: query mTrain for mouse Regimen, set mouse stage
 
@@ -56,17 +60,17 @@ states:
   # configure openephys in background
 
   # 6) Configure Hardware Openephys: check openephys connection, reminder to check tip referencing
-  # check_openephys:
-  #   description: Openephys
-  #   display:
-  #     - field: None
-  #       type: check_box
-  #       desc: Checked all probes are connected
-  #     - field: None
-  #       type: check_box
-  #       desc: Checked all probes are set to tip referencing
-  #   inputs:
-  #     - state: pretest
+  check_openephys:
+    description: Openephys
+    display:
+      - field: None
+        type: check_box
+        desc: Checked all probes are connected
+      - field: None
+        type: check_box
+        desc: Checked all probes are set to tip referencing
+    inputs:
+      - state: pretest
 
   # 7) pretest (remove current check boxes, check laser)
   pretest:
@@ -84,13 +88,18 @@ states:
       - type: note
         desc: move probes to target coords
     inputs:
-      - state: dip_probes
+      - state: probe_dye_photo_doc
 
   # 9) DiI application; check bumping, photodoc, confirm dye
   probe_dye_photo_doc:
     description: Probes in dye photo doc
     display:
-      - field: pre_insertion_image
+      - field: None
+        type: check_box
+        desc: checked which dye to use today (DiI/DiO)
+      - field: note
+        desc: dip probes and capture a photo
+      - field: probe_dye_image
         type: high_res_image
         desc: Take a photo
       - field: snapshot_ok # This is apparently unused
@@ -131,7 +140,7 @@ states:
   pre_brain_surface_photo_doc:
     description: Pre lowering brain surface photo doc
     display:
-      - field: pre_insertion_image
+      - field: pre_brain_surface_image
         type: high_res_image
         desc: Pre-insertion photo doc
       - field: snapshot_ok # This is apparently unused
@@ -271,6 +280,7 @@ states:
 
   # 19) Initiate behavior experiment (data streams but not stimulus)
   start_behavior_streams:
+    description: Start behavior streams
     inputs:
       - state: run_stimulus
 
@@ -285,47 +295,71 @@ states:
 
   # 21) Monitor experiment (just check MVR, sync, camstim, openephys)
   monitor_exp:
-    inputs:
-      - state: exp_end
-
-  # 22) End experiment
-  exp_end:
+    description: Monitor exp
     inputs:
       - state: exp_end_probe_inserted_photo_doc
+    # show time since exp start?
 
   # 23) end of experiment photodoc
   exp_end_probe_inserted_photo_doc:
-  description: exp end, probes inserted photo doc
-  display:
-    - field: full_insertion_image
-      type: high_res_image
-      desc: Insertion photo doc
-    - field: snapshot_ok # This is apparently unused
-      type: branch_radio_button
-      desc: Is this snapshot acceptable?
-      options:
-        - field: snapshot_retry
-          desc: Retake snapshot.
-          next: probe_inserted_photo_doc # This is unused, but i guess useful for a note
-        - field: snapshot_continue
-          desc: Accept snapshot and continue.
-          next: probe_insertion # This is unused, but i guess useful for a note
-  inputs:
-    - state: exp_end_probe_inserted_photo_doc
-    - state: exp_end_post_removal_photo_doc
+    description: exp end, probes inserted photo doc
+    display:
+      - field: full_insertion_image
+        type: high_res_image
+        desc: Insertion photo doc
+      - field: snapshot_ok # This is apparently unused
+        type: branch_radio_button
+        desc: Is this snapshot acceptable?
+        options:
+          - field: snapshot_retry
+            desc: Retake snapshot.
+            next: probe_inserted_photo_doc # This is unused, but i guess useful for a note
+          - field: snapshot_continue
+            desc: Accept snapshot and continue.
+            next: probe_insertion # This is unused, but i guess useful for a note
+    inputs:
+      - state: exp_end_probe_inserted_photo_doc
+      - state: post_removal_photo_doc
 
   # 24) post-removal photodoc
-  # 25) Move files (collect files listed below into the Sync computer neuropixels data directory)
+  post_removal_photo_doc:
+    description: exp end, probes inserted photo doc
+    display:
+      - field: full_insertion_image
+        type: high_res_image
+        desc: Insertion photo doc
+      - field: snapshot_ok # This is apparently unused
+        type: branch_radio_button
+        desc: Is this snapshot acceptable?
+        options:
+          - field: snapshot_retry
+            desc: Retake snapshot.
+            next: probe_inserted_photo_doc # This is unused, but i guess useful for a note
+          - field: snapshot_continue
+            desc: Accept snapshot and continue.
+            next: probe_insertion # This is unused, but i guess useful for a note
+    inputs:
+      - state: post_removal_photo_doc
+      - state: post_exp_animal_and_data_management
+
   # 26) water mouse
+  post_exp_animal_and_data_management:
+    description: Remove and water mouse (+small data management)
+    inputs:
+      - state: network_backup
+  # the following can be done behind the scenes during mouse removal screen: 
+      # dedicated screens could display if an error occurs, with the chance to retry 
+  # 25) Move files (collect files listed below into the Sync computer neuropixels data directory)
   # 27) check files
   # 28) make manifest and platform json (note: manifest should be created after platform json is finalized)
 
-  # 30) network backup
-  network_backup:
-    inputs:
-      - state: workflow_complete
 
+  # 30) network backup
   # 29) *stretch goal: kick off data joint processing
+  network_backup:
+    description: Large data management
+    inputs:
+    - state: workflow_complete
 
   workflow_complete:
     description: Workflow Complete!
