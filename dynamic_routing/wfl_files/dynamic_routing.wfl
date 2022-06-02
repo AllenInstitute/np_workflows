@@ -44,7 +44,7 @@ states:
         type: text_entry
         desc: Enter mouse LabTracks ID, then click the right arrow to continue.
     inputs:
-      - state: pre_brain_surface_photo_doc #load_mouse
+      - state: flush_lines #load_mouse
 
   # 4) *stretch goal: query mTrain for mouse Regimen, set mouse stage
 
@@ -163,7 +163,7 @@ states:
     display:
       - field: None
         type: note
-        description: consult probe gui for guidance Note targets missed
+        desc: consult probe gui for guidance Note targets missed
       - field: notes_A
         type: text_entry
         desc: notes on A
@@ -203,7 +203,7 @@ states:
     display:
       - field: None
         type: note
-        description: advance probes note observations
+        desc: advance probes note observations
       - field: notes_A
         type: text_entry
         desc: notes on A
@@ -246,7 +246,8 @@ states:
       - field: None
         type: note
         desc: Press the green "next" arrow when it becomes available. #! can we auto-advance or do this in the background?
-    inputs: settle_timer
+    inputs: 
+      - state: settle_timer
 
   # 17) pre-stimulus timer #! minus time elapsed since probes reached final depth?
   # run settle_timer in background instead of a wait screen
@@ -257,7 +258,7 @@ states:
         type: note
         desc: Settle Timer waiting.  Press the green "next" arrow when it becomes available. #! when waiting, is it easier to spot the green arrow when it appears, or the 'new' screen? could we change the arrow to another color to indicate waiting?
     inputs:
-      - state: run_stimulus
+      - state: lick_spout
 
   # 18) prime lick spout/move lick spout/confirm
   lick_spout:
@@ -359,7 +360,7 @@ states:
   network_backup:
     description: Large data management
     inputs:
-    - state: workflow_complete
+      - state: workflow_complete
 
   workflow_complete:
     description: Workflow Complete!
