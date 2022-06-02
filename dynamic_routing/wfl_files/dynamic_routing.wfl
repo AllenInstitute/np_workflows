@@ -65,7 +65,7 @@ states:
     display:
       - field: None
         type: check_box
-        desc: Checked all probes are connected
+        desc: Checked all probes are connected (lit up green)
       - field: None
         type: check_box
         desc: Checked all probes are set to tip referencing
