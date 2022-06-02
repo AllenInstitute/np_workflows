@@ -14,9 +14,9 @@ states:
   init:
     description: Experiment Initialization
     display:
-      - field: exp_logo
-        type: image
-        desc: logo
+      # - field: exp_logo
+      #   type: image
+      #   desc: logo
       - type: note
         desc: Preparing the "Dynamic Routing" experiment.  Press next to continue
         # can this be auto-advanced w/out pressing button?
@@ -96,7 +96,7 @@ states:
     display:
       - field: None
         type: check_box
-        desc: checked which dye to use today (DiI/DiO)
+        desc: checked which dye to use today (DiI or DiO)
       - field: note
         desc: dip probes and capture a photo
       - field: probe_dye_image
@@ -163,7 +163,7 @@ states:
     display:
       - field: None
         type: note
-        description: consult probe gui for guidance. Note targets missed
+        description: consult probe gui for guidance Note targets missed
       - field: notes_A
         type: text_entry
         desc: notes on A
@@ -203,7 +203,7 @@ states:
     display:
       - field: None
         type: note
-        description: advance probes. note observations
+        description: advance probes note observations
       - field: notes_A
         type: text_entry
         desc: notes on A
@@ -251,7 +251,7 @@ states:
   # 17) pre-stimulus timer #! minus time elapsed since probes reached final depth?
   # run settle_timer in background instead of a wait screen
   settle_timer:
-    description: Pre-stimulus timer
+    description: Pre stimulus timer
     display:
       - field: None
         type: note
@@ -261,7 +261,7 @@ states:
 
   # 18) prime lick spout/move lick spout/confirm
   lick_spout:
-    description: Check lick spout/confirm
+    description: Check lick spout and confirm
     display:
       - field: None
         type: note
@@ -302,7 +302,7 @@ states:
 
   # 23) end of experiment photodoc
   exp_end_probe_inserted_photo_doc:
-    description: exp end, probes inserted photo doc
+    description: exp end probes inserted photo doc
     display:
       - field: full_insertion_image
         type: high_res_image
@@ -323,7 +323,7 @@ states:
 
   # 24) post-removal photodoc
   post_removal_photo_doc:
-    description: exp end, probes inserted photo doc
+    description: exp end probes inserted photo doc
     display:
       - field: full_insertion_image
         type: high_res_image
@@ -344,7 +344,7 @@ states:
 
   # 26) water mouse
   post_exp_animal_and_data_management:
-    description: Remove and water mouse (+small data management)
+    description: water mouse and small data management
     inputs:
       - state: network_backup
   # the following can be done behind the scenes during mouse removal screen: 
