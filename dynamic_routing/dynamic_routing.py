@@ -8,10 +8,12 @@ import shutil
 import threading
 from time import sleep
 
+import mpetk.aibsmw.routerio.router
 import requests
 from mpetk import limstk, mpeconfig, zro
 from wfltk import middleware_messages_pb2 as messages
 
+import ephys
 from .model import DynamicRouting  # It can make sense to have a class to store experiment data.
 from .mvr import MVRConnector  # This will eventually get incorporated into the workflow launcher
 
@@ -22,15 +24,14 @@ from .mvr import MVRConnector  # This will eventually get incorporated into the 
 config: dict = mpeconfig.source_configuration("dynamic_routing")
 experiment = DynamicRouting()
 
+io: mpetk.aibsmw.routerio.router.ZMQHandler
+
 mvr: MVRConnector
 camstim_agent: zro.Proxy
 sync: zro.Proxy
 mouse_director: zro.Proxy
 
 
-# TODO:  connect to open ephys
-#        check drive space
-#
 def fail_state(message: str, state: dict):
     """
     This is an example of how to create a single failure reporting function.  It inspects the stack to figure out which
@@ -52,6 +53,7 @@ def fail_state(message: str, state: dict):
     state["external"]["msg_text"] = message
     logging.warning(f"{state_name} failed: {message}")
 
+
 def wait_on_snapshot():  # you could define this outside of the state of course.
     while True:
         for message in mvr.read():
@@ -72,8 +74,10 @@ def init_input(state):
     The expectation is these services are on (i.e., you have started them with RSC).  If the connection fails you can
     send a message to the user with the fail_state() function above.
     """
-    import os
-    logging.info(f"PYTHON PATH={os.getenv('PYTHON_PATH', default='NA')}")
+    global io
+    io = state['resources']['io']
+    io.write(ephys.start_ecephys_acquisition())
+    #  Here we either need to test open ephys by trying to record or we get the status message.  awaiting testing.
     component_errors = []
     global mvr
     mvr = MVRConnector(args=config['MVR'])
@@ -97,6 +101,14 @@ def init_input(state):
     except Exception:
         component_errors.append(f"Failed to connect to Sync.")
 
+    global mouse_director
+    service = config['mouse_director']
+    mouse_director = zro.Proxy(f"{service['host']}:{service['port']}", timeout=service['timeout'])
+    try:
+        logging.info(f'MouseDirector Uptime: {mouse_director.uptime}')
+    except Exception:
+        component_errors.append(f"Failed to connect to MouseDirector.")
+
     #  At this point, You could send the user to an informative state to repair the remote services.
     if component_errors:
         fail_state('\n'.join(component_errors), state)
@@ -116,10 +128,7 @@ def get_user_id_input(state):
             f"Could not find user {user_name} in LIMS.  You might get this error if you have never logged into LIMS",
             state)
     state["user_name"] = user_name  # It is ok to save data into the state.
-
-
-
-
+    mouse_director.set_user_id(user_name)
 
 def get_mouse_id_input(state):
     """
@@ -141,6 +150,7 @@ def get_mouse_id_input(state):
         fail_state(f"Could not find mouse id {mouse_id} in MTrain", state)
         return
 
+    mouse_director.set_mouse_id(mouse_id)
     experiment.mouse_id = mouse_id
     experiment.script = response.json()['data']['script'].split('/')[-1]
     experiment.stimulus_name = response.json()['data']['name']
@@ -155,6 +165,7 @@ def get_mouse_id_input(state):
     )
     logging.info(log_message, extra={"weblog": True})
 
+
 def pre_brain_surface_photo_doc_enter(state):
     mvr.take_snapshot()
     success, mesg = wait_on_snapshot()
@@ -162,6 +173,7 @@ def pre_brain_surface_photo_doc_enter(state):
         fail_state("Error taking snapshot: {mesg}")
     else:
         state['external']['pre_insertion_image'] = mesg
+
 
 def pre_brain_surface_photo_doc_input(state):
     """
@@ -173,6 +185,7 @@ def pre_brain_surface_photo_doc_input(state):
         state["external"]["next_state"] = "pre_brain_surface_photo_doc"
     else:
         state["external"]["next_state"] = "probe_insertion_instructions"
+
 
 """
 def probe_insertion_instructions_exit(state):
@@ -193,12 +206,12 @@ def run_stimulus_enter(state):
     """
 
     #  This is in the enter state because we want to do things before the user sees the screen (like turn off arrow)
-    state["resources"]["io"].write(messages.state_busy(message="Waiting for stimulus script to complete."))
+    io.write(messages.state_busy(message="Waiting for stimulus script to complete."))
 
     #  Normally, we want to start the recording devices just before camstim
     sync.start()
     mvr.start_record(file_name_prefix=experiment.experiment_id)
-
+    io.write(ephys.start_ecephys_recording())
     #  If you are using the start session api (usually with mtrain, you would do the following.
     camstim_agent.start_session(experiment.mouse_id, experiment.user_name)
 
@@ -208,10 +221,8 @@ def run_stimulus_enter(state):
     #  any user event. (timers, waiting on services, etc)
 
     def check_stimulus():  # you could define this outside of the state of course.
-        io = state['resources']['io']
         sleep(5.0)  # gives camstim agent a chance to get started
         while True:
-
             try:
                 if not camstim_agent.is_running():
                     break
@@ -221,8 +232,10 @@ def run_stimulus_enter(state):
 
         #  It is possible here to check camstim agent for an error and take some action.
         mvr.stop_record()
+        io.write(ephys.stop_ecephys_recording())
         sync.stop()
         io.write(messages.state_ready(message="Stimulus complete."))  # re-enables the arrow
+        mouse_director.finalize_session('')
 
     #  Because the next arrow is disabled, we can wait on this thread to re-enable it without the user being able to
     #  progress the workflow.
@@ -235,7 +248,6 @@ def wait_on_sync_enter(state):
     state["resources"]["io"].write(messages.state_busy(message="Waiting for sync to complete."))
 
     def wait_on_sync():  # you could define this outside of the state of course.
-        io = state['resources']['io']
         while "READY" not in sync.get_state():
             sleep(3)
         io.write(messages.state_ready(message="Stimulus complete."))  # re-enables the arrow
@@ -251,7 +263,6 @@ def settle_timer_enter(state):
     state["resources"]["io"].write(messages.state_busy(message="Waiting for stimulus script to complete."))
 
     def wait_on_timer():  # you could define this outside of the state of course.
-        io = state['resources']['io']
         sleep(5.0)  # gives camstim agent a chance to get started
         io.write(messages.state_ready(message="Stimulus complete."))  # re-enables the arrow
 

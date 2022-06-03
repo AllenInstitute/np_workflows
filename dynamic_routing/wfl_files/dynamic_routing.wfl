@@ -36,7 +36,7 @@ states:
         type: text_entry
         desc: Enter mouse LabTracks ID, then click the right arrow to continue.
     inputs:
-        - state: load_mouse
+      - state: load_mouse
 
   load_mouse:
     description:  Load Mouse Onto Stage
@@ -71,7 +71,7 @@ states:
                 next: pre_brain_surface_photo_doc  # This is unused, but i guess useful for a note
               - field: snapshot_continue
                 desc: Accept snapshot and continue.
-                next: probe_insertion_instructions   # This is unused, but i guess useful for a note
+                next: probe_insertion_instructions   # This is unused , but i guess useful for a note
     inputs:
       - state: pre_brain_surface_photo_doc
       - state: probe_insertion_instructions
