@@ -13,7 +13,7 @@ import requests
 from mpetk import limstk, mpeconfig, zro
 from wfltk import middleware_messages_pb2 as messages
 
-import ephys
+import ephys_api
 from .model import DynamicRouting  # It can make sense to have a class to store experiment data.
 from .mvr import MVRConnector  # This will eventually get incorporated into the workflow launcher
 
