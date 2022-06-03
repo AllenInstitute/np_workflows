@@ -71,7 +71,7 @@ states:
                 next: pre_brain_surface_photo_doc  # This is unused, but i guess useful for a note
               - field: snapshot_continue
                 desc: Accept snapshot and continue.
-                next: probe_insertion_instructions   # This is unused , but i guess useful for a note
+                next: probe_insertion_instructions   # This is unused, but i guess useful for a note
     inputs:
       - state: pre_brain_surface_photo_doc
       - state: probe_insertion_instructions
