@@ -36,7 +36,7 @@ states:
         type: text_entry
         desc: Enter mouse LabTracks ID, then click the right arrow to continue.
     inputs:
-        - state: load_mouse
+      - state: load_mouse
 
   load_mouse:
     description:  Load Mouse Onto Stage
@@ -80,7 +80,7 @@ states:
     description:  Probe insertion instructions
     display:
       - field: None
-        type: Note
+        type: note
         description:  Some instructions here?
     inputs:
       - state: settle_timer
