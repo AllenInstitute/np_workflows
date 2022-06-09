@@ -8,12 +8,14 @@ import shutil
 import threading
 from time import sleep
 
+import mpetk.aibsmw.routerio.router
 import requests
 from mpetk import limstk, mpeconfig, zro
 from wfltk import middleware_messages_pb2 as messages
 
-from .model import DynamicRouting # It can make sense to have a class to store experiment data.
-from .mvr import MVRConnector     # This will eventually get incorporated into the workflow launcher
+from .ephys_api import ephys
+from .model import DynamicRouting  # It can make sense to have a class to store experiment data.
+from .mvr import MVRConnector  # This will eventually get incorporated into the workflow launcher
 
 # Setup your typical components; the config, services, and perhaps some typical models for an experiment.
 # An alternative is to store these in the state.  However, this is one of those times that globals are ok because
@@ -22,15 +24,14 @@ from .mvr import MVRConnector     # This will eventually get incorporated into t
 config: dict = mpeconfig.source_configuration("dynamic_routing")
 experiment = DynamicRouting()
 
+io: mpetk.aibsmw.routerio.router.ZMQHandler
+
 mvr: MVRConnector
 camstim_agent: zro.Proxy
 sync: zro.Proxy
 mouse_director: zro.Proxy
 
 
-# TODO:  connect to open ephys
-#        check drive space
-#
 def fail_state(message: str, state: dict):
     """
     This is an example of how to create a single failure reporting function.  It inspects the stack to figure out which
@@ -56,15 +57,18 @@ def fail_state(message: str, state: dict):
 def wait_on_snapshot():  # you could define this outside of the state of course.
     while True:
         for message in mvr.read():
-            if message.get('mvr_broadcast', False) == "snapshot_taken":
-                drive, filepath = os.path.splitdrive(message['snapshot_filepath'])
-                experiment.pre_brain_surface_photo = f"\\\\{config['MVR']['host']}\\{drive[0]}${filepath}"
-                sleep(1) # MVR has responded too quickly.  It hasn't let go of the file so we must wait.
-                dest = shutil.copy(experiment.pre_brain_surface_photo, "C:/ProgramData/AIBS_MPE/dynamic_routing")
-                logging.info(f"Copied: {experiment.pre_brain_surface_photo} -> {dest}")
-                return True, dest
-            elif message.get('mvr_broadcast', False) == "snapshot_failed":
-                return False, message['error_message']
+            try:
+                if message.get('mvr_broadcast', False) == "snapshot_taken":
+                    drive, filepath = os.path.splitdrive(message['snapshot_filepath'])
+                    experiment.pre_brain_surface_photo = f"\\\\{config['MVR']['host']}\\{drive[0]}${filepath}"
+                    sleep(1) # MVR has responded too quickly.  It hasn't let go of the file so we must wait.
+                    dest = shutil.copy(experiment.pre_brain_surface_photo, "C:/ProgramData/AIBS_MPE/dynamic_routing")
+                    logging.info(f"Copied: {experiment.pre_brain_surface_photo} -> {dest}")
+                    return True, dest
+                elif message.get('mvr_broadcast', False) == "snapshot_failed":
+                    return False, message['error_message']
+            except Exception as e:
+                return False, e
 
 
 def init_enter(state):
@@ -80,9 +84,14 @@ def init_input(state):
     The expectation is these services are on (i.e., you have started them with RSC).  If the connection fails you can
     send a message to the user with the fail_state() function above.
     """
-    import os
-    logging.info(f"PYTHON PATH={os.getenv('PYTHON_PATH', default='NA')}")
+    
+    global io
+    io = state['resources']['io']
+    
     component_errors = []
+    
+    io.write(ephys.start_ecephys_acquisition())
+    #  Here we either need to test open ephys by trying to record or we get the status message.  awaiting testing.
     global mvr
     mvr = MVRConnector(args=config['MVR'])
     if not mvr._mvr_connected:
@@ -105,6 +114,17 @@ def init_input(state):
     except Exception:
         component_errors.append(f"Failed to connect to Sync.")
 
+    
+    global mouse_director
+    service = config['mouse_director']
+    mouse_director = zro.Proxy(f"{service['host']}:{service['port']}", timeout=service['timeout'])
+    try:
+        logging.info(f'MouseDirector Uptime: {mouse_director.uptime}')
+    except Exception:
+        # component_errors.append(f"Failed to connect to MouseDirector.")
+        logging.info(" ** skipping connection to MouseDirector **")
+        
+    
     #  At this point, You could send the user to an informative state to repair the remote services.
     if component_errors:
         fail_state('\n'.join(component_errors), state)
@@ -119,13 +139,16 @@ def get_user_id_input(state):
     """
       Description: The user will input their user name and it will ve validated against the LIMS db.
     """
-    state["user_name"] = "ben.hardcastle"
 
     # external contains values coming from the UI.  "user_id" is a key specified in the wfl file.
     user_name = state["external"]["user_id"]
     if not limstk.user_details(user_name):
         fail_state(f"Could not find user \"{user_name}\" in LIMS", state)
     state["user_name"] = user_name # It is ok to save data into the state.
+    try: 
+        mouse_director.set_user_id(user_name) 
+    except:
+        pass
     
 def get_mouse_id_input(state):
     """
@@ -149,6 +172,10 @@ def get_mouse_id_input(state):
         fail_state(f"Could not find mouse id \"{mouse_id}\" in MTrain", state)
         return
 
+    try:
+        mouse_director.set_mouse_id(mouse_id)
+    except:
+        pass
     experiment.mouse_id = mouse_id
     experiment.script = response.json()['data']['script'].split('/')[-1]
     experiment.stimulus_name = response.json()['data']['name']
@@ -166,9 +193,10 @@ def pre_brain_surface_photo_doc_enter(state):
     mvr.take_snapshot()
     success, mesg = wait_on_snapshot()
     if not success:
-        fail_state("Error taking snapshot: {mesg}")
+        fail_state(f"Error taking snapshot: {mesg}",state)
     else:
         state['external']['pre_insertion_image'] = mesg # display the captured image
+
 
 
 def pre_brain_surface_photo_doc_input(state):
@@ -202,12 +230,12 @@ def run_stimulus_enter(state):
     """
 
     #  This is in the enter state because we want to do things before the user sees the screen (like turn off arrow)
-    state["resources"]["io"].write(messages.state_busy(message="Waiting for stimulus script to complete."))
+    io.write(messages.state_busy(message="Waiting for stimulus script to complete."))
 
     #  Normally, we want to start the recording devices just before camstim
     sync.start()
     mvr.start_record(file_name_prefix=experiment.experiment_id)
-
+    io.write(ephys.start_ecephys_recording())
     #  If you are using the start session api (usually with mtrain, you would do the following.
     camstim_agent.start_session(experiment.mouse_id, experiment.user_name)
 
@@ -216,11 +244,9 @@ def run_stimulus_enter(state):
     #  The following technique for turning off the next arrow and calling a "is ready" function is applicable for
     #  any user event. (timers, waiting on services, etc)
 
-    def check_stimulus(): # you could define this outside of the state of course.
-        io = state['resources']['io']
-        sleep(5.0)        # gives camstim agent a chance to get started
+    def check_stimulus():  # you could define this outside of the state of course.
+        sleep(5.0)  # gives camstim agent a chance to get started
         while True:
-
             try:
                 if not camstim_agent.is_running():
                     break
@@ -230,9 +256,13 @@ def run_stimulus_enter(state):
 
         #  It is possible here to check camstim agent for an error and take some action.
         mvr.stop_record()
+        io.write(ephys.stop_ecephys_recording())
         sync.stop()
-        io.write(messages.state_ready(message="Stimulus complete.")) # re-enables the arrow
-
+        io.write(messages.state_ready(message="Stimulus complete."))  # re-enables the arrow
+        try:
+            mouse_director.finalize_session('')
+        except:
+            pass
     #  Because the next arrow is disabled, we can wait on this thread to re-enable it without the user being able to
     #  progress the workflow.
     t = threading.Thread(target=check_stimulus)
@@ -243,8 +273,7 @@ def wait_on_sync_enter(state):
     #  This is in the enter state because we want to do things before the user sees the screen (like turn off arrow)
     state["resources"]["io"].write(messages.state_busy(message="Waiting for sync to complete."))
 
-    def wait_on_sync():                                              # you could define this outside of the state of course.
-        io = state['resources']['io']
+    def wait_on_sync():  # you could define this outside of the state of course.
         while "READY" not in sync.get_state():
             sleep(3)
         io.write(messages.state_ready(message="Stimulus complete.")) # re-enables the arrow
@@ -259,10 +288,9 @@ def settle_timer_enter(state):
     #  This is in the enter state because we want to do things before the user sees the screen (like turn off arrow)
     state["resources"]["io"].write(messages.state_busy(message="Waiting for stimulus script to complete."))
 
-    def wait_on_timer():                                             # you could define this outside of the state of course.
-        io = state['resources']['io']
-        sleep(5.0)                                                   # gives camstim agent a chance to get started
-        io.write(messages.state_ready(message="Stimulus complete.")) # re-enables the arrow
+    def wait_on_timer():  # you could define this outside of the state of course.
+        sleep(5.0)  # gives camstim agent a chance to get started
+        io.write(messages.state_ready(message="Stimulus complete."))  # re-enables the arrow
 
     #  Because the next arrow is disabled, we can wait on this thread to re-enable it without the user being able to
     #  progress the workflow.
