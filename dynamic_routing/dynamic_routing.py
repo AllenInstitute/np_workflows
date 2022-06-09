@@ -128,9 +128,6 @@ def get_user_id_input(state):
             f"Could not find user {user_name} in LIMS.  You might get this error if you have never logged into LIMS",
             state)
     state["user_name"] = user_name # It is ok to save data into the state.
-
-def get_mouse_id_entry(state):
-    state["external"]["mouse_id"] = "366122"
     
 def get_mouse_id_input(state):
     """
