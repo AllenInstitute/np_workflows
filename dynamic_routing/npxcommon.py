@@ -1,37 +1,39 @@
-import csv
-import glob
-import inspect
-import itertools
-import json
-import logging
-import os
-import shutil
-import subprocess
-import sys
-import time
-import traceback
-from collections import namedtuple
-from datetime import date as date
 from datetime import datetime as dt
 from datetime import timedelta as timedelta
-from functools import partial
-from math import floor
-from pprint import pprint
-from shutil import copyfile, disk_usage
+from datetime import date as date
 
-import limstk
-import mpeconfig
-import numpy
-import psutil
+import inspect
+import traceback
+
 import requests
+import json
 import yaml
+from shutil import copyfile, disk_usage
+import os
+import logging
+from functools import partial
+import glob
+
 import zmq
 from PIL import Image
-from wfltk import middleware_messages_pb2 as wfltk_msgs
-from zro import Proxy
-
-from . import ephys_edi_pb2 as ephys_messages
+import sys
+import numpy
+import csv
+import itertools
+import time
+import psutil
+import subprocess
+import glob
 from .MVRConnector import MVRConnector
+from math import floor
+from wfltk import middleware_messages_pb2 as wfltk_msgs
+import limstk
+import mpeconfig
+from . import ephys_edi_pb2 as ephys_messages
+from collections import namedtuple
+from pprint import pprint
+import shutil
+from zro import Proxy
 
 config = mpeconfig.source_configuration('neuropixels', version='1.4.0')
 mvr_writer = MVRConnector(args=config['MVR'])
@@ -63,7 +65,7 @@ def handle_message(message_id, message, timestamp, io):
     print(message)
 
 
-def default_exit(state, label):
+def default_exit(state_globals, label):
     """
     Exit function for state initialize
     """
@@ -71,7 +73,7 @@ def default_exit(state, label):
     pass
 
 
-def default_enter(state, label):
+def default_enter(state_globals, label):
     """
     Exit function for state initialize
     """
@@ -79,10 +81,10 @@ def default_enter(state, label):
     pass
 
 
-def default_input(state, label):
+def default_input(state_globals, label):
     # print(f'>> {label}_input <<')
-    state['external']['transition_result'] = True
-    state['external']['status_message'] = 'success'
+    state_globals['external']['transition_result'] = True
+    state_globals['external']['status_message'] = 'success'
 
 
 def make_values_strings(dict_in):
@@ -97,17 +99,17 @@ def make_keys_and_values_strings(dict_in):
     return new_dict
 
 
-def initialize_input(state):
+def initialize_input(state_globals):
     try:
-        mouse_director_proxy.set_user_id(state["external"]["user_id"])
+        mouse_director_proxy.set_user_id(state_globals["external"]["user_id"])
     except Exception:
         alert_string = f'Failed to communicate with MouseDirector'
-        alert_text(alert_string, state)  # Todo put this back
+        alert_text(alert_string, state_globals)  # Todo put this back
         print('########################################################')
         logging.debug(alert_string, exc_info=True)
 
 
-def initialize_enter(state):
+def initialize_enter(state_globals):
     """
     Entry function for state initialize
     """
@@ -118,36 +120,36 @@ def initialize_enter(state):
     # logging.start_stop('Starting neuropixels project code', extra={'weblog': True})
     print('>> Starting neuropixels code <<')
 
-    state["external"]["workflow_start_time"] = dt.now().strftime('%Y%m%d%H%M%S')
+    state_globals["external"]["workflow_start_time"] = dt.now().strftime('%Y%m%d%H%M%S')
 
     compStatusArray = {}
-    state["external"]["component_status"] = {}
-    state["external"]["water_calibration_heights"] = []
-    state["external"]["water_calibration_volumes"] = []
-    state["external"]["exp_monitor_time"] = 10
-    state['external']['foraging_id'] = ''
-    state['external']['foraging_id_list'] = []
-    state['external']['high_zoom_level'] = get_from_config(['high_zoom_level'], default=4)
-    state['external']['low_zoom_level'] = get_from_config(['high_zoom_level'], default=2.5)
-    state['external']['colon'] = ':'
-    state['external']['backup_location'] = config['backup_location']
+    state_globals["external"]["component_status"] = {}
+    state_globals["external"]["water_calibration_heights"] = []
+    state_globals["external"]["water_calibration_volumes"] = []
+    state_globals["external"]["exp_monitor_time"] = 10
+    state_globals['external']['foraging_id'] = ''
+    state_globals['external']['foraging_id_list'] = []
+    state_globals['external']['high_zoom_level'] = get_from_config(['high_zoom_level'], default=4)
+    state_globals['external']['low_zoom_level'] = get_from_config(['high_zoom_level'], default=2.5)
+    state_globals['external']['colon'] = ':'
+    state_globals['external']['backup_location'] = config['backup_location']
     eye_default = "Eye dichroic in place and adjusted so that the eye is centered?"
-    state['external']['eye_dichroic_string'] = get_from_config(['eye_dichroic_string'], default=eye_default)
+    state_globals['external']['eye_dichroic_string'] = get_from_config(['eye_dichroic_string'], default=eye_default)
     cleanup_str_default = "Empty the poop tray"
-    state['external']['cleanup_str'] = get_from_config(['cleanup_str'], default=cleanup_str_default)
+    state_globals['external']['cleanup_str'] = get_from_config(['cleanup_str'], default=cleanup_str_default)
 
     pre_exp_qc_string_default = "Pay attention to the running wheel plot for encoder failure, and behavior plot for signs of poor lickspout and wheel positioning"
-    state['external']['pre_exp_qc_string'] = get_from_config(['pre_exp_qc_string'],
+    state_globals['external']['pre_exp_qc_string'] = get_from_config(['pre_exp_qc_string'],
                                                                      default=pre_exp_qc_string_default)
 
-    state['external']['lowering_distance'] = get_from_config(['lowering_distance'], default=r"200um/min")
-    state['external']['lowering_speed'] = get_from_config(['lowering_speed'], default='1000um')
+    state_globals['external']['lowering_distance'] = get_from_config(['lowering_distance'], default=r"200um/min")
+    state_globals['external']['lowering_speed'] = get_from_config(['lowering_speed'], default='1000um')
 
     key = 'Post Processing Validation Agent'
     if not (key in config['components']):
         config['components'][key] = {'desc': key, 'host': 'localhost', 'port': 1234, 'version': '0.1.0'}
 
-    establish_proxies(state)
+    establish_proxies(state_globals)
 
     global mouse_director_proxy
 
@@ -185,7 +187,7 @@ def initialize_enter(state):
     # print('mvr automated ui: '+str(mvr_connected))
     # mvr_connected = mvr_writer._recv()
     # print('mvr _recv: '+str(mvr_connected))
-    state['external']['component_status']['MVR'] = mvr_connected
+    state_globals['external']['component_status']['MVR'] = mvr_connected
 
     # set up the neuropixel data location
     data_location = f'{config["windows_install_paths"]["install"]}_data'
@@ -193,67 +195,67 @@ def initialize_enter(state):
     if not os.path.exists(data_location):
         os.makedirs(data_location)
 
-    state['external']['data_location'] = data_location
-    state['external']['probe_list'] = config['probe_slots']
-    make_values_strings(state['external']['probe_list'])
+    state_globals['external']['data_location'] = data_location
+    state_globals['external']['probe_list'] = config['probe_slots']
+    make_values_strings(state_globals['external']['probe_list'])
 
-    print('config:' + str(state['external']['probe_list']))
-    state['external']['PXI'] = make_keys_and_values_strings(config['slot_drives'])
+    print('config:' + str(state_globals['external']['probe_list']))
+    state_globals['external']['PXI'] = make_keys_and_values_strings(config['slot_drives'])
     print('PXI')
-    print('config: ' + str(state['external']['PXI']))
-    slots = set(state['external']['probe_list'].values())
+    print('config: ' + str(state_globals['external']['PXI']))
+    slots = set(state_globals['external']['probe_list'].values())
     reverse_mapping = {slot: [] for slot in slots}
-    for probe, slot in state['external']['probe_list'].items():
+    for probe, slot in state_globals['external']['probe_list'].items():
         reverse_mapping[slot].append(probe)
-    state['external']['reverse_mapping'] = reverse_mapping
+    state_globals['external']['reverse_mapping'] = reverse_mapping
     probes_in_slot_strings = {slot: 'probe' + ''.join(probe_list) for slot, probe_list in reverse_mapping.items()}
-    state['external']['probes_in_slot'] = probes_in_slot_strings
+    state_globals['external']['probes_in_slot'] = probes_in_slot_strings
     print('probes in slot')
-    print('config: ' + str(state['external']['probes_in_slot']))
+    print('config: ' + str(state_globals['external']['probes_in_slot']))
 
-    for slot, drive in state['external']['PXI'].items():
-        state['external']['slot_' + slot + '_drive'] = drive
+    for slot, drive in state_globals['external']['PXI'].items():
+        state_globals['external']['slot_' + slot + '_drive'] = drive
 
     # set the lims locations based on what's in the config
-    state['external']['trigger_dir'] = config['default_paths']['trigger']
-    state['external']['lims_location'] = config['default_paths']['incoming']
+    state_globals['external']['trigger_dir'] = config['default_paths']['trigger']
+    state_globals['external']['lims_location'] = config['default_paths']['incoming']
 
     # look for the hardware configuration to be added to the platform json file
-    state['hardware_config'] = config['hardware']
+    state_globals['hardware_config'] = config['hardware']
 
     # get the location of the external open ephys drives
-    state['openephys_drives'] = config['openephys_drives']
-    print('config: ' + str(state['openephys_drives']))
+    state_globals['openephys_drives'] = config['openephys_drives']
+    print('config: ' + str(state_globals['openephys_drives']))
 
     local_lims_head = config['mapped_lims_location']
     os.makedirs(local_lims_head, exist_ok=True)
-    state["external"]["local_lims_head"] = local_lims_head
+    state_globals["external"]["local_lims_head"] = local_lims_head
 
     # get the AIBS ID, if set.  Will be used in the platform json file
-    state['external']['rig_id'] = os.environ.get("AIBS_RIG_ID", os.environ.get("COMPUTERNAME", "TEST_RIG"))
+    state_globals['external']['rig_id'] = os.environ.get("AIBS_RIG_ID", os.environ.get("COMPUTERNAME", "TEST_RIG"))
 
-    state["external"]["Manual.Project.Code"] = "None"
-    state["external"]["Manual.Date.String"] = "None"
+    state_globals["external"]["Manual.Project.Code"] = "None"
+    state_globals["external"]["Manual.Date.String"] = "None"
     ExperimentNotes = {'BleedingOnInsertion': {}, 'BleedingOnRemoval': {}}
-    state['external']['ExperimentNotes'] = ExperimentNotes
+    state_globals['external']['ExperimentNotes'] = ExperimentNotes
 
     # initialize some variables
-    for probe in state['external']['probe_list']:
+    for probe in state_globals['external']['probe_list']:
         key = 'probe_' + probe + '_DiI_depth'
-        state["external"][key] = '6000'
+        state_globals["external"][key] = '6000'
         # TODO would be great if we had this read the file we are going to produce from the targeting to read in the maximums
         # might get confusing because those aren't hard limits if we hit the brain deeper
 
     # initialize some choice fields
-    # state['external']['components_run'] = True
+    # state_globals['external']['components_run'] = True
     print('Done with initialize_enter')
 
 
-def assess_previous_sessions(state):
-    state['external']['exp_sessions'] = {}
-    state['external']['hab_sessions'] = {}
-    state['external']['all_sessions'] = {}
-    state['external']['mouse_sessions'] = {}
+def assess_previous_sessions(state_globals):
+    state_globals['external']['exp_sessions'] = {}
+    state_globals['external']['hab_sessions'] = {}
+    state_globals['external']['all_sessions'] = {}
+    state_globals['external']['mouse_sessions'] = {}
 
     exp_sessions = {}
     try:
@@ -263,7 +265,7 @@ def assess_previous_sessions(state):
             exp_sessions[exp_session] = full_path
     except Exception as E:
         message = "Unable to read past exp sessions"
-        alert_text(message, state)
+        alert_text(message, state_globals)
 
     hab_sessions = {}
     try:
@@ -273,54 +275,54 @@ def assess_previous_sessions(state):
             hab_sessions[hab_session] = full_path
     except Exception as E:
         message = "Unable to read past hab sessions"
-        alert_text(message, state)
+        alert_text(message, state_globals)
 
     all_sessions = exp_sessions.copy()
     all_sessions.update(hab_sessions)
 
     mouse_sessions = {}
-    mouse_num = '_' + state['external']['mouse_id'] + '_'
+    mouse_num = '_' + state_globals['external']['mouse_id'] + '_'
     for session, path in all_sessions.items():
         if mouse_num in session:
             mouse_sessions[session] = path
 
-    state['external']['exp_sessions'] = exp_sessions
-    state['external']['hab_sessions'] = hab_sessions
-    state['external']['all_sessions'] = all_sessions
-    state['external']['mouse_sessions'] = mouse_sessions
+    state_globals['external']['exp_sessions'] = exp_sessions
+    state_globals['external']['hab_sessions'] = hab_sessions
+    state_globals['external']['all_sessions'] = all_sessions
+    state_globals['external']['mouse_sessions'] = mouse_sessions
 
     try:
-        last_exp_date, path = get_most_recent_session(exp_sessions, state)
+        last_exp_date, path = get_most_recent_session(exp_sessions, state_globals)
         last_exp_int = int(last_exp_date)
         current_date_int = int(dt.now().strftime("%Y%m%d%H%M%S"))
         if last_exp_int == current_date_int - 1:
-            state['external']['probes_need_cleaning'] = True
+            state_globals['external']['probes_need_cleaning'] = True
     except Exception as E:
         message = "Unable to determine if probes need to be cleaned"
         logging.debug(message, exc_info=True)
-        alert_text(message, state)
+        alert_text(message, state_globals)
 
     try:
-        last_mouse_date, path = get_most_recent_session(mouse_sessions, state)
+        last_mouse_date, path = get_most_recent_session(mouse_sessions, state_globals)
         for file in os.listdir(path):
             if '_platformD1.json' in file:
                 fullpath = os.path.join(path, file)
                 with open(fullpath, 'r') as f:
                     platform_json = json.load(f)
                 if 'wheel_height' in platform_json:
-                    state['external']['wheel_height'] = platform_json['wheel_height']
+                    state_globals['external']['wheel_height'] = platform_json['wheel_height']
                 if 'mouse_weight_pre' in platform_json:
-                    state['external']['previous_mouse_weight_pre'] = platform_json['mouse_weight_pre']
+                    state_globals['external']['previous_mouse_weight_pre'] = platform_json['mouse_weight_pre']
                 if 'water_calibration_warning' in platform_json:
-                    state['external']['water_calibration_warning'] = platform_json['water_calibration_warning']
+                    state_globals['external']['water_calibration_warning'] = platform_json['water_calibration_warning']
     except Exception as E:
         message = "A failure occurred atempting to load the wheel height or mouse weight from the last session"
-        alert_text(message, state)
+        alert_text(message, state_globals)
         logging.debug(message, exc_info=True)
-    save_platform_json(state, manifest=False)
+    save_platform_json(state_globals, manifest=False)
 
 
-def get_most_recent_session(session_dict, state):
+def get_most_recent_session(session_dict, state_globals):
     exp_dates = {}
     last_date = 0
     path = None
@@ -337,7 +339,7 @@ def get_most_recent_session(session_dict, state):
         path = exp_dates[last_date]
     except Exception as E:
         message = "Error getting recent session session"
-        alert_text(message, state)
+        alert_text(message, state_globals)
         logging.debug(message, exc_info=True)
     return last_date, path
     # this could be actually useful if we wantto put in QC reminders at some point....
@@ -354,87 +356,87 @@ def count_sessions(session_dict, mouse_num):
                 count += 1
     except Exception as E:
         message = "Error coutning past sessions"
-        alert_text(message, state)
+        alert_text(message, state_globals)
     return count
 
 
-def handle_2_choice_button(choice_field, choice_state, default_state, state):
-    if choice_field in state['external'] and state['external'][choice_field]:
+def handle_2_choice_button(choice_field, choice_state, default_state, state_globals):
+    if choice_field in state_globals['external'] and state_globals['external'][choice_field]:
         print('go back to ' + choice_state)
-        state['external']['next_state'] = choice_state
-        state['external'].pop(choice_field, None)
+        state_globals['external']['next_state'] = choice_state
+        state_globals['external'].pop(choice_field, None)
     else:
-        state['external']['next_state'] = default_state
-    state['external']['transition_result'] = True
-    state['external']['status_message'] = 'success'
+        state_globals['external']['next_state'] = default_state
+    state_globals['external']['transition_result'] = True
+    state_globals['external']['status_message'] = 'success'
 
 
-def components_error_input(state, next_state):
+def components_error_input(state_globals, next_state):
     print('>> components_error_input <<')
-    handle_2_choice_button('components_retry', 'initialize', next_state, state)
+    handle_2_choice_button('components_retry', 'initialize', next_state, state_globals)
 
 
-def prepare_for_pretest_input(state):
-    state['external']['clear_sticky'] = True
+def prepare_for_pretest_input(state_globals):
+    state_globals['external']['clear_sticky'] = True
 
 
-def pretest_input(state):
+def pretest_input(state_globals):
     print('>> pretest_error_input <<')
     # message = ephys_messages.acquisition(command=0)
-    # state['resources']['io'].write(message)
+    # state_globals['resources']['io'].write(message)
 
-    # handle_2_choice_button('pretest_failed', 'pretest_error', 'configure_hardware_videomon', state)
+    # handle_2_choice_button('pretest_failed', 'pretest_error', 'configure_hardware_videomon', state_globals)
 
 
-def start_ecephys_recording(state):
+def start_ecephys_recording(state_globals):
     print('Attempting to start ecephys acquisiton')
-    send_ecephys_message(state, 'recording', command=1)
+    send_ecephys_message(state_globals, 'recording', command=1)
     # time.sleep(15) - the process can take this long but its annoying to have the WSE wait...
 
 
-def stop_ecephys_recording(state):
+def stop_ecephys_recording(state_globals):
     print('Attempting to stop ecephys acquisiton')
-    send_ecephys_message(state, 'recording', command=0)
+    send_ecephys_message(state_globals, 'recording', command=0)
 
 
-def start_ecephys_acquisition(state):
+def start_ecephys_acquisition(state_globals):
     print('Attempting to start ecephys acquisiton')
-    message = send_ecephys_message(state, 'acquisition', command=1)
+    message = send_ecephys_message(state_globals, 'acquisition', command=1)
     # time.sleep(15) - the process can take this long but its annoying to have the WSE wait...
     return message
 
 
-def stop_ecephys_acquisition(state):
+def stop_ecephys_acquisition(state_globals):
     print('Attempting to stop ecephys acquisiton')
-    send_ecephys_message(state, 'acquisition', command=0)
+    send_ecephys_message(state_globals, 'acquisition', command=0)
 
 
-def set_open_ephys_name(state):
+def set_open_ephys_name(state_globals):
     try:
-        print('Attempting to set openephys session name to ' + str(state["external"]["session_name"]))
-        send_ecephys_message(state, 'set_data_file_path', path=state["external"]["session_name"])
+        print('Attempting to set openephys session name to ' + str(state_globals["external"]["session_name"]))
+        send_ecephys_message(state_globals, 'set_data_file_path', path=state_globals["external"]["session_name"])
     except Exception as E:
         print(f'Failed to set open ephys name: {E}')
 
 
-def clear_open_ephys_name(state):
+def clear_open_ephys_name(state_globals):
     try:
         print('Attempting to clear openephys session name')
-        send_ecephys_message(state, 'set_data_file_path', path='')
+        send_ecephys_message(state_globals, 'set_data_file_path', path='')
     except Exception as E:
         print(f'Failed to set open ephys name: {E}')
 
 
-def request_open_ephys_status(state):
+def request_open_ephys_status(state_globals):
     try:
         print('checking open ephys status')
-        message = send_ecephys_message(state, 'REQUEST_SYSTEM_STATUS', path='')
+        message = send_ecephys_message(state_globals, 'REQUEST_SYSTEM_STATUS', path='')
     except Exception as E:
         print(f'Failed to set open ephys name: {E}')
     return message
 
 
-def send_ecephys_message(state, message_type, **kwargs):
+def send_ecephys_message(state_globals, message_type, **kwargs):
     message = None
     try:
         try:
@@ -446,23 +448,23 @@ def send_ecephys_message(state, message_type, **kwargs):
                     message = method_to_call(command=kwargs['command'])
             except Exception as e:
                 print(f'Failed to generate openephys message:{e}!')
-                state['external']['status_message'] = f'OpenEphys proxy failure:{e}'
-                state['external']['component_status']["OpenEphys"] = False
-            state['resources']['io'].write(message)
-            state['external']['status_message'] = 'success'
+                state_globals['external']['status_message'] = f'OpenEphys proxy failure:{e}'
+                state_globals['external']['component_status']["OpenEphys"] = False
+            state_globals['resources']['io'].write(message)
+            state_globals['external']['status_message'] = 'success'
         except Exception as e:
-            state['external']['status_message'] = f'OpenEphys acquisition stop failure:{e}'
-            state['external']['component_status']["OpenEphys"] = False
+            state_globals['external']['status_message'] = f'OpenEphys acquisition stop failure:{e}'
+            state_globals['external']['component_status']["OpenEphys"] = False
     except Exception as e:
         print(f'OpenEphys proxy failure:{e}!')
-        state['external']['status_message'] = f'OpenEphys proxy failure:{e}'
-        state['external']['component_status']["OpenEphys"] = False
+        state_globals['external']['status_message'] = f'OpenEphys proxy failure:{e}'
+        state_globals['external']['component_status']["OpenEphys"] = False
     return message
 
 
-def pretest_error_input(state):
+def pretest_error_input(state_globals):
     print('>> pretest_error_input <<')
-    handle_2_choice_button('pretest_override', 'configure_hardware_videomon', 'start_pretest', state)
+    handle_2_choice_button('pretest_override', 'configure_hardware_videomon', 'start_pretest', state_globals)
 
 
 def dir_failed_message(probeDir):
@@ -506,7 +508,7 @@ def no_found_settings(settings_path):
     return message
 
 
-def check_data(probeDir, state, label, settings_path=None):
+def check_data(probeDir, state_globals, label, settings_path=None):
     if settings_path is None:
         settings_path = os.path.join(probeDir, 'settings.xml')
     probe_drive, tail = os.path.split(probeDir)
@@ -518,7 +520,7 @@ def check_data(probeDir, state, label, settings_path=None):
         needed = 600 * (10 ** 9)
         if space < needed:
             failed[f'{label} disk space_large enough'] = no_space_message(probeDir)
-            # settings_path = os.path.join(computer, 'C','Users','svc_neuropix','Documents','GitHub','plugin-GUI','Builds','VisualStudio2013','x64','Release64','bin',state["external"]["session_name"],'settings*.xml')
+            # settings_path = os.path.join(computer, 'C','Users','svc_neuropix','Documents','GitHub','plugin-GUI','Builds','VisualStudio2013','x64','Release64','bin',state_globals["external"]["session_name"],'settings*.xml')
         try:
             settings_path = glob.glob(settings_path)[0]
         except IndexError as E:
@@ -532,28 +534,28 @@ def check_data(probeDir, state, label, settings_path=None):
     return failed
 
 
-def check_data_drives(state):
+def check_data_drives(state_globals):
     drive_list = []
     failed = {}
-    state['dummy_recordings'] = {}
-    if not state['external']['PXI']:
-        for probe in state['external']['probe_list']:
-            if state['external'][f'probe_{probe}_surface']:
-                probeDir = f'{state["openephys_drives"][probe]}/{state["external"]["session_name"]}_probe{probe}'
+    state_globals['dummy_recordings'] = {}
+    if not state_globals['external']['PXI']:
+        for probe in state_globals['external']['probe_list']:
+            if state_globals['external'][f'probe_{probe}_surface']:
+                probeDir = f'{state_globals["openephys_drives"][probe]}/{state_globals["external"]["session_name"]}_probe{probe}'
                 data_failed = check_data(probeDir)
                 failed.update(data_failed)
     else:
         failed = {}
-        for slot, drive in state['external']['PXI'].items():
-            label = state['external']['probes_in_slot'][slot]
-            probeDir, computer = get_probeDir(state, slot, drive)
-            #           settings_path = os.path.join(computer, r"C\users\svc_neuropix\documents\GitHub\plugin-GUI\Builds\VisualStudio2013\x64\release64\bin",state["external"]["session_name"], 'settings*.xml')
-            settings_path = get_settings_path(state)
+        for slot, drive in state_globals['external']['PXI'].items():
+            label = state_globals['external']['probes_in_slot'][slot]
+            probeDir, computer = get_probeDir(state_globals, slot, drive)
+            #           settings_path = os.path.join(computer, r"C\users\svc_neuropix\documents\GitHub\plugin-GUI\Builds\VisualStudio2013\x64\release64\bin",state_globals["external"]["session_name"], 'settings*.xml')
+            settings_path = get_settings_path(state_globals)
 
             try:
 
                 # TODO ^open ephys settings path needs to be in config
-                data_failed = check_data(probeDir, state, label)
+                data_failed = check_data(probeDir, state_globals, label)
                 # failed.update(data_failed)
                 found_key = f'{label} data dir_found'
                 if not (found_key in data_failed) and (
@@ -561,7 +563,7 @@ def check_data_drives(state):
                     try:
                         print(f'Globbing for settings at {settings_path}')
                         settings_path = glob.glob(settings_path)[0]
-                        state['dummy_recordings'][slot] = os.listdir(probeDir)
+                        state_globals['dummy_recordings'][slot] = os.listdir(probeDir)
                         print(os.listdir(probeDir))
                         no_copy = False
                         new_settings_path = os.path.join(probeDir, 'settings.xml')
@@ -572,7 +574,7 @@ def check_data_drives(state):
                         no_copy = True
                         failed[f'copy settings {label}_sucessful'] = no_copy_settings(settings_path)
                         logging.debug(E)
-                data_failed = check_data(probeDir, state, label)
+                data_failed = check_data(probeDir, state_globals, label)
                 failed.update(data_failed)
             except Exception as E:
                 message = f'Failed to check data for slot {slot}'
@@ -582,9 +584,9 @@ def check_data_drives(state):
     return failed
 
 
-def get_settings_path(state):
-    slot, drive = list(state['external']['PXI'].items())[0]
-    probeDir, computer = get_probeDir(state, slot, drive)
+def get_settings_path(state_globals):
+    slot, drive = list(state_globals['external']['PXI'].items())[0]
+    probeDir, computer = get_probeDir(state_globals, slot, drive)
     data_dirname = os.path.split(probeDir)[1]
     settings_path = False
     try:
@@ -597,39 +599,39 @@ def get_settings_path(state):
                                  'settings.xml')
         if settings_path:
             message = f'Failed to find settings file at path from config: {settings_path}\n\n Using default {default} instead'
-            # alert_text(message, state)
+            # alert_text(message, state_globals)
             print(message)
         settings_path = default
     return settings_path
 
 
-def get_probeDir(state, slot, drive):
-    a_probe = list(state['external']['probe_list'].keys())[0]
-    # slot = state['external']['probe_list'][a_probe]
-    # drive = state['external']['PXI'][a_probe]
-    computer, x = os.path.split(state["openephys_drives"][a_probe])
+def get_probeDir(state_globals, slot, drive):
+    a_probe = list(state_globals['external']['probe_list'].keys())[0]
+    # slot = state_globals['external']['probe_list'][a_probe]
+    # drive = state_globals['external']['PXI'][a_probe]
+    computer, x = os.path.split(state_globals["openephys_drives"][a_probe])
     computer = r"\\" + computer.split(r'/')[2]
     # print('computer:' + computer + ', tail:' + x)
     try:
-        probeDirs = glob.glob(os.path.join(computer, drive, state["external"]["session_name"] + '*'))
+        probeDirs = glob.glob(os.path.join(computer, drive, state_globals["external"]["session_name"] + '*'))
         if len(probeDirs) > 1:
             message = 'There are multiple possible data directories on the daq. please delete the false ones.'
-            if not (message in state['external']['message_text']):
-                alert_text(message, state)
+            if not (message in state_globals['external']['message_text']):
+                alert_text(message, state_globals)
         probeDir = probeDirs[-1]
     except Exception as E:
-        probeDir = os.path.join(computer, drive, state["external"]["session_name"])
+        probeDir = os.path.join(computer, drive, state_globals["external"]["session_name"])
     return probeDir, computer
 
 
-def delete_dummy_recording(state):
+def delete_dummy_recording(state_globals):
     print('Attempting to delete dummy recordings')
-    for slot, drive in state['external']['PXI'].items():
+    for slot, drive in state_globals['external']['PXI'].items():
         try:
-            probeDir, computer = get_probeDir(state, slot, drive)
-            print(str(state['dummy_recordings'][slot]))
-            #           settings_path = os.path.join(computer, r"C\users\svc_neuropix\documents\GitHub\plugin-GUI\Builds\VisualStudio2013\x64\release64\bin",state["external"]["session_name"], 'settings*.xml')
-            for recording in state['dummy_recordings'][slot]:
+            probeDir, computer = get_probeDir(state_globals, slot, drive)
+            print(str(state_globals['dummy_recordings'][slot]))
+            #           settings_path = os.path.join(computer, r"C\users\svc_neuropix\documents\GitHub\plugin-GUI\Builds\VisualStudio2013\x64\release64\bin",state_globals["external"]["session_name"], 'settings*.xml')
+            for recording in state_globals['dummy_recordings'][slot]:
                 fullpath = os.path.join(probeDir, recording)
                 not_setting = not ('setting' in recording)
                 small_file = int(os.path.getsize(fullpath)) < (150 * (10 ** 6))
@@ -642,65 +644,65 @@ def delete_dummy_recording(state):
                     os.remove(fullpath)
         except Exception as E:
             message = f'Failed to delete dummy recordings for slor {slot}'
-            alert_text(message, state)
-            print_error(state, E)
+            alert_text(message, state_globals)
+            print_error(state_globals, E)
 
 
-def reset_open_ephys(state):
-    clear_open_ephys_name(state)
+def reset_open_ephys(state_globals):
+    clear_open_ephys_name(state_globals)
     time.sleep(.5)
-    start_ecephys_recording(state)
+    start_ecephys_recording(state_globals)
     time.sleep(3)
-    stop_ecephys_recording(state)
+    stop_ecephys_recording(state_globals)
     time.sleep(.5)
-    # stop_ecephys_acquisition(state)
+    # stop_ecephys_acquisition(state_globals)
 
 
-def remove_mouse_input(state):
+def remove_mouse_input(state_globals):
     """
     Input function for state remove_mouse
     """
     # recreate the proxy
-    state["external"]["HeadFrameExitTime"] = dt.now().strftime("%Y%m%d%H%M%S")
+    state_globals["external"]["HeadFrameExitTime"] = dt.now().strftime("%Y%m%d%H%M%S")
 
     try:
-        mouse_weight = float(state['external']['mouse_weight_post'])
+        mouse_weight = float(state_globals['external']['mouse_weight_post'])
         print(f'Attempting to send mouse weight: {mouse_weight}')
     except Exception as E:
         return 'The mouse weight must be a number. Please enter a number'
     else:
         try:
-            pre_weight = float(state['external']['mouse_weight_pre'])
+            pre_weight = float(state_globals['external']['mouse_weight_pre'])
             lower = pre_weight - float(get_from_config(['mouse_weight_upper_diff'], default=.2))
             upper = pre_weight + float(get_from_config(['mouse_weight_lower_diff'], default=1))
             if (mouse_weight < (lower)) or (mouse_weight > (upper)):
                 message = (f"It looks like the current weight {mouse_weight} is more than {upper} or less than {lower}"
                     f" Are you sure it was typed correctly?")
 
-                overrideable_error_state(state, 'remove_mouse_and_move_files2', override_state='water_mouse',
+                overrideable_error_state(state_globals, 'remove_mouse_and_move_files2', override_state='water_mouse',
                                          message=message)
         except Exception as E:
             message = 'Unable to verify mouse weight is reasonable'
-            alert_text(message, state)
+            alert_text(message, state_globals)
         # else:
-        #    get_water_supplement(state, mouse_weight)
+        #    get_water_supplement(state_globals, mouse_weight)
 
 
-def get_water_supplement(state, mouse_weight):
+def get_water_supplement(state_globals, mouse_weight):
     try:
-        mouse_director_proxy.set_mouse_id(state["external"]["mouse_id"])
+        mouse_director_proxy.set_mouse_id(state_globals["external"]["mouse_id"])
         mouse_director_proxy.set_mouse_weight(mouse_weight)
         try:
             water_supplement = float(mouse_director_proxy.get_water_supplement())
             print(f'Water supplement is: {water_supplement}')
-            state['external']['water_supplement'] = water_supplement
+            state_globals['external']['water_supplement'] = water_supplement
         except Exception as E:
             message = 'Unable to retrieve water supplement. Did mouse director crash? Make sure the mouse number has been entered'
-            overrideable_error_state(state, 'remove_mouse_and_move_files2',
+            overrideable_error_state(state_globals, 'remove_mouse_and_move_files2',
                                      override_state='water_mouse', message=message)
     except Exception as E:
         message = 'Unable to send mouse weight. Did mouse director crash? Make sure the mouse number has been entered'
-        overrideable_error_state(state, 'remove_mouse_and_move_files2', override_state='water_mouse',
+        overrideable_error_state(state_globals, 'remove_mouse_and_move_files2', override_state='water_mouse',
                                       message=message)
 
 
@@ -709,21 +711,21 @@ def get_water_supplement(state, mouse_weight):
 
 
 
-def monitor_experiment(state, wait_time=300):
+def monitor_experiment(state_globals, wait_time=300):
     print(f'monitoring experiment for {wait_time}')
     failed = {}
     start_time = dt.now()
     while ((dt.now() - start_time).total_seconds() < wait_time):
-        camstim_is_running = camstim_running(state)
+        camstim_is_running = camstim_running(state_globals)
         if not (camstim_is_running):
             time.sleep(20)
-            camstim_is_running = camstim_running(state)
+            camstim_is_running = camstim_running(state_globals)
             if not (camstim_is_running):
                 failed['camstim_not running'] = 'Camstim appears to be finished'
                 print('camstim is finished')
                 break
         check_wait_time = get_from_config(['session_monitoring_stream_check_wait_time'], default=80)
-        failed.update(check_data_stream_size(state, wait_time=check_wait_time, reestablish_sizes=True,
+        failed.update(check_data_stream_size(state_globals, wait_time=check_wait_time, reestablish_sizes=True,
                                              wait_in_between=10))
         if failed:
             return failed
@@ -732,60 +734,60 @@ def monitor_experiment(state, wait_time=300):
     return failed
 
 
-def establish_data_stream_size(state):
+def establish_data_stream_size(state_globals):
     time.sleep(1)
     failed = {}
     file_size_dict = {}
-    sync_path = get_sync_location(state)
+    sync_path = get_sync_location(state_globals)
     path_dict = {
         'sync': sync_path,
     }
 
-    path_dict.update(get_video_locations(state))
+    path_dict.update(get_video_locations(state_globals))
 
-    for slot, drive in state['external']['PXI'].items():
-        a_probe = state['external']['reverse_mapping'][slot]
-        probeDir, computer = get_probeDir(state, slot, drive)
-        key = 'Ephys data ' + state['external']['probes_in_slot'][slot]
+    for slot, drive in state_globals['external']['PXI'].items():
+        a_probe = state_globals['external']['reverse_mapping'][slot]
+        probeDir, computer = get_probeDir(state_globals, slot, drive)
+        key = 'Ephys data ' + state_globals['external']['probes_in_slot'][slot]
         path_dict[key] = probeDir
     print()
     print(path_dict)
     already_alerted = False
     for stream, location in path_dict.items():
         try:
-            state['external'][location] = get_current_size(location)
-            print_str = 'stream:' + str(stream) + str(state['external'][location])
+            state_globals['external'][location] = get_current_size(location)
+            print_str = 'stream:' + str(stream) + str(state_globals['external'][location])
             print(print_str)
         except Exception as E:
             key = stream + '_found'
             logging.info(f'Could not get size of file at {location}')
             failed[key] = f'Could not get size of file at {location}'
             if not(already_alerted) and ('Ephys data' in key):
-                alert_text('It looks like you may need to click restart connection in open ephys', state)
+                alert_text('It looks like you may need to click restart connection in open ephys', state_globals)
                 already_alerted = True
     return failed
 
 
-def check_data_stream_size(state, wait_time=120, reestablish_sizes=False, wait_in_between=3):
+def check_data_stream_size(state_globals, wait_time=120, reestablish_sizes=False, wait_in_between=3):
     time.sleep(1)
     failed = {}
     file_size_dict = {}
-    sync_path = get_sync_location(state)
+    sync_path = get_sync_location(state_globals)
     path_dict = {
         'sync': sync_path,
     }
 
-    path_dict.update(get_video_locations(state))
+    path_dict.update(get_video_locations(state_globals))
 
     min_space_dict = {
     }
-    if "ExperimentStartTime_dt" in state['external']:
+    if "ExperimentStartTime_dt" in state_globals['external']:
         try:
             max_experiment_duration = config['max_experiment_duration_min'] * 60
         except Exception as E:
             max_experiment_duration = (3 * 60 * 60)
 
-        elapsed_experiment_time = (dt.now() - state['external']['ExperimentStartTime_dt']).total_seconds()
+        elapsed_experiment_time = (dt.now() - state_globals['external']['ExperimentStartTime_dt']).total_seconds()
         exp_ratio = max(.05, min(1, (max_experiment_duration - elapsed_experiment_time) / max_experiment_duration))
     else:
         exp_ratio = 1
@@ -794,18 +796,18 @@ def check_data_stream_size(state, wait_time=120, reestablish_sizes=False, wait_i
         min_space_dict[name] = 70
 
     data_c = []
-    if not ('hab' in state['external']['session_type']):
-        for slot, drive in state['external']['PXI'].items():
-            a_probe = state['external']['reverse_mapping'][slot]
-            probeDir, computer = get_probeDir(state, slot, drive)
-            key = 'Ephys data ' + state['external']['probes_in_slot'][slot]
+    if not ('hab' in state_globals['external']['session_type']):
+        for slot, drive in state_globals['external']['PXI'].items():
+            a_probe = state_globals['external']['reverse_mapping'][slot]
+            probeDir, computer = get_probeDir(state_globals, slot, drive)
+            key = 'Ephys data ' + state_globals['external']['probes_in_slot'][slot]
             path_dict[key] = probeDir
             try:
-                settings_location = glob.glob(get_settings_path(state))[0]
+                settings_location = glob.glob(get_settings_path(state_globals))[0]
                 data_c.append(settings_location)
             except Exception as E:
                 data_c.append(os.path.join(computer, 'C'))
-                alert_text('Failed to find open ephys settings dir, C stability is likely to fail.', state)
+                alert_text('Failed to find open ephys settings dir, C stability is likely to fail.', state_globals)
             if key in min_space_dict:
                 min_space_dict[key] = min_space_dict[key] + 500 * exp_ratio
             else:
@@ -815,8 +817,8 @@ def check_data_stream_size(state, wait_time=120, reestablish_sizes=False, wait_i
     already_alerted = False
     for stream, location in path_dict.items():
         try:
-            if (location in state['external']) and not (reestablish_sizes):
-                file_size_dict[stream] = state['external'][location]
+            if (location in state_globals['external']) and not (reestablish_sizes):
+                file_size_dict[stream] = state_globals['external'][location]
                 print_str = 'stream:' + str(stream) + str(file_size_dict[stream])
                 print(print_str)
             else:
@@ -828,7 +830,7 @@ def check_data_stream_size(state, wait_time=120, reestablish_sizes=False, wait_i
             message = f'Could not get size of file at {location}'
             failed[key] = message
             if not(already_alerted) and ('Ephys data' in key):
-                alert_text('It looks like you may need to click restart connection in open ephys', state)
+                alert_text('It looks like you may need to click restart connection in open ephys', state_globals)
                 already_alerted = True
         try:
             freespace = psutil.disk_usage(os.path.splitdrive(location)[0]).free
@@ -920,8 +922,8 @@ def create_file_extensions_dict():
                                   ['checkpoint', 'session_types', 'size_min_rel', 'size_min_abs', 'lims_key',
                                    'category'])
 
-    # weight = float(state['external']['mouse_weight'])
-    # mouse_proxy = state['component_proxies']['']
+    # weight = float(state_globals['external']['mouse_weight'])
+    # mouse_proxy = state_globals['component_proxies']['']
 
     file_extension_dict = {
         ".behavior.avi": extension_params(1, 'old_vmon', 999, 999, "behavior_tracking", 'AVI'),
@@ -1066,7 +1068,7 @@ def make_category_dict(file_extensions_dict):
     return category_dict
 
 
-def check_files_input(state, session_type, checkpoint):
+def check_files_input(state_globals, session_type, checkpoint):
     # TODO lets have this use NP_pipeline_validation as much as possible. for all the checks.
     print(f'Checking for files required for {session_type}')
     file_extensions_dict = create_file_extensions_dict()
@@ -1078,8 +1080,8 @@ def check_files_input(state, session_type, checkpoint):
     for extension, params in file_extensions_dict.items():
         if params.checkpoint == checkpoint and params.session_types in check_what:
             # print(f'Checking {extension}')
-            file_path = os.path.join(state['external']['local_lims_location'],
-                                     state["external"]["session_name"] + extension)
+            file_path = os.path.join(state_globals['external']['local_lims_location'],
+                                     state_globals["external"]["session_name"] + extension)
             size = False
             try:
                 size = os.path.getsize(file_path)
@@ -1123,7 +1125,7 @@ def check_files_input(state, session_type, checkpoint):
     return missing_files
 
 
-def check_availability(network_path, state):
+def check_availability(network_path, state_globals):
     backup = True
     try:
         if not (os.path.exists(network_path)):
@@ -1131,7 +1133,7 @@ def check_availability(network_path, state):
         freespace = psutil.disk_usage(network_path).free
         print('The backup disk is accessible')
         if freespace < 3 * (10 ** 13):
-            alert_text('The network drive looks like it is getting full.', state)
+            alert_text('The network drive looks like it is getting full.', state_globals)
     except Exception as E:
         backup = False
         # print('ERROR: Cannot acess the backup drive')
@@ -1147,15 +1149,15 @@ def check_availability(network_path, state):
 open_report_process = None
 
 
-def check_files2(state, session_type, checkpoint):
+def check_files2(state_globals, session_type, checkpoint):
     # TODO This should only open sync report and handle the check with a speread call in .._workflow.py
-    missing_files = check_files_input(state, session_type, checkpoint)
-    network_path = get_backup_location(state['external']['session_type'])
-    backup = check_availability(network_path, state)
+    missing_files = check_files_input(state_globals, session_type, checkpoint)
+    network_path = get_backup_location(state_globals['external']['session_type'])
+    backup = check_availability(network_path, state_globals)
     stop = not (backup and not (missing_files))
     try:
-        sync_report_name = f'{state["external"]["session_name"]}_report.pdf'
-        sync_report_path = os.path.join(state['external']['local_lims_location'], sync_report_name)
+        sync_report_name = f'{state_globals["external"]["session_name"]}_report.pdf'
+        sync_report_path = os.path.join(state_globals['external']['local_lims_location'], sync_report_name)
         print(f'attempting to open sync report for manual insection from path {sync_report_path}')
         open_report_process = subprocess.Popen(sync_report_path, shell=True)
     except Exception as E:
@@ -1174,7 +1176,7 @@ def kill_open_report():
     return killed
 
 
-def videomon_copy_wrapup(state, wait_time=15):
+def videomon_copy_wrapup(state_globals, wait_time=15):
     i = 20
     time.sleep(1)
     if 'camera_copy_processes' in global_processes:
@@ -1189,30 +1191,30 @@ def videomon_copy_wrapup(state, wait_time=15):
 
                 else:
                     print(f"Videos are fully copied")
-                    rename_video_files(state)
+                    rename_video_files(state_globals)
                     return None
                 time.sleep(wait_time)
             except Exception as E:
-                print_error(state, e)
+                print_error(state_globals, e)
                 break
                 # logging.debug('Error confirming eyetracking fully copied')
     else:
         message = f'Videos are not copying automatically, could not confirm copying complete'
-        alert_text(message, state)
+        alert_text(message, state_globals)
         return
     message = f'Error confirming Videos are fully copied'
-    alert_text(message, state)
+    alert_text(message, state_globals)
 
 
-def backup_files(state):
-    network_path = get_backup_location(state['external']['session_type'])
-    if check_availability(network_path, state):
-        source = state['external']['local_lims_location']
-        destination = os.path.join(network_path, state["external"]["session_name"])
+def backup_files(state_globals):
+    network_path = get_backup_location(state_globals['external']['session_type'])
+    if check_availability(network_path, state_globals):
+        source = state_globals['external']['local_lims_location']
+        destination = os.path.join(network_path, state_globals["external"]["session_name"])
         # wait to ensure that eyetracking is fully copied
         # print('sleeping for '+str(wait_time))
         # time.sleep(wait_time)
-        # eye_tracking_path = state["external"]["eyetracking_local_file_path"]
+        # eye_tracking_path = state_globals["external"]["eyetracking_local_file_path"]
         print('Proceeding with network backup')
         command_string = "robocopy " + source + " " + destination + r" /e /xo"
         print(f'Backing up files to {destination}')
@@ -1220,14 +1222,14 @@ def backup_files(state):
         global_processes['network_backup_process'] = p
     else:
         message = f'Canot access the network location {network_path}'
-        overrideable_error_state(state, 'copy_files_to_network', 'ready_to_check_network', message)
+        overrideable_error_state(state_globals, 'copy_files_to_network', 'ready_to_check_network', message)
 
 
-def check_files_network(state, session_type, checkpoints):
+def check_files_network(state_globals, session_type, checkpoints):
     # TODO - this should be generalized, its like a specific version of check files.
     print(f'Checking for files required for {session_type}')
     file_extensions_dict = create_file_extensions_dict()
-    network_location = get_backup_location(state['external']['session_type'])
+    network_location = get_backup_location(state_globals['external']['session_type'])
     missing_files = {}
     # check_what = set(check_what)
     session_type_mapping = create_session_type_mapping()
@@ -1235,10 +1237,10 @@ def check_files_network(state, session_type, checkpoints):
     for extension, params in file_extensions_dict.items():
         if (params.checkpoint in checkpoints) and (params.session_types in check_what):
             # print(f'Checking {extension}')
-            file_path = os.path.join(state['external']['local_lims_location'],
-                                     state["external"]["session_name"] + extension)
-            network_path = os.path.join(network_location, state["external"]["session_name"],
-                                        state["external"]["session_name"] + extension)
+            file_path = os.path.join(state_globals['external']['local_lims_location'],
+                                     state_globals["external"]["session_name"] + extension)
+            network_path = os.path.join(network_location, state_globals["external"]["session_name"],
+                                        state_globals["external"]["session_name"] + extension)
             size_match = False
             try:
                 size_local = os.path.getsize(file_path)
@@ -1256,43 +1258,43 @@ def check_files_network(state, session_type, checkpoints):
     return missing_files
 
 
-def get_final_probeDir(state, probe):
-    # computer,x = os.path.split(state["openephys_drives"][a_probe])
+def get_final_probeDir(state_globals, probe):
+    # computer,x = os.path.split(state_globals["openephys_drives"][a_probe])
     # computer = r"\\"+computer.split(r'/')[2]
-    slot = state['external']['probe_list'][probe]
-    drive = state['external']['PXI'][slot]
-    probeDir, computer = get_probeDir(state, slot, drive)
-    tail = state["external"]["session_name"] + '_' + state['external']['probes_in_slot'][slot]
+    slot = state_globals['external']['probe_list'][probe]
+    drive = state_globals['external']['PXI'][slot]
+    probeDir, computer = get_probeDir(state_globals, slot, drive)
+    tail = state_globals["external"]["session_name"] + '_' + state_globals['external']['probes_in_slot'][slot]
     # print('computer:'+ computer + ', tail:'+tail)
     new_dir = os.path.join(computer, drive, tail)
     print(new_dir)
     return new_dir, computer
 
 
-def get_processing_agents(state):
+def get_processing_agents(state_globals):
     Processing_Agents = {}
     drives = get_from_config(['processing_drives'], default=config['openephys_drives'])
-    if not ('processing_started' in state):
-        state['processing_started'] = {}
+    if not ('processing_started' in state_globals):
+        state_globals['processing_started'] = {}
     for drive in drives.values():
         computer_name = drive.split(r'/')[2]
         Processing_Agents[computer_name] = {'desc': 'ProcessingAgent', 'host': computer_name, 'port': 1234,
                                             'version': '0.1.0'}
-        if not (computer_name in state['processing_started']):
-            state['processing_started'][computer_name] = False
+        if not (computer_name in state_globals['processing_started']):
+            state_globals['processing_started'][computer_name] = False
     return Processing_Agents
 
 
-def initiate_data_processing(state):
-    Processing_Agents = get_processing_agents(state)
-    session_name = state["external"]["session_name"]
+def initiate_data_processing(state_globals):
+    Processing_Agents = get_processing_agents(state_globals)
+    session_name = state_globals["external"]["session_name"]
     probe_recorded_dict = {}
-    for probe in state['external']['probe_list']:
-        if state['external'][f'probe_{probe}_surface']:
-            probe_recorded_dict[probe] = get_final_probeDir(state, probe)
+    for probe in state_globals['external']['probe_list']:
+        if state_globals['external'][f'probe_{probe}_surface']:
+            probe_recorded_dict[probe] = get_final_probeDir(state_globals, probe)
     all_initiated = True
     for key, value in Processing_Agents.items():
-        if True:  # not(state['processing_started'][key]):
+        if True:  # not(state_globals['processing_started'][key]):
             print(
                 f'Creating Proxy for device:{key} at host:{value["host"]} port:{value["port"]} device name:{value["desc"]}')
             port = str(value["port"])
@@ -1303,7 +1305,7 @@ def initiate_data_processing(state):
             proxy = Proxy(fullport)  # , serialization='json')
 
             # save the proxies for use later
-            # state['component_proxies'][key] = proxy
+            # state_globals['component_proxies'][key] = proxy
 
             # ** This is slow during development...leave in and uncomment when going to actual testing with hardware
 
@@ -1325,7 +1327,7 @@ def initiate_data_processing(state):
                 message = f'Processing agent uptime failed on {key}, gui is closed or not at config hostname and port: {fullport}. If the gui is closed please open it using RSC'
                 message = get_from_config(['processing_ping_string'], default=message)
                 logging.info(message, exc_info=True)
-                overrideable_error_state(state, 'initiate_data_processing', 'copy_files_to_network', message)
+                overrideable_error_state(state_globals, 'initiate_data_processing', 'copy_files_to_network', message)
                 initated = False
             else:
                 try:
@@ -1337,7 +1339,7 @@ def initiate_data_processing(state):
                     message = f'Processing agent Ping failed on {key}, processing is probabbly still running from the last session'
                     message = get_from_config(['processing_ping_string'], default=message)
                     logging.info(message, exc_info=True)
-                    overrideable_error_state(state, 'initiate_data_processing', 'copy_files_to_network',
+                    overrideable_error_state(state_globals, 'initiate_data_processing', 'copy_files_to_network',
                                              message)
                     initated = False
                 else:
@@ -1372,9 +1374,9 @@ def initiate_data_processing(state):
                         message = f'It looks like processing failed to start on {key}. Please check the prompt for errors about disk space, etc'
                         message = get_from_config(['processing_ping_string'], default=message)
                         logging.info(message, exc_info=True)
-                        overrideable_error_state(state, 'initiate_data_processing', 'copy_files_to_network',
+                        overrideable_error_state(state_globals, 'initiate_data_processing', 'copy_files_to_network',
                                                  message)
-                    state['processing_started'][key] = initiated
+                    state_globals['processing_started'][key] = initiated
                     all_initiated = all_initiated and initiated
 
     Day2_Agent = {'desc': 'Day2Agent', 'host': 'localhost', 'port': 1234, 'version': '0.1.0'}
@@ -1388,7 +1390,7 @@ def initiate_data_processing(state):
     proxy = Proxy(fullport)  # , serialization='json')
 
     # save the proxies for use later
-    # state['component_proxies'][key] = proxy
+    # state_globals['component_proxies'][key] = proxy
 
     # ** This is slow during development...leave in and uncomment when going to actual testing with hardware
 
@@ -1417,112 +1419,112 @@ def initiate_data_processing(state):
     return all_initiated
 
 
-def get_start_experiment_params(state):
-    state['external']["ExperimentStartTime_dt"] = dt.now()
-    state['external']["ExperimentStartTime"] = state['external']["ExperimentStartTime_dt"].strftime(
+def get_start_experiment_params(state_globals):
+    state_globals['external']["ExperimentStartTime_dt"] = dt.now()
+    state_globals['external']["ExperimentStartTime"] = state_globals['external']["ExperimentStartTime_dt"].strftime(
         '%Y%m%d%H%M%S')
-    state['external']['local_log'] = f'ExperimentStartTime:{state["external"]["ExperimentStartTime"]}'
-    state['external'][
-        'sync_file_path'] = f'{state["external"]["local_lims_location"]}/{state["external"]["session_name"]}.sync'
+    state_globals['external']['local_log'] = f'ExperimentStartTime:{state_globals["external"]["ExperimentStartTime"]}'
+    state_globals['external'][
+        'sync_file_path'] = f'{state_globals["external"]["local_lims_location"]}/{state_globals["external"]["session_name"]}.sync'
     sync_output_path = f'C:/ProgramData/AIBS_MPE/sync/output/'  # TODO put this in zookeeper
     os.makedirs(sync_output_path, exist_ok=True)
-    # state['external']['sync_temp_file'] = os.path.join(sync_output_path, f'{state["external"]["session_name"]}_temp')
+    # state_globals['external']['sync_temp_file'] = os.path.join(sync_output_path, f'{state_globals["external"]["session_name"]}_temp')
 
 
-def start_sync(state):
+def start_sync(state_globals):
     try:
-        proxy = state['component_proxies']['Sync']
+        proxy = state_globals['component_proxies']['Sync']
         try:
             proxy.start()
-            # state['external']['sync_temp_file'] = f'{config["sync_output_path"]}/{state["external"]["session_name"]}_temp.h5'#TODO put in config
-            state['external']['status_message'] = 'success'
+            # state_globals['external']['sync_temp_file'] = f'{config["sync_output_path"]}/{state_globals["external"]["session_name"]}_temp.h5'#TODO put in config
+            state_globals['external']['status_message'] = 'success'
         except Exception as e:
             message = f'Remote call to start sync returned an error: {e}'
             print(message)
-            alert_text(message, state)
-            state['external']['status_message'] = f'Sync start failure:{e}'
-            state['external']['component_status']["Sync"] = False
+            alert_text(message, state_globals)
+            state_globals['external']['status_message'] = f'Sync start failure:{e}'
+            state_globals['external']['component_status']["Sync"] = False
     except Exception as e:
         print(f'Sync proxy failure:{e}!')
-        state['external']['status_message'] = f'Sync proxy failure:{e}'
-        state['external']['component_status']["Sync"] = False
+        state_globals['external']['status_message'] = f'Sync proxy failure:{e}'
+        state_globals['external']['component_status']["Sync"] = False
 
 
-def stop_sync(state):
+def stop_sync(state_globals):
     try:
-        proxy = state['component_proxies']['Sync']
+        proxy = state_globals['component_proxies']['Sync']
         try:
             proxy.stop()
 
             sync_wrapup_time = get_from_config(['sync_wrapup_time'], default=5)
 
-            state['external']['status_message'] = 'success'
+            state_globals['external']['status_message'] = 'success'
         except Exception as e:
-            state['external']['status_message'] = f'Sync start failure:{e}'
-            state['external']['component_status']["Sync"] = False
+            state_globals['external']['status_message'] = f'Sync start failure:{e}'
+            state_globals['external']['component_status']["Sync"] = False
 
     except Exception as e:
         print(f'Sync proxy failure:{e}!')
-        state['external']['status_message'] = f'Sync proxy failure:{e}'
-        state['external']['component_status']["Sync"] = False
+        state_globals['external']['status_message'] = f'Sync proxy failure:{e}'
+        state_globals['external']['component_status']["Sync"] = False
     # put in a delay between the sync starting and the videomon starting
 
 
-def start_videomon(state, video_prefix=''):
+def start_videomon(state_globals, video_prefix=''):
     try:
-        # proxy = state['component_proxies']['VideoMon']
+        # proxy = state_globals['component_proxies']['VideoMon']
         try:
-            state['external'][
-                'behavior_file_path'] = f'{state["external"]["mapped_lims_location"]}/{state["external"]["session_name"]}.behavior.avi'
-            state['external'][
-                'behavior_local_file_path'] = f'{state["external"]["local_lims_location"]}/{state["external"]["session_name"]}.behavior.avi'
-            state['external'][
-                'behavior_local_file_name'] = f'{state["external"]["session_name"]}.behavior.avi'
+            state_globals['external'][
+                'behavior_file_path'] = f'{state_globals["external"]["mapped_lims_location"]}/{state_globals["external"]["session_name"]}.behavior.avi'
+            state_globals['external'][
+                'behavior_local_file_path'] = f'{state_globals["external"]["local_lims_location"]}/{state_globals["external"]["session_name"]}.behavior.avi'
+            state_globals['external'][
+                'behavior_local_file_name'] = f'{state_globals["external"]["session_name"]}.behavior.avi'
 
-            state['external'][
-                'eyetracking_file_path'] = f'{state["external"]["mapped_lims_location"]}/{state["external"]["session_name"]}.eye.avi'
-            state['external'][
-                'eyetracking_local_file_path'] = f'{state["external"]["local_lims_location"]}/{state["external"]["session_name"]}.eye.avi'
-            state['external'][
-                'eyetracking_local_file_name'] = f'{state["external"]["session_name"]}.eye.avi'
-            state['external'][
-                'videomon_file_path'] = f'C:/ProgramData/AIBS_MPE/videomon/data/{state["external"]["session_name"]}'  # TODO put in config
+            state_globals['external'][
+                'eyetracking_file_path'] = f'{state_globals["external"]["mapped_lims_location"]}/{state_globals["external"]["session_name"]}.eye.avi'
+            state_globals['external'][
+                'eyetracking_local_file_path'] = f'{state_globals["external"]["local_lims_location"]}/{state_globals["external"]["session_name"]}.eye.avi'
+            state_globals['external'][
+                'eyetracking_local_file_name'] = f'{state_globals["external"]["session_name"]}.eye.avi'
+            state_globals['external'][
+                'videomon_file_path'] = f'C:/ProgramData/AIBS_MPE/videomon/data/{state_globals["external"]["session_name"]}'  # TODO put in config
 
             mvr_writer.define_hosts([cam['label'] for cam in config['cameras']])
             MaxRecTime_min = 365 * 60
-            log = f'MID, {state["external"]["mouse_id"]}, BID, {os.getenv("aibs_comp_id")}, Action, Begin Recording, MaxRecTime_min, {MaxRecTime_min}'
+            log = f'MID, {state_globals["external"]["mouse_id"]}, BID, {os.getenv("aibs_comp_id")}, Action, Begin Recording, MaxRecTime_min, {MaxRecTime_min}'
             logging.info(log, extra={'weblog': True})
-            print('START RECORD:', video_prefix, state['external']['session_name'])
+            print('START RECORD:', video_prefix, state_globals['external']['session_name'])
             mvr_writer.start_record(file_name_prefix=video_prefix,
-                                    sub_folder=state['external']['session_name'],
+                                    sub_folder=state_globals['external']['session_name'],
                                     record_time=MaxRecTime_min)
-            state['external']['status_message'] = 'success'
+            state_globals['external']['status_message'] = 'success'
         except Exception as e:
             message = f'Remote call to start MVR returned an error: {e}'
             print(message)
-            alert_text(message, state)
-            state['external']['status_message'] = f'Videomon start failure:{e}'
-            state['external']['component_status']["VideoMon"] = False
+            alert_text(message, state_globals)
+            state_globals['external']['status_message'] = f'Videomon start failure:{e}'
+            state_globals['external']['component_status']["VideoMon"] = False
     except Exception as e:
         print(f'VideoMon proxy failure:{e}!')
-        state['external']['status_message'] = f'Videomon proxy failure:{e}'
-        state['external']['component_status']["VideoMon"] = False
+        state_globals['external']['status_message'] = f'Videomon proxy failure:{e}'
+        state_globals['external']['component_status']["VideoMon"] = False
 
     # start the ephys process
     # recreate the proxy
 
 
-def get_video_locations(state):
+def get_video_locations(state_globals):
     paths = {}
     for camera in config['cameras']:
         label = camera["label"]
-        source = get_video_location(state, label)
+        source = get_video_location(state_globals, label)
         paths[label] = source
     return paths
 
 
-def get_video_location(state, label):
-    full_path = f"\\\\{config['MVR']['host']}\\c$/ProgramData/AIBS_MPE/MVR/data/{state['external']['session_name']}/*{label}*.mp4"
+def get_video_location(state_globals, label):
+    full_path = f"\\\\{config['MVR']['host']}\\c$/ProgramData/AIBS_MPE/MVR/data/{state_globals['external']['session_name']}/*{label}*.mp4"
     print(f'Globbing for video at {full_path}')
     try:
         source = glob.glob(full_path)[0]
@@ -1532,7 +1534,7 @@ def get_video_location(state, label):
     return source
 
 
-def print_error(state, e):
+def print_error(state_globals, e):
     template = "An exception of type {0} occurred. Arguments:{1!r}"
     message = template.format(type(e).__name__, e.args)
     print('\n\n' + '#' * 50)
@@ -1542,52 +1544,52 @@ def print_error(state, e):
     print('\n\n' + '#' * 50)
 
 
-def stop_videomon(state):
+def stop_videomon(state_globals):
     print('Attemption to stop videomon')
     # global_processes['camera_copy_processes'] = {}
     try:
-        # proxy = state['component_proxies']['VideoMon']
+        # proxy = state_globals['component_proxies']['VideoMon']
         try:
             host = r'\\' + config['MVR']['host']
-            src_file_prefix = f"{host}\\c$\\programdata\\aibs_mpe\\mvr\\data\\{state['external']['session_name']}"
-            # src_file_prefix = os.path.join(host, vid_out_dir, state['external']['session_name'])
-            dst_file_prefix = state["external"]["mapped_lims_location"]
-            # os.path.join(state["external"]["mapped_lims_location"], state["external"]['session_name'])
-            log = f'MID, {state["external"]["mouse_id"]}, BID, {os.getenv("aibs_comp_id")}, Action, Stop Recording'
+            src_file_prefix = f"{host}\\c$\\programdata\\aibs_mpe\\mvr\\data\\{state_globals['external']['session_name']}"
+            # src_file_prefix = os.path.join(host, vid_out_dir, state_globals['external']['session_name'])
+            dst_file_prefix = state_globals["external"]["mapped_lims_location"]
+            # os.path.join(state_globals["external"]["mapped_lims_location"], state_globals["external"]['session_name'])
+            log = f'MID, {state_globals["external"]["mouse_id"]}, BID, {os.getenv("aibs_comp_id")}, Action, Stop Recording'
             logging.info(log, extra={'weblog': True})
             mvr_writer.stop_record()
             time.sleep(1)
             if not (os.path.exists(src_file_prefix)):
                 message = 'Could not find videos to move, check location and permissions'
-                alert_text(message, state)
-            state['external']['video_filenames'] = os.listdir(src_file_prefix)
+                alert_text(message, state_globals)
+            state_globals['external']['video_filenames'] = os.listdir(src_file_prefix)
             command_string = "robocopy " + src_file_prefix + " " + dst_file_prefix + r" /e /xo"
             global_processes['camera_copy_processes'] = subprocess.Popen(command_string)
             # proxy.copy_arbitrary_file(
-            #    (state["external"]["videomon_file_path"] + "-0.avi"),
-            #    state["external"]["behavior_file_path"],
+            #    (state_globals["external"]["videomon_file_path"] + "-0.avi"),
+            #    state_globals["external"]["behavior_file_path"],
             # )
-            state['external']['status_message'] = 'success'
+            state_globals['external']['status_message'] = 'success'
         except Exception as e:
             message = f'Remote call to stop MVR returned an error: {e}'
             print(message)
-            alert_text(message, state)
-            state['external']['status_message'] = f'Videomon start failure:{e}'
-            state['external']['component_status']["VideoMon"] = False
+            alert_text(message, state_globals)
+            state_globals['external']['status_message'] = f'Videomon start failure:{e}'
+            state_globals['external']['component_status']["VideoMon"] = False
     except Exception as e:
         print(f'VideoMon proxy failure:{e}!')
-        state['external']['status_message'] = f'Videomon proxy failure:{e}'
-        state['external']['component_status']["VideoMon"] = False
+        state_globals['external']['status_message'] = f'Videomon proxy failure:{e}'
+        state_globals['external']['component_status']["VideoMon"] = False
 
 
-def rename_video_files(state):
+def rename_video_files(state_globals):
     for camera in config['cameras']:
         label = camera["label"]
         try:
-            if not ('video_filenames' in state['external']):
+            if not ('video_filenames' in state_globals['external']):
                 message = f"No video filenames were saved, globbing for them instead"
                 print(message)
-                full_path = os.path.join(state["external"]["mapped_lims_location"], '*' + label + '*')
+                full_path = os.path.join(state_globals["external"]["mapped_lims_location"], '*' + label + '*')
                 print(f'Globbing for files at {full_path}')
                 assocatied_files = glob.glob(full_path)
                 print(f'Files found for {label}: {assocatied_files}')
@@ -1595,174 +1597,174 @@ def rename_video_files(state):
                 for old_filepath in assocatied_files:
                     if not ('pkl' in filename):
                         extension = os.path.splitext(old_filepath)[1]
-                        new_filepath = os.path.join(state["external"]["mapped_lims_location"],
-                                                    state["external"]['session_name'] + '.' + label + extension)
+                        new_filepath = os.path.join(state_globals["external"]["mapped_lims_location"],
+                                                    state_globals["external"]['session_name'] + '.' + label + extension)
                         os.rename(old_filepath, new_filepath)
             else:
-                assocatied_files = state['external']['video_filenames']
+                assocatied_files = state_globals['external']['video_filenames']
                 for file_name in assocatied_files:
                     if label.lower() in file_name.lower():
                         extension = os.path.splitext(file_name)[1]
-                        old_filepath = os.path.join(state["external"]["mapped_lims_location"], file_name)
-                        new_filepath = os.path.join(state["external"]["mapped_lims_location"],
-                                                    state["external"]['session_name'] + '.' + label + extension)
+                        old_filepath = os.path.join(state_globals["external"]["mapped_lims_location"], file_name)
+                        new_filepath = os.path.join(state_globals["external"]["mapped_lims_location"],
+                                                    state_globals["external"]['session_name'] + '.' + label + extension)
                         if os.path.exists(new_filepath):
                             print(f"Not renaming {label}, it already exists")
                         else:
                             os.rename(old_filepath, new_filepath)
         except Exception as E:
             message = f"There was an error renaming {label} video, maybe they don't exist"
-            alert_text(message, state)
-            print_error(state, E)
+            alert_text(message, state_globals)
+            print_error(state_globals, E)
 
 
 # start the stim process
 # recreate the proxy
-def start_stim(state):
+def start_stim(state_globals):
     try:
-        proxy = state['component_proxies']['Stim']
+        proxy = state_globals['component_proxies']['Stim']
         try:
-            status = retrieve_stim_status(camstim_proxy, state)
-            print(f'starting stim:{state["external"]["stimulus_selected"]}')
+            status = retrieve_stim_status(camstim_proxy, state_globals)
+            print(f'starting stim:{state_globals["external"]["stimulus_selected"]}')
             try:
-                proxy.start_script_from_path(state["external"]["stimulus_selected"])
+                proxy.start_script_from_path(state_globals["external"]["stimulus_selected"])
             except Exception as E:
                 message = 'Unable to start the stimulus. Please start manually and override, or fix camstim and retry'
-                overrideable_error_state(state, retry_state='initiate_stimulus',
+                overrideable_error_state(state_globals, retry_state='initiate_stimulus',
                                          override_state='experiment_running_timer', message=message)
-            state['external']['status_message'] = 'success'
+            state_globals['external']['status_message'] = 'success'
         except Exception as e:
             message = f'Remote call to start stim returned an error: {e}'
             print(message)
-            alert_text(message, state)
-            state['external']['status_message'] = f'Stim start failure:{e}'
-            state['external']['component_status']["Stim"] = False
+            alert_text(message, state_globals)
+            state_globals['external']['status_message'] = f'Stim start failure:{e}'
+            state_globals['external']['component_status']["Stim"] = False
     except Exception as e:
         print(f'Stim proxy failure:{e}!')
-        state['external']['status_message'] = f'Stim proxy failure:{e}'
-        state['external']['component_status']["Stim"] = False
+        state_globals['external']['status_message'] = f'Stim proxy failure:{e}'
+        state_globals['external']['component_status']["Stim"] = False
 
 
-def start_common_session_monitoring(state, video_prefix=''):
-    get_start_experiment_params(state)
+def start_common_session_monitoring(state_globals, video_prefix=''):
+    get_start_experiment_params(state_globals)
     time.sleep(3)
-    start_sync(state)
+    start_sync(state_globals)
     time.sleep(1)
-    start_videomon(state, video_prefix)
+    start_videomon(state_globals, video_prefix)
     time.sleep(
         2)  # a little extra buffer to make doubly sure we don't get any dropped MVR frames before the stim starts
 
 
-def start_common_experiment_monitoring(state, video_prefix=''):
-    start_common_session_monitoring(state, video_prefix)
-    start_ecephys_recording(state)
-    # failed = check_data_stream_size(state)
+def start_common_experiment_monitoring(state_globals, video_prefix=''):
+    start_common_session_monitoring(state_globals, video_prefix)
+    start_ecephys_recording(state_globals)
+    # failed = check_data_stream_size(state_globals)
     # return failed
 
 
-def stop_common_session_monitoring(state):
+def stop_common_session_monitoring(state_globals):
     print('Stopping common session monitoring')
-    get_stop_experiment_params(state)
+    get_stop_experiment_params(state_globals)
     time.sleep(2)  # A little extra buffer to make sure we recieve all the frames before MVR stops
-    stop_videomon(state)
+    stop_videomon(state_globals)
     time.sleep(3)
-    io = state["resources"]["io"]
-    sync_proxy = state["component_proxies"]["Sync"]
-    stop_sync(state)
+    io = state_globals["resources"]["io"]
+    sync_proxy = state_globals["component_proxies"]["Sync"]
+    stop_sync(state_globals)
 
 
-def stop_common_experiment_monitoring(state):
+def stop_common_experiment_monitoring(state_globals):
     print('Stopping common experiment monitoring')
-    stop_ecephys_recording(state)
-    stop_common_session_monitoring(state)
+    stop_ecephys_recording(state_globals)
+    stop_common_session_monitoring(state_globals)
 
 
-def get_stop_experiment_params(state):
+def get_stop_experiment_params(state_globals):
     print('Getting stop experiment params')
-    state["external"]["ExperimentCompleteTime"] = dt.now().strftime("%Y%m%d%H%M%S")
-    state["external"][
+    state_globals["external"]["ExperimentCompleteTime"] = dt.now().strftime("%Y%m%d%H%M%S")
+    state_globals["external"][
         "local_log"
-    ] = f'ExperimentCompleteTime:{state["external"]["ExperimentCompleteTime"]}'
+    ] = f'ExperimentCompleteTime:{state_globals["external"]["ExperimentCompleteTime"]}'
 
 
-def camstim_running(state):
+def camstim_running(state_globals):
     running = False
     try:
-        camstim_proxy = state['component_proxies']['Stim']
+        camstim_proxy = state_globals['component_proxies']['Stim']
         running = camstim_proxy.status['running']
     except Exception as E:
         message = 'Failed to check if camstim is running a stimulus'
-        alert_text(message, state)
+        alert_text(message, state_globals)
     return running
 
 
-def initiate_behavior_stimulus_input(state):
+def initiate_behavior_stimulus_input(state_globals):
     message = None
-    if camstim_running(state):
+    if camstim_running(state_globals):
         message = ("A stim appears to be running."
                    "\nPlease stop session on mouse director and restart camstim using RSC before initiating a new one,"
                    "\nor proceed to experiment_running_timer to use the currently running stim")
-        overrideable_error_state(state, 'initiate_behavior_stimulus', override_state='experiment_running_timer',
+        overrideable_error_state(state_globals, 'initiate_behavior_stimulus', override_state='experiment_running_timer',
                                  message=message)
         return
     else:
-        initiate_behavior(state)
-    # state['external']['clear_sticky'] = True
-    # state['external']['next_state'] = 'experiment_running_timer'
-    # state["external"]["transition_result"] = True
-    # state["external"]["status_message"] = "success"
-    save_platform_json(state, manifest=False)
-    if not (camstim_running(state)):
+        initiate_behavior(state_globals)
+    # state_globals['external']['clear_sticky'] = True
+    # state_globals['external']['next_state'] = 'experiment_running_timer'
+    # state_globals["external"]["transition_result"] = True
+    # state_globals["external"]["status_message"] = "success"
+    save_platform_json(state_globals, manifest=False)
+    if not (camstim_running(state_globals)):
         message = "The stimulus doesn't seem to have started"
-        overrideable_error_state(state, 'initiate_behavior_stimulus', override_state='experiment_running_timer',
+        overrideable_error_state(state_globals, 'initiate_behavior_stimulus', override_state='experiment_running_timer',
                                  message=message)
-    save_platform_json(state, manifest=False)
+    save_platform_json(state_globals, manifest=False)
     return message
 
 
-def initiate_behavior(state):
-    mouse_id = state["external"]["mouse_id"]
-    user_id = state["external"]["user_id"]
-    camstim_proxy = state['component_proxies']['Stim']
+def initiate_behavior(state_globals):
+    mouse_id = state_globals["external"]["mouse_id"]
+    user_id = state_globals["external"]["user_id"]
+    camstim_proxy = state_globals['component_proxies']['Stim']
     print('Starting behavior session')
     try:
         camstim_proxy.start_session(mouse_id, user_id)
     except Exception as E:
         print('here2')
         message = 'Unable to start the stimulus. Please start manually and override, or fix camstim and retry'
-        overrideable_error_state(state, retry_state='initiate_behavior_stimulus',
+        overrideable_error_state(state_globals, retry_state='initiate_behavior_stimulus',
                                  override_state='experiment_running_timer', message=message)
 
     time.sleep(5)
     # try:
     print('attempting to retrieve_stim_status')
-    retrieve_stim_status(camstim_proxy, state)
-    state['external']['next_state'] = 'experiment_running_timer'
-    # state['external'].pop(choice_field, None)
+    retrieve_stim_status(camstim_proxy, state_globals)
+    state_globals['external']['next_state'] = 'experiment_running_timer'
+    # state_globals['external'].pop(choice_field, None)
     # except Exception as E:
     #    logging.debug('failed to retireve stim status from camstim', exc_info=True)
-    #    state['external']['next_state'] = 'camstim_ping_error'
+    #    state_globals['external']['next_state'] = 'camstim_ping_error'
 
 
-def verify_script_name(state, stimulus_name):
+def verify_script_name(state_globals, stimulus_name):
     try:
         if not (stimulus_name is None):
             missing_keywords = []
             keywords = []
-            session_day = state['external']['entered_experiment_day']
-            if not ('hab' in state['external']['full_session_type'].lower()):
+            session_day = state_globals['external']['entered_experiment_day']
+            if not ('hab' in state_globals['external']['full_session_type'].lower()):
                 try:
                     keywords.extend(config['MTrainData']['Experiment_Keywords'])
                 except Exception:
-                    alert_text('Failed to check Experiment_Keywords in script name - not in config', state)
+                    alert_text('Failed to check Experiment_Keywords in script name - not in config', state_globals)
             try:
                 keywords.extend(config['MTrainData']['Stage_Keywords'])
             except Exception:
-                alert_text('Failed to check Stage_Keywords in script name - not in config', state)
+                alert_text('Failed to check Stage_Keywords in script name - not in config', state_globals)
             try:
                 keywords.extend(config['MTrainData']['Experiment_Sessions'][session_day]['Keywords'])
             except Exception:
-                if 'hab' in state['external']['session_type']:
+                if 'hab' in state_globals['external']['session_type']:
                     try:
                         mtrain_string = None
                         try:
@@ -1775,20 +1777,20 @@ def verify_script_name(state, stimulus_name):
                             keywords.extend(config['MTrainData']['Habituation_Sessions']['Habituation']['Keywords'])
                     except Exception as E:
                         alert_text(f'Failed to check Habituation keywords in script name - not in config',
-                                   state)
+                                   state_globals)
                 else:
-                    alert_text(f'Failed to check {session_day} keywords in script name - not in config', state)
+                    alert_text(f'Failed to check {session_day} keywords in script name - not in config', state_globals)
             for keyword in keywords:
                 if not (keyword in stimulus_name):
                     missing_keywords.append(keyword)
             if missing_keywords:
                 message = f"Some keywords are missing from the script name: {', '.join(missing_keywords)}"
-                alert_text(message, state)
+                alert_text(message, state_globals)
         else:
-            alert_text('No script name found: Unable to confirm correct mtrain stage', state)
+            alert_text('No script name found: Unable to confirm correct mtrain stage', state_globals)
     except Exception as E:
         message = 'A failure occurred while attempting to check the script name'
-        alert_text(message, state)
+        alert_text(message, state_globals)
         logging.debug(message, exc_info=True)
 
 
@@ -1801,64 +1803,64 @@ def get_script_name(stim_status):
     return stimulus_name, script_path
 
 
-def get_stim_status(camstim_proxy, state):
+def get_stim_status(camstim_proxy, state_globals):
     foraging_id = None
     stimulus_name = None
     script_path = None
     try:
         stim_status = camstim_proxy.status
-        if not camstim_running(state):
+        if not camstim_running(state_globals):
             message = "The stimulus doesn't seem to be running. \nPlease fix camstim and retry. \n   If you start manually you shoulds still revert \n   so that the WSE grabs the new foraging ID"
-            overrideable_error_state(state, retry_state='initiate_behavior_stimulus',
+            overrideable_error_state(state_globals, retry_state='initiate_behavior_stimulus',
                                      override_state='experiment_running_timer', message=message)
         foraging_id = stim_status['session_uuid']
         stimulus_name, script_path = get_script_name(stim_status)
     except Exception as E:
         message = 'Unable to retrieve the stim status. \nPlease fix camstim and retry. \n   If you start manually you shoulds still reinitiate \n   so that the WSE grabs the new foraging ID'
-        overrideable_error_state(state, retry_state='initiate_behavior_stimulus',
+        overrideable_error_state(state_globals, retry_state='initiate_behavior_stimulus',
                                  override_state='experiment_running_timer', message=message)
     return foraging_id, stimulus_name, script_path
 
 
-def retrieve_stim_status(camstim_proxy, state):
+def retrieve_stim_status(camstim_proxy, state_globals):
     try:
-        foraging_id, stimulus_name, script_path = get_stim_status(camstim_proxy, state)
-        # state['external']['foraging_id'] = foraging_id
-        state['external']['foraging_id_list'].append(foraging_id)
-        state['external']['stimulus_name'] = stimulus_name
-        state['external']['script_name'] = script_path
-        print('foraging ID:' + state['external']['foraging_id'])
-        print('stimulus_name:' + state['external']['stimulus_name'])
-        print('script_name:' + state['external']['script_name'])
-        verify_script_name(state, stimulus_name)
-        # if not(bool(state['external']['foraging_id'])):
-        # alert_text('The foraging ID is empty', state)
+        foraging_id, stimulus_name, script_path = get_stim_status(camstim_proxy, state_globals)
+        # state_globals['external']['foraging_id'] = foraging_id
+        state_globals['external']['foraging_id_list'].append(foraging_id)
+        state_globals['external']['stimulus_name'] = stimulus_name
+        state_globals['external']['script_name'] = script_path
+        print('foraging ID:' + state_globals['external']['foraging_id'])
+        print('stimulus_name:' + state_globals['external']['stimulus_name'])
+        print('script_name:' + state_globals['external']['script_name'])
+        verify_script_name(state_globals, stimulus_name)
+        # if not(bool(state_globals['external']['foraging_id'])):
+        # alert_text('The foraging ID is empty', state_globals)
     except Exception as E:
         message = 'Unable to retrieve the stim status. \nPlease fix camstim and retry. \n   If you start manually you shoulds still reinitiate \n   so that the WSE grabs the new foraging ID'
-        overrideable_error_state(state, retry_state='initiate_behavior_stimulus',
+        overrideable_error_state(state_globals, retry_state='initiate_behavior_stimulus',
                                  override_state='experiment_running_timer', message=message)
 
 
-def camstim_ping_error_input(state):
+def camstim_ping_error_input(state_globals):
     print('>> camstim_ping_error_input <<')
     handle_2_choice_button('camstim_ping_retry', 'initiate_behavior_stimulus', 'experiment_running_timer',
-                           state)
+                           state_globals)
 
 
-def alert_text(message, state, alert=True, transition=True, log_message=True, log_level=logging.DEBUG):
+def alert_text(message, state_globals, alert=True, transition=True, log_message=True, log_level=logging.DEBUG):
     if log_message:
         logging.log(log_level, message)
-    if 'alert' in state['external'] and state['external']['alert']:
-        message = append_alert(message, state)
-    state['external']['alert'] = alert
-    state["external"]["transition_result"] = transition
-    state["external"]["msg_text"] = message
+    if 'alert' in state_globals['external'] and state_globals['external']['alert']:
+        message = append_alert(message, state_globals)
+    state_globals['external']['alert'] = alert
+    state_globals["external"]["transition_result"] = transition
+    state_globals["external"]["msg_text"] = message
 
 
-def append_alert(message: str, state: dict):
+def append_alert(message: str, state_globals: dict):
     current_message = ''
-    if 'msg_text' in state['external']:
-        current_message = state["external"]["msg_text"]
+    if 'msg_text' in state_globals['external']:
+        current_message = state_globals["external"]["msg_text"]
         if not ('There were multiple messages:\n' in current_message):
             current_message = f'There were multiple messages:\n --- {current_message}\n\n'
     message = f'{current_message} --- {message}\n\n'
@@ -1881,14 +1883,14 @@ def get_new_files_list(path, num_files, extension='.pkl'):
     return recent_list
 
 
-def check_pkls(state, session_type):
+def check_pkls(state_globals, session_type):
     time.sleep(10)  # this is to give camstim time to copy them.
     # Better solution would be to use robocopy here and ping process as with videos
     pkl_list = get_pkl_list(session_type)
     failed = {}
     for pkl_extension in pkl_list:
-        pkl_path = os.path.join(state["external"]["mapped_lims_location"],
-                                state["external"]["session_name"] + pkl_extension)
+        pkl_path = os.path.join(state_globals["external"]["mapped_lims_location"],
+                                state_globals["external"]["session_name"] + pkl_extension)
         if not (os.path.exists(pkl_path)):
             key = f'{pkl_extension}_found'
             message = f'Did not find pkl at {pkl_path}'
@@ -1928,10 +1930,10 @@ def get_num_pkls(session_type):
     return num_files
 
 
-def file_created_after_experiment_start(state, fullpath, modified=False):
+def file_created_after_experiment_start(state_globals, fullpath, modified=False):
     created_after_experiment_start = False
     try:
-        experiment_start_time = state['external']["ExperimentStartTime_dt"]
+        experiment_start_time = state_globals['external']["ExperimentStartTime_dt"]
         if modified:
             filetime = dt.fromtimestamp(
                 os.path.getmtime(fullpath)
@@ -1944,9 +1946,9 @@ def file_created_after_experiment_start(state, fullpath, modified=False):
         logging.info('The file was created at:' + filetime.strftime('%Y%m%d_%H_%M_%S'))
         created_after_experiment_start = filetime > experiment_start_time
     except Exception as E:
-        print_error(state, E)
+        print_error(state_globals, E)
         message = 'A failure occurred confirming the file was created during the expriment'
-        alert_text(message, state)
+        alert_text(message, state_globals)
     return created_after_experiment_start
 
 
@@ -1962,22 +1964,22 @@ def get_foraging_id(pkl_path):
     return foraging_id
 
 
-def overwrite_foraging_id(behavior_pkl_path, session_type, state):
+def overwrite_foraging_id(behavior_pkl_path, session_type, state_globals):
     foraging_id = get_foraging_id(behavior_pkl_path)
     print(foraging_id)
     if (foraging_id is None):
         message = 'Foraging ID not retrieved from pkl file. You will have to enter manually'
-        alert_text(message, state)
+        alert_text(message, state_globals)
     elif not ('pretest' in session_type):
-        state['external']['foraging_id'] = foraging_id
-        if not (foraging_id in state['external']['foraging_id_list']):
-            state['external']['foraging_id_list'].append(foraging_id)
+        state_globals['external']['foraging_id'] = foraging_id
+        if not (foraging_id in state_globals['external']['foraging_id_list']):
+            state_globals['external']['foraging_id_list'].append(foraging_id)
 
 
-def get_pkl_path(pkl_keyword, state):
+def get_pkl_path(pkl_keyword, state_globals):
     if '-' in pkl_keyword:
         try:
-            data_location = state['external']['local_lims_location']
+            data_location = state_globals['external']['local_lims_location']
             file_name = pkl_keyword + '*'
             computer = r'\\' + os.environ['COMPUTERNAME']
             filepath = os.path.join(computer, data_location, file_name)
@@ -1985,16 +1987,16 @@ def get_pkl_path(pkl_keyword, state):
         except Exception as E:
             pkl_keyword = pkl_keyword[:-1]
             suffix = '.' + pkl_keyword + '.pkl'
-            pkl_path = get_file_path(suffix, state)
+            pkl_path = get_file_path(suffix, state_globals)
     else:
         suffix = '.' + pkl_keyword + '.pkl'
-        pkl_path = get_file_path(suffix, state)
+        pkl_path = get_file_path(suffix, state_globals)
     return pkl_path
 
 
-def get_file_path(suffix, state):
-    data_location = state['external']['local_lims_location']
-    session_name = state['external']["session_name"]
+def get_file_path(suffix, state_globals):
+    data_location = state_globals['external']['local_lims_location']
+    session_name = state_globals['external']["session_name"]
     file_name = session_name + suffix
     computer = r'\\' + os.environ['COMPUTERNAME']
     filepath = os.path.join(computer, data_location, file_name)
@@ -2002,7 +2004,7 @@ def get_file_path(suffix, state):
     return filepath
 
 
-def copy_stim_pkls(state, session_type):
+def copy_stim_pkls(state_globals, session_type):
     print('Copying stim pkls')
 
     num_files = get_num_pkls(session_type)
@@ -2011,7 +2013,7 @@ def copy_stim_pkls(state, session_type):
 
     print(f'Pkls to copy: {" ,".join(pkl_list)}')
     try:
-        camstim_proxy = state["component_proxies"]["Stim"]
+        camstim_proxy = state_globals["component_proxies"]["Stim"]
 
         try:
             host = r'\\' + config['components']['Stim']['host']
@@ -2025,12 +2027,12 @@ def copy_stim_pkls(state, session_type):
                     filename = os.path.split(file)[1]
                     full_path = os.path.join(stim_output_path, filename)
 
-                    if not (file_created_after_experiment_start(state, full_path)):
+                    if not (file_created_after_experiment_start(state_globals, full_path)):
                         Err_string2 = f'The canidate pkl file {file} was not created before the start of the experiment'
                         logging.debug(Err_string2)
                     else:
                         source = full_path
-                        destination = os.path.join(state["external"]["mapped_lims_location"], filename)
+                        destination = os.path.join(state_globals["external"]["mapped_lims_location"], filename)
                         print(f'Asking camstim to copy {source} to {destination}')
                         camstim_proxy.copy_arbitrary_file(source, destination)
                         time.sleep(.5)
@@ -2056,8 +2058,8 @@ def copy_stim_pkls(state, session_type):
                         # elif (
                         #    'hab' in session_type.lower()):  # TODO remove this when Chris's final stim is working? (should include behavior in filename therefore its redundant, might get smaller pkl instead of slightly larger custom one)
                         #    copy_file_as = "behavior"
-                        #    destination = os.path.join(state["external"]["mapped_lims_location"],
-                        #                               state["external"][
+                        #    destination = os.path.join(state_globals["external"]["mapped_lims_location"],
+                        #                               state_globals["external"][
                         #                                   "session_name"] + '.' + copy_file_as + '.pkl')
                         #    if os.path.exists(destination):
                         #        copy_file_as = False
@@ -2066,21 +2068,21 @@ def copy_stim_pkls(state, session_type):
                     key = name + '_copied sucessfully'
                     message = f"Did not copy this pkl file {file} because of {E}!"
                     warnings[key] = message
-                    print_error(state, E)
+                    print_error(state_globals, E)
 
                 try:
                     if copy_file_as:
                         source = full_path
-                        destination = get_pkl_path(copy_file_as, state)
+                        destination = get_pkl_path(copy_file_as, state_globals)
                         if os.path.exists(destination):
                             key = copy_file_as + '_unambiguous'
                             message = f'It looks like the {copy_file_as} pkl has already been copied\nIf this is the first time you tried to copy pkls, there must be two possibilities.\n You will have to make sure the correct one is renamed'
                             warnings[key] = message
                         else:
-                            if not (state["external"]["mouse_id"] in file):
+                            if not (state_globals["external"]["mouse_id"] in file):
                                 alert_text(
                                     f'The mouse ID was not found in the pkl {copy_file_as} filename. It was renamed to go to lims anyway.',
-                                    state)
+                                    state_globals)
                             print(f'Asking camstim to copy {source} to {destination}')
                             camstim_proxy.copy_arbitrary_file(source, destination)
                             # command_string = "robocopy "+ source +" "+destination +r" /e /xo"
@@ -2090,39 +2092,39 @@ def copy_stim_pkls(state, session_type):
                     key = name + '_renamed sucessfully'
                     message = f"Did not rename this pkl file {file} because of {E}!"
                     warnings[key] = message
-                    print_error(state, E)
+                    print_error(state_globals, E)
 
                 try:
                     if ('behavior' in copy_file_as):  # and not('pretest' in session_type):
                         time.sleep(2)
-                        overwrite_foraging_id(source, session_type, state)
+                        overwrite_foraging_id(source, session_type, state_globals)
                 except Exception as E:
                     name = os.path.split(file)[1]
                     key = f'foraging id_retrieved from {name}'
                     message = f"Did not retrive foraging ID from file {file} because of {E}!"
                     warnings[key] = message
-                    print_error(state, E)
+                    print_error(state_globals, E)
 
             if warnings:
-                alert_from_error_dict(state, warnings)
+                alert_from_error_dict(state_globals, warnings)
 
                 # logging.exception(E)
 
         except Exception as e:
             message = f"Stim copy file failure:{e}"
-            alert_text(message, state)
+            alert_text(message, state_globals)
             # print(f"Stim copy failure:{e}!")
-            # state["external"]["component_status"]["Stim"] = False
+            # state_globals["external"]["component_status"]["Stim"] = False
             # logging.exception(e)
     except Exception as e:
         print(f"Stim proxy failure:{e}!")
-        state["external"]["status_message"] = f"Stim proxy failure:{e}"
+        state_globals["external"]["status_message"] = f"Stim proxy failure:{e}"
 
-        state["external"]["component_status"]["Stim"] = False
+        state_globals["external"]["component_status"]["Stim"] = False
 
 
-def establish_proxies(state):
-    state['component_proxies'] = {}
+def establish_proxies(state_globals):
+    state_globals['component_proxies'] = {}
     for key, value in config['components'].items():
         if 'port' in value:
             print(
@@ -2135,10 +2137,10 @@ def establish_proxies(state):
             proxy = Proxy(fullport, serialization='json')
 
             # save the proxies for use later
-            state['component_proxies'][key] = proxy
+            state_globals['component_proxies'][key] = proxy
 
 
-def check_components(state):
+def check_components(state_globals):
     print('Checking components')
     compStatusArray = {}
     for key, value in config['components'].items():
@@ -2155,7 +2157,7 @@ def check_components(state):
 
             # put this in the state globals so we can re-establish the proxy later in the workflow.  Can save the proxies
             # themselve since they are object and can't be serialized.
-            proxy = state['component_proxies'][key]
+            proxy = state_globals['component_proxies'][key]
             try:
                 print(f'{key} uptime: {proxy.uptime}')
                 try:
@@ -2163,7 +2165,7 @@ def check_components(state):
                     version = platform_info.get('version', None)
                     if version < value['version']:
                         message = f'Component:{key} reporting outdated version.  Reporting {version}, needs {value["version"]}\n'
-                        alert_text(message, state)
+                        alert_text(message, state_globals)
                     else:
                         print(f'>>>> Component:{key} correct version {version} <<<<\n')
                 except Exception as e:
@@ -2174,141 +2176,141 @@ def check_components(state):
                 if 'Processing Agent' in key:
                     message = 'Processing agent did not respond. The processing agent may fail to respond if it is still busy processing data from the previous experiment.'
                     message = get_from_config(['processing_agent_unresponsive_str'], message)
-                    if not ('msg_text' in state['external']) or not (
-                        message in state['external']['msg_text']):
-                        alert_text(message, state)
+                    if not ('msg_text' in state_globals['external']) or not (
+                        message in state_globals['external']['msg_text']):
+                        alert_text(message, state_globals)
         else:  # the open ephys interface goes through the workflow router program, so need to set this up differently
-            if not ('hab' in state['external']['session_type']):
+            if not ('hab' in state_globals['external']['session_type']):
                 compStatusArray[key] = False
-                state['resources']['io'].add_message_bundle(ephys_messages)
-                state['resources']['io'].register_for_message('system_info', handle_message)
-                state['resources']['io'].register_for_message('system_status', handle_message)
-                state['resources']['io'].register_for_message('set_data_file_path', handle_message)
-                state['resources']['io'].register_for_message('acquisition', handle_message)
-                state['resources']['io'].register_for_message('recording', handle_message)
+                state_globals['resources']['io'].add_message_bundle(ephys_messages)
+                state_globals['resources']['io'].register_for_message('system_info', handle_message)
+                state_globals['resources']['io'].register_for_message('system_status', handle_message)
+                state_globals['resources']['io'].register_for_message('set_data_file_path', handle_message)
+                state_globals['resources']['io'].register_for_message('acquisition', handle_message)
+                state_globals['resources']['io'].register_for_message('recording', handle_message)
 
                 # and now request the system info
                 message = ephys_messages.request_system_info()
-                state['resources']['io'].write(message)
+                state_globals['resources']['io'].write(message)
                 compStatusArray[key] = True
 
-    state["external"]["drive_memory_low"] = False
-    if disk_usage(state["external"]["local_lims_head"]).free < 80 * (10 ** 9):
-        state["external"]["drive_memory_low"] = True
-    state['external']['component_status'].update(compStatusArray)
+    state_globals["external"]["drive_memory_low"] = False
+    if disk_usage(state_globals["external"]["local_lims_head"]).free < 80 * (10 ** 9):
+        state_globals["external"]["drive_memory_low"] = True
+    state_globals['external']['component_status'].update(compStatusArray)
 
 
-def confirm_components(state):
+def confirm_components(state_globals):
     print('confirming complonents')
-    check_components(state)
+    check_components(state_globals)
     failed = []
-    for name, status in state['external']['component_status'].items():
+    for name, status in state_globals['external']['component_status'].items():
         if not (status):
             failed.append(name)
-    if state["external"]["drive_memory_low"]:
+    if state_globals["external"]["drive_memory_low"]:
         failed.append('z drive_memory_low')
     return failed
 
 
-def run_pretest_script(state, camstim, pretest_DOC_path):
+def run_pretest_script(state_globals, camstim, pretest_DOC_path):
     print(f'Attempting to run pretest stim from path {pretest_DOC_path}')
     try:
         camstim.start_script_from_path(pretest_DOC_path)
     except Exception as E:
         message = f'Unable to start the stimulus from pretest path. {pretest_DOC_path}'
-        overrideable_error_state(state, retry_state='configure_hardware_openephys', override_state='pretest',
+        overrideable_error_state(state_globals, retry_state='configure_hardware_openephys', override_state='pretest',
                                  message=message)
         raise
 
 
-def run_pretest_override_params(state, camstim, params_path):
+def run_pretest_override_params(state_globals, camstim, params_path):
     print(f'Attempting to run pretest stim with override params {params_path}')
-    state['external']['pretest_stimulus_name'] = ''
+    state_globals['external']['pretest_stimulus_name'] = ''
     override_params = False
     try:
         with open(params_path, 'r') as f:
             override_params = json.load(f)
     except Exception as E:
         message = f'Unable to load override params. Make sure they are present and shared at {params_path}'
-        overrideable_error_state(state, retry_state='configure_hardware_openephys', override_state='pretest',
+        overrideable_error_state(state_globals, retry_state='configure_hardware_openephys', override_state='pretest',
                                  message=message)
     if override_params:
         try:
-            mouse_id = state["external"]["mouse_id"]
-            user_id = state["external"]["user_id"]
+            mouse_id = state_globals["external"]["mouse_id"]
+            user_id = state_globals["external"]["user_id"]
             print('Starting behavior session')
             camstim.start_session(mouse_id, user_id, override_params=override_params)
             try:
                 time.sleep(3)
                 stim_status = camstim.status
                 stimulus_name, script_path = get_script_name(stim_status)
-                state['external']['pretest_stimulus_name'] = stimulus_name
+                state_globals['external']['pretest_stimulus_name'] = stimulus_name
             except Exception as E:
                 message = f'Unable to retrieve the pretest script name: {E}'
-                alert_text(message, state)
+                alert_text(message, state_globals)
 
         except Exception as E:
             message = 'Unable to start the session. Please start manually and override, or fix camstim and retry'
-            overrideable_error_state(state, retry_state='configure_hardware_openephys',
+            overrideable_error_state(state_globals, retry_state='configure_hardware_openephys',
                                      override_state='pretest', message=message)
         try:
-            if not (camstim_running(state)):
+            if not (camstim_running(state_globals)):
                 message = "The stimulus doesn't seem to be running. \nPlease fix camstim and retry."
-                overrideable_error_state(state, retry_state='configure_hardware_openephys',
+                overrideable_error_state(state_globals, retry_state='configure_hardware_openephys',
                                          override_state='pretest', message=message)
         except Exception as E:
             message = "Unable to check if the sim is running. \nPlease fix camstim and retry."
-            overrideable_error_state(state, retry_state='configure_hardware_openephys',
+            overrideable_error_state(state_globals, retry_state='configure_hardware_openephys',
                                      override_state='pretest', message=message)
 
 
-def pretest_path(state):
+def pretest_path(state_globals):
     params_path = False
     try:
         params_dir = config['pretest']['path']
         params_path = os.path.join(params_dir,
-                                   state['external']['full_session_type'] + '_pretest_stim_params.json')
+                                   state_globals['external']['full_session_type'] + '_pretest_stim_params.json')
         params_path = glob.glob(params_path)[0]
     except Exception as E:
         if params_path:
             message = f'Failed to find file at path {params_path}'
-            alert_text(message, state)
+            alert_text(message, state_globals)
         params_dir = r"C:\Users\svc_neuropix\Documents\GitHub\NP_pipeline_validation\pretest_stim_params"
         params_path = os.path.join(params_dir,
-                                   state['external']['full_session_type'] + '_pretest_stim_params.json')
+                                   state_globals['external']['full_session_type'] + '_pretest_stim_params.json')
     return params_path
 
 
-def start_pretest_stim(state):
+def start_pretest_stim(state_globals):
     computername = r'\\' + os.environ['COMPUTERNAME']
     # print(computername)
-    camstim = state["component_proxies"]["Stim"]
+    camstim = state_globals["component_proxies"]["Stim"]
     ran_stim = False
     try:
         if ('pretest' in config) and (config['pretest']['mode'] == 'manual'):
             time.sleep(10)
             alert_text(
                 'Pretest mode is manual - the WSE waited 10 seconds, hopefully you started pretest in that time.',
-                state)
+                state_globals)
             ran_stim = True
         if ('pretest' in config) and (config['pretest']['mode'] == 'script'):
             pretest_DOC_path = config['pretest']['path']
-            run_pretest_script(state, camstim, pretest_DOC_path)
+            run_pretest_script(state_globals, camstim, pretest_DOC_path)
             ran_stim = True
     except Exception as E:
         pass
     if not (ran_stim):
-        params_path = pretest_path(state)
-        run_pretest_override_params(state, camstim, params_path)
+        params_path = pretest_path(state_globals)
+        run_pretest_override_params(state_globals, camstim, params_path)
 
     # else:
-    #    params_path = pretest_path(state)
-    #    run_pretest_override_params(state, camstim, params_path)
+    #    params_path = pretest_path(state_globals)
+    #    run_pretest_override_params(state_globals, camstim, params_path)
     # pretest_DOC_path = os.path.join(computername, r"NP_pipeline_pretest\example_DOC_short.py")  # TODO Put in config
-    # run_pretest_script(state, camstim, pretest_DOC_path)
+    # run_pretest_script(state_globals, camstim, pretest_DOC_path)
 
 
-def run_np_validation(state, env_name, functions_path, params_path, file_paths_path, validation_output_path):
+def run_np_validation(state_globals, env_name, functions_path, params_path, file_paths_path, validation_output_path):
     try:
         command = (' ').join(
             [config['np_validation_python_path'], functions_path, params_path, file_paths_path, validation_output_path])
@@ -2316,18 +2318,18 @@ def run_np_validation(state, env_name, functions_path, params_path, file_paths_p
     except Exception as E:
         message = f'Failed to initiate validation. See the prompt for more details'
         traceback.print_tb(E.__traceback__)
-        alert_text(message, state)
+        alert_text(message, state_globals)
 
 
-def get_validation_output_path(state, validation_type):
+def get_validation_output_path(state_globals, validation_type):
     validation_output_path = os.path.join(
-        state["external"]["mapped_lims_location"],
+        state_globals["external"]["mapped_lims_location"],
         validation_type + '_validation_results.json'
     )
     return validation_output_path
 
 
-def get_validation_params_path(state, validation_type):
+def get_validation_params_path(state_globals, validation_type):
     validation_params_path = False
     try:
         validation_params_path = os.path.join(config['validation']['params_directory'],
@@ -2338,17 +2340,17 @@ def get_validation_params_path(state, validation_type):
         default = os.path.join(dir_path, validation_type + '_params.json')
         if validation_params_path:
             message = f'Failed to find validtaion params file at path from config: {validation_params_path}\n\n Using default {default} instead'
-            # alert_text(message, state)
+            # alert_text(message, state_globals)
             print(message)
         validation_params_path = default
     return validation_params_path
 
 
-def get_file_paths_path(state, validation_type):
-    return os.path.join(state['external']['local_lims_location'], validation_type + '_file_paths.json')
+def get_file_paths_path(state_globals, validation_type):
+    return os.path.join(state_globals['external']['local_lims_location'], validation_type + '_file_paths.json')
 
 
-def run_validation(state, validation_type):
+def run_validation(state_globals, validation_type):
     # run QC script
     try:
         env_name = config['validation']['environment']
@@ -2363,25 +2365,25 @@ def run_validation(state, validation_type):
         default = r"C:\Users\svc_neuropix\Documents\GitHub\NP_pipeline_validation\run_validation_functions.py"
         if functions_path:
             message = f'Failed to find validtaion functions file at path from config: {functions_path}\n\n Using default {default} instead'
-            # alert_text(message, state)
+            # alert_text(message, state_globals)
             print(message)
         functions_path = default
 
-    params_path = get_validation_params_path(state, validation_type)
-    file_paths_path = get_file_paths_path(state, validation_type)
-    make_validation_path_json(state, file_paths_path)
-    validation_output_path = get_validation_output_path(state, validation_type)
+    params_path = get_validation_params_path(state_globals, validation_type)
+    file_paths_path = get_file_paths_path(state_globals, validation_type)
+    make_validation_path_json(state_globals, file_paths_path)
+    validation_output_path = get_validation_output_path(state_globals, validation_type)
     print(validation_output_path)
 
-    run_np_validation(state, env_name, functions_path, params_path, file_paths_path, validation_output_path)
+    run_np_validation(state_globals, env_name, functions_path, params_path, file_paths_path, validation_output_path)
 
     # change session_name back
 
 
-def get_validation_results(state, validation_type):
+def get_validation_results(state_globals, validation_type):
     failed = {}
     try:
-        validation_output_path = get_validation_output_path(state, validation_type)
+        validation_output_path = get_validation_output_path(state_globals, validation_type)
         with open(validation_output_path, 'r') as f:
             validation_results = json.load(f)
         print(validation_results)
@@ -2397,11 +2399,11 @@ def get_validation_results(state, validation_type):
     return failed
 
 
-def make_validation_path_json(state, write_path):
-    add_new_files(state)
-    add_probe_dirs(state)
+def make_validation_path_json(state_globals, write_path):
+    add_new_files(state_globals)
+    add_probe_dirs(state_globals)
     file_paths = {
-        'file_paths': state['file_paths_dict']
+        'file_paths': state_globals['file_paths_dict']
     }
 
     with open(write_path, 'w') as out:
@@ -2410,27 +2412,27 @@ def make_validation_path_json(state, write_path):
     return write_path
 
 
-def init_files(state):
-    if not ('file_paths_dict' in state):
-        state['file_paths_dict'] = {}
-    if not ('files_dict' in state):
-        state['files_dict'] = {}
+def init_files(state_globals):
+    if not ('file_paths_dict' in state_globals):
+        state_globals['file_paths_dict'] = {}
+    if not ('files_dict' in state_globals):
+        state_globals['files_dict'] = {}
 
 
-def add_new_files(state, manifest=False):
-    files_dict, file_paths_dict = get_new_files(state, manifest)
-    init_files(state)
-    state['files_dict'].update(files_dict)
-    state['file_paths_dict'].update(file_paths_dict)
+def add_new_files(state_globals, manifest=False):
+    files_dict, file_paths_dict = get_new_files(state_globals, manifest)
+    init_files(state_globals)
+    state_globals['files_dict'].update(files_dict)
+    state_globals['file_paths_dict'].update(file_paths_dict)
 
 
-def get_new_files(state, manifest=False):
+def get_new_files(state_globals, manifest=False):
     file_extensions_dict = create_file_extensions_dict()
     files_dict = {}
     file_paths_dict = {}
     try:
-        data_location = state['external']['local_lims_location']
-        session_name = state['external']["session_name"]
+        data_location = state_globals['external']['local_lims_location']
+        session_name = state_globals['external']["session_name"]
         for suffix, params in file_extensions_dict.items():
             name = params.lims_key
             try:
@@ -2445,9 +2447,9 @@ def get_new_files(state, manifest=False):
                         ### would read the pkl here but don't want to add pkl as dependnecy...
                         #with open()
                         #foraging_id =
-                        #state['external']['foraging_id'] = foraging_id
-                        #if not(foraging_id in state['external']['foraging_id_list']):
-                        #    state['external']['foraging_id_list'].append(foraging_id)
+                        #state_globals['external']['foraging_id'] = foraging_id
+                        #if not(foraging_id in state_globals['external']['foraging_id_list']):
+                        #    state_globals['external']['foraging_id_list'].append(foraging_id)
                     if name is None:
                         name = 'platform_json'
                     else:
@@ -2471,27 +2473,27 @@ def get_new_files(state, manifest=False):
     return files_dict, file_paths_dict
 
 
-def add_probe_dirs(state, manifest=False):
-    files_dict, file_paths_dict = get_probe_dirs(state, manifest)
-    init_files(state)
-    state['files_dict'].update(files_dict)
-    state['file_paths_dict'].update(file_paths_dict)
+def add_probe_dirs(state_globals, manifest=False):
+    files_dict, file_paths_dict = get_probe_dirs(state_globals, manifest)
+    init_files(state_globals)
+    state_globals['files_dict'].update(files_dict)
+    state_globals['file_paths_dict'].update(file_paths_dict)
 
 
-def get_probe_dirs(state, manifest=False):
+def get_probe_dirs(state_globals, manifest=False):
     slots_in_manifest = []
     files_dict = {}
     file_paths_dict = {}
-    for probe in state["external"]["probe_list"]:
+    for probe in state_globals["external"]["probe_list"]:
         try:
-            if not (state["external"]["PXI"]):
-                probe_dir = f'{state["openephys_drives"][probe]}/{state["external"]["session_name"]}_probe{probe}'
+            if not (state_globals["external"]["PXI"]):
+                probe_dir = f'{state_globals["openephys_drives"][probe]}/{state_globals["external"]["session_name"]}_probe{probe}'
                 if os.path.isdir(probe_dir):
                     lims_key = f"ephys_raw_data_probe_{probe}"
-                    if [f"probe_{probe}_surface"] in state["external"] and state["external"][
+                    if [f"probe_{probe}_surface"] in state_globals["external"] and state_globals["external"][
                         f"probe_{probe}_surface"]:
                         files_dict[lims_key] = {
-                            "directory_name": f'{state["external"]["session_name"]}_probe{probe}'
+                            "directory_name": f'{state_globals["external"]["session_name"]}_probe{probe}'
                         }
                         file_paths_dict[lims_key] = probe_dir
                         if manifest:
@@ -2504,16 +2506,16 @@ def get_probe_dirs(state, manifest=False):
                     if manifest:
                         print(f"Probe directory not found at {probe_dir}\n")
             else:
-                a_probe = list(state["external"]["probe_list"].keys())[0]
-                computer, x = os.path.split(state["openephys_drives"][a_probe])
+                a_probe = list(state_globals["external"]["probe_list"].keys())[0]
+                computer, x = os.path.split(state_globals["openephys_drives"][a_probe])
                 computer = r"\\" + computer.split(r"/")[2]
                 # print("computer:" + computer + ", tail:" + x)
-                slot = state["external"]["probe_list"][probe]
+                slot = state_globals["external"]["probe_list"][probe]
                 dirname = (
-                    state["external"]["session_name"] + "_" + state["external"]["probes_in_slot"][slot]
+                    state_globals["external"]["session_name"] + "_" + state_globals["external"]["probes_in_slot"][slot]
                 )
-                drive = state["external"]["PXI"][slot]
-                probe_dir, computer = get_probeDir(state, slot, drive)  # os.path.join(computer, drive, dirname)
+                drive = state_globals["external"]["PXI"][slot]
+                probe_dir, computer = get_probeDir(state_globals, slot, drive)  # os.path.join(computer, drive, dirname)
                 if os.path.isdir(probe_dir):
                     name = f"ephys_raw_data_probe_{probe}"
                     dirname = os.path.split(probe_dir)[1]
@@ -2535,7 +2537,7 @@ def get_probe_dirs(state, manifest=False):
     return files_dict, file_paths_dict
 
 
-def get_sync_location(state):
+def get_sync_location(state_globals):
     latest = ''
     try:
         # the following is a tempo stop gap to find the latest sync file
@@ -2552,19 +2554,19 @@ def get_sync_location(state):
 
         print('latest file is', latest)
     except Exception as E:
-        print_error(state, E)
+        print_error(state_globals, E)
         message = 'Unable to get sync file location'
-        alert_text(message, state)
+        alert_text(message, state_globals)
     return latest
 
 
-def move_files(state):
+def move_files(state_globals):
     try:
         # the following is a tempo stop gap to find the latest sync file
 
-        latest = get_sync_location(state)
+        latest = get_sync_location(state_globals)
 
-        proxy = state['component_proxies']['Sync']
+        proxy = state_globals['component_proxies']['Sync']
         try:
             # proxy.stop()
 
@@ -2572,13 +2574,13 @@ def move_files(state):
             dirname, filename = os.path.split(latest)
             extension = os.path.splitext(filename)[1]
             timestamp = dt.now().strftime('%Y%m%d%H%M%S')
-            session_ID = state['external']['session_name']
+            session_ID = state_globals['external']['session_name']
             new_path = os.path.join(dirname, f'{session_ID}_{timestamp}{extension}')
             sync_finished = False
             # MARKER
             message = wfltk_msgs.state_busy(message="Waiting for sync copy to complete.")
-            state["resources"]["io"].write(message)
-            sync_proxy = state["component_proxies"]["Sync"]
+            state_globals["resources"]["io"].write(message)
+            sync_proxy = state_globals["component_proxies"]["Sync"]
             time.sleep(3)  # wait for the stimulus to start ... (gross)
             logging.info('Attempting to get SYNC state')
 
@@ -2590,79 +2592,79 @@ def move_files(state):
                     if state[0] == "READY":
                         time.sleep(1)
                         logging.info('SYNC is READY, copying files.')
-                        latest = get_sync_location(state)
+                        latest = get_sync_location(state_globals)
                         logging.info(f'Latest {latest}')
-                        if file_created_after_experiment_start(state, latest, modified=True):
-                            copy_to = os.path.join(state["external"]["local_lims_location"],
-                                                                   f'{state["external"]["session_name"]}.sync')
+                        if file_created_after_experiment_start(state_globals, latest, modified=True):
+                            copy_to = os.path.join(state_globals["external"]["local_lims_location"],
+                                                                   f'{state_globals["external"]["session_name"]}.sync')
 
                             logging.info(f'Copying {latest} to {copy_to}')
                             proxy.copy_arbitrary_file(latest, copy_to)
-                            state['external']['status_message'] = 'success'
+                            state_globals['external']['status_message'] = 'success'
                         logging.info(f'renaming {latest} to {new_path}')
                         os.rename(latest, new_path)
                         break
                 except zmq.error.Again:
-                    alert_text('Error communicating with sync.  Sync files might not be copied', state)
+                    alert_text('Error communicating with sync.  Sync files might not be copied', state_globals)
                     logging.error('Error communicating with sync.  Sync files might not be copied')
                     break
                 except Exception as e:
-                    alert_text('Error handling sync file copy.', state)
+                    alert_text('Error handling sync file copy.', state_globals)
                     logging.error(f'Error handling sync file copy: {e}')
                 finally:
                     logging.info('Done checking SYNC state')
             #import pdb; pdb.set_trace()
             message = wfltk_msgs.state_ready(message="Sync file copy complete.")
             logging.info('SYNC file copy complete')
-            state["resources"]["io"].write(message)
+            state_globals["resources"]["io"].write(message)
 
         except Exception as e:
             logging.info(f'Sync end failure:{e}!')
-            state['external']['status_message'] = f'Sync copy failure:{e}'
-            state['external']['component_status']["Sync"] = False
+            state_globals['external']['status_message'] = f'Sync copy failure:{e}'
+            state_globals['external']['component_status']["Sync"] = False
     except Exception as e:
         logging.info(f'Sync proxy failure:{e}!')
-        state['external']['status_message'] = f'Sync proxy failure:{e}'
-        state['external']['component_status']["Sync"] = False
+        state_globals['external']['status_message'] = f'Sync proxy failure:{e}'
+        state_globals['external']['component_status']["Sync"] = False
 
     # copy the eyetracking file
     # try:
-    #    proxy = state['component_proxies']['VideoMon']
+    #    proxy = state_globals['component_proxies']['VideoMon']
     #    try:
-    #        proxy.copy_arbitrary_file((state['external']['videomon_file_path'] + '-1.avi'),
-    #                                  state['external']['eyetracking_file_path'])
+    #        proxy.copy_arbitrary_file((state_globals['external']['videomon_file_path'] + '-1.avi'),
+    #                                  state_globals['external']['eyetracking_file_path'])
     #        # proxy.stop_display()
-    #        state['external']['status_message'] = 'success'
+    #        state_globals['external']['status_message'] = 'success'
     #    except Exception as e:
     #        print(f'VideoMon eyetracking file copy failure:{e}!')
-    #        state['external']['status_message'] = f'Videomon stop failure:{e}'
-    #        state['external']['component_status']["VideoMon"] = False
+    #        state_globals['external']['status_message'] = f'Videomon stop failure:{e}'
+    #        state_globals['external']['component_status']["VideoMon"] = False
     # except Exception as e:
     #    print(f'VideoMon proxy failure:{e}!')
-    #    state['external']['status_message'] = f'Videomon proxy failure:{e}'
-    #    state['external']['component_status']["VideoMon"] = False
+    #    state_globals['external']['status_message'] = f'Videomon proxy failure:{e}'
+    #    state_globals['external']['component_status']["VideoMon"] = False
 
     # send the path to the Notes App for saving the JSON file
 
-    state['external']['summary_comment'] = 'None'
+    state_globals['external']['summary_comment'] = 'None'
 
-    newstep_file_path = os.path.join(state['external']['local_lims_location'],
-                                     f'{state["external"]["session_name"]}.motor-locs.csv')
+    newstep_file_path = os.path.join(state_globals['external']['local_lims_location'],
+                                     f'{state_globals["external"]["session_name"]}.motor-locs.csv')
 
     try:
-        proxy = state['component_proxies']['Notes']
+        proxy = state_globals['component_proxies']['Notes']
         try:
-            # result = proxy.copyMLog(str(state["external"]["mapped_lims_location"]),
-            #                        str(state["external"]["session_name"]))
+            # result = proxy.copyMLog(str(state_globals["external"]["mapped_lims_location"]),
+            #                        str(state_globals["external"]["session_name"]))
             print('Now copying mlog')
-            copymlog(state)
+            copymlog(state_globals)
         except Exception as e:
             print(f'Notes copy log failure:{e}!')
     except Exception as e:
         print(f'Notes proxy failure:{e}!')
 
 
-def get_mlog_location(state):
+def get_mlog_location(state_globals):
     location = False
     try:
         host = r'\\' + config['MVR']['host']
@@ -2672,35 +2674,35 @@ def get_mlog_location(state):
         default = os.path.join(host, r'C\MPM_data\log.csv')
         if location:
             message = f'Failed to find mlog file at path from config: {location}\n\n Using default {default} instead'
-            # alert_text(message, state)
+            # alert_text(message, state_globals)
             print(message)
         location = default
         print(f'mlog location {location}')
     return location
 
 
-def rename_mlog(state):
+def rename_mlog(state_globals):
     try:
-        old_fullpath = get_mlog_location(state)
+        old_fullpath = get_mlog_location(state_globals)
         destination = os.path.split(old_fullpath)[0]
         extension = os.path.splitext(old_fullpath)[1]
         timestamp = dt.now().strftime('%Y%m%d%H%M%S')
         new_fullpath = os.path.join(destination, timestamp + extension)
         shutil.copy2(old_fullpath, new_fullpath)
     except Exception as E:
-        print_error(state, E)
+        print_error(state_globals, E)
         message = 'A failure occured while trying to rename the newscale log, Check location and permissions'
-        alert_text(message, state)
+        alert_text(message, state_globals)
 
 
-def copymlog(state):
+def copymlog(state_globals):
     print('entered copymlog')
     try:
-        original_fullpath = get_mlog_location(state)
+        original_fullpath = get_mlog_location(state_globals)
         source, filename = os.path.split(original_fullpath)
-        destination = state["external"]["mapped_lims_location"]
+        destination = state_globals["external"]["mapped_lims_location"]
         command_string = f"robocopy {source} {destination} {filename} /e /xo"
-        session_type = state['external']['session_type']
+        session_type = state_globals['external']['session_type']
         process_name = 'mlog_copy_process' + session_type
         print(f'copying from filename {filename} source {source} to destination {destination}')
         if not (process_name in global_processes):
@@ -2711,71 +2713,71 @@ def copymlog(state):
                 print(E)
                 logging.debug(E)
             old_fullpath = os.path.join(destination, filename)
-            new_fullpath = os.path.join(destination, state["external"]["session_name"] + ".motor-locs.csv")
+            new_fullpath = os.path.join(destination, state_globals["external"]["session_name"] + ".motor-locs.csv")
             print(f'renaming file from {old_fullpath} to destination {new_fullpath}')
             if not (os.path.exists(new_fullpath)):
                 os.rename(old_fullpath, new_fullpath)
     except Exception as E:
-        print_error(state, E)
+        print_error(state_globals, E)
         message = 'A failure occured while trying to copy and rename the newscale log, Check location and permissions'
-        alert_text(message, state)
+        alert_text(message, state_globals)
 
 
-def save_notes(state):
+def save_notes(state_globals):
     try:
-        proxy = state['component_proxies']['Notes']
+        proxy = state_globals['component_proxies']['Notes']
 
         try:
-            result = proxy.saveFile(str(state["external"]["mapped_lims_location"]),
-                                    str(state["external"]["session_name"]))
-            state["external"]["local_surgery_notes_location"] = os.path.join(
-                state["external"]["local_lims_location"], result)
-            state["external"]["surgery_notes_name"] = result
-            state['external']['status_message'] = 'success'
-            state['external']['component_status']["Notes"] = True
+            result = proxy.saveFile(str(state_globals["external"]["mapped_lims_location"]),
+                                    str(state_globals["external"]["session_name"]))
+            state_globals["external"]["local_surgery_notes_location"] = os.path.join(
+                state_globals["external"]["local_lims_location"], result)
+            state_globals["external"]["surgery_notes_name"] = result
+            state_globals['external']['status_message'] = 'success'
+            state_globals['external']['component_status']["Notes"] = True
         except Exception as e:
             print(f'Notes save failure:{e}!')
-            state['external']['status_message'] = f'Notes saveFile Failure:{e}'
-            state['external']['component_status']["Notes"] = False
+            state_globals['external']['status_message'] = f'Notes saveFile Failure:{e}'
+            state_globals['external']['component_status']["Notes"] = False
     except Exception as e:
         print(f'Notes proxy failure:{e}!')
-        state['external']['status_message'] = f'Notes Proxy Failure:{e}'
-        state['external']['component_status']["Notes"] = False
+        state_globals['external']['status_message'] = f'Notes Proxy Failure:{e}'
+        state_globals['external']['component_status']["Notes"] = False
 
 
-def overrideable_error_state(state, retry_state, override_state=None, message=None):
+def overrideable_error_state(state_globals, retry_state, override_state=None, message=None):
     if override_state is None:
         print('override_state' + override_state)
-        override_state = state['external']['next_state']
+        override_state = state_globals['external']['next_state']
         print('override_state' + override_state)
-    if not (state['external']['next_state'] == 'overrideable_error_state'):
-        state['external']['retry_state'] = retry_state
-        state['external']['override_state'] = override_state
-        state['external']['next_state'] = 'overrideable_error_state'
+    if not (state_globals['external']['next_state'] == 'overrideable_error_state'):
+        state_globals['external']['retry_state'] = retry_state
+        state_globals['external']['override_state'] = override_state
+        state_globals['external']['next_state'] = 'overrideable_error_state'
     if message:
-        alert_text(message, state)
+        alert_text(message, state_globals)
 
 
-def overrideable_error_state_input(state):
-    retry = state['external']['retry_state']
-    override = state['external']['override_state']
-    handle_2_choice_button('retry', retry, override, state)
+def overrideable_error_state_input(state_globals):
+    retry = state_globals['external']['retry_state']
+    override = state_globals['external']['override_state']
+    handle_2_choice_button('retry', retry, override, state_globals)
 
 
-def overrideable_error_state_exit(state):
-    # state["external"].pop("msg_text")
+def overrideable_error_state_exit(state_globals):
+    # state_globals["external"].pop("msg_text")
     pass
 
 
-def check_experiment_foraging_id(state):
+def check_experiment_foraging_id(state_globals):
     return {'foraging_id': 'Could not confirm that the foraging ID matches the one for the behavior pkl'}
 
 
-def check_experiment_stimulus_pkls(state):
+def check_experiment_stimulus_pkls(state_globals):
     return {}
 
 
-def alert_from_error_dict(state, failure_dict, primary_key=None, suppress_alert=False):
+def alert_from_error_dict(state_globals, failure_dict, primary_key=None, suppress_alert=False):
     total_failure_count = len(failure_dict)
     eye_grabbing_prompt_message = '\n' + '_' * 50 + '\n{}: {}\n' + '_' * 50
 
@@ -2818,7 +2820,7 @@ def alert_from_error_dict(state, failure_dict, primary_key=None, suppress_alert=
     else:
         detailed_message = f'{first_message}. \n\nThere were no other failures'
     if not (suppress_alert):
-        alert_text(detailed_message, state, log_message=False)
+        alert_text(detailed_message, state_globals, log_message=False)
     for name, message in failure_dict.items():
         full_string = eye_grabbing_prompt_message.format(name, message)
         logging.debug(f'a validation check failed: {name}')
@@ -2865,18 +2867,18 @@ def get_from_config(key_list, default=''):
         join_str = '"]["'
         message = f'Failed to find ["{join_str.join(key_list)}"] in  config. Using default {default} instead'
         print(message)
-        # alert_text(message, state)
+        # alert_text(message, state_globals)
         field = default
     return field
 
 
-def settle_timer_enter(state, wait_time=300):
+def settle_timer_enter(state_globals, wait_time=300):
     stop_time = dt.now()
-    time_elapsed = (stop_time - state["resources"]["final_depth_timer_start"]).total_seconds()
+    time_elapsed = (stop_time - state_globals["resources"]["final_depth_timer_start"]).total_seconds()
     total_seconds = max(0, wait_time - time_elapsed)
-    state['external']['settle_time_remaining_num'] = total_seconds
-    state['external']['settle_time_remaining'] = convert_seconds_to_time_string(total_seconds)
-    state["external"]["final_depth_timer_seconds"] = convert_seconds_to_time_string(wait_time)
+    state_globals['external']['settle_time_remaining_num'] = total_seconds
+    state_globals['external']['settle_time_remaining'] = convert_seconds_to_time_string(total_seconds)
+    state_globals["external"]["final_depth_timer_seconds"] = convert_seconds_to_time_string(wait_time)
     print('the total seconds remaining =', total_seconds)
 
 
@@ -2892,28 +2894,28 @@ def convert_seconds_to_time_string(seconds):
     return string
 
 
-def save_platform_json(state, manifest=False):
-    state["external"]["test_lims_incoming_location"] = "C:/test_lims_incoming"
-    state["external"]["test_lims_trigger_location"] = "C:/ProgramData/AIBS_MPE/neuropixels/lims_trigger"
-    state["external"]["platform_json_save_time"] = dt.now().strftime('%Y%m%d%H%M%S')
+def save_platform_json(state_globals, manifest=False):
+    state_globals["external"]["test_lims_incoming_location"] = "C:/test_lims_incoming"
+    state_globals["external"]["test_lims_trigger_location"] = "C:/ProgramData/AIBS_MPE/neuropixels/lims_trigger"
+    state_globals["external"]["platform_json_save_time"] = dt.now().strftime('%Y%m%d%H%M%S')
     if manifest:
-        state["external"]["manifest_creation_time"] = dt.now().strftime('%Y%m%d%H%M%S')
+        state_globals["external"]["manifest_creation_time"] = dt.now().strftime('%Y%m%d%H%M%S')
 
-    platform = get_platform_fields(state, manifest)
+    platform = get_platform_fields(state_globals, manifest)
 
     # create files dict for everything to be added to the platform json
 
     lims_session = False
     if manifest:
         # do the LIMS TK stuff here...this is for pushing to the real lims directories
-        lims_session = limstk.Session("neuropixel", "neuropixels", id=state["external"]["ecephys_session_id"])
-        lims_session.path_data["trigger_dir"] = state["external"]["trigger_dir"]
-        lims_session.path_data["location"] = state["external"]["lims_location"]
+        lims_session = limstk.Session("neuropixel", "neuropixels", id=state_globals["external"]["ecephys_session_id"])
+        lims_session.path_data["trigger_dir"] = state_globals["external"]["trigger_dir"]
+        lims_session.path_data["location"] = state_globals["external"]["lims_location"]
         print(
-            f'Doing Real LIMS upload to location:{state["external"]["lims_location"]} '
-            f'trigger_dir:{state["external"]["trigger_dir"]}'
+            f'Doing Real LIMS upload to location:{state_globals["external"]["lims_location"]} '
+            f'trigger_dir:{state_globals["external"]["trigger_dir"]}'
         )
-        lims_session.trigger_data["sessionid"] = state["external"]["ecephys_session_id"]
+        lims_session.trigger_data["sessionid"] = state_globals["external"]["ecephys_session_id"]
         lims_session.trigger_data["location"] = lims_session.path_data["location"]
 
     error = False
@@ -2923,17 +2925,17 @@ def save_platform_json(state, manifest=False):
 
     # do this for real now
 
-    add_new_files(state, manifest=lims_session)
-    add_probe_dirs(state, manifest=lims_session)
+    add_new_files(state_globals, manifest=lims_session)
+    add_probe_dirs(state_globals, manifest=lims_session)
 
-    platform["files"] = state['files_dict']
+    platform["files"] = state_globals['files_dict']
     # Add the files_dict to the plaftorm json
 
     # And now dump everything into the platform json file
-    if 'local_lims_location' in state["external"]:
+    if 'local_lims_location' in state_globals["external"]:
         platform_file_path = os.path.join(
-            state["external"]["local_lims_location"],
-            f'{state["external"]["session_name"]}_platformD1.json'
+            state_globals["external"]["local_lims_location"],
+            f'{state_globals["external"]["session_name"]}_platformD1.json'
         )
 
         # make the platform json human readable
@@ -2945,16 +2947,16 @@ def save_platform_json(state, manifest=False):
             write_file.close()
         except Exception as E:
             message = 'Unable to write platform json. Is the data directory acessible (shared if necessary) with the necessary permissions?'
-            alert_text(message, state)
+            alert_text(message, state_globals)
 
     # and now add this to the trigger file
 
     # create the sync report file
     if manifest:
         lims_session.add_to_manifest(platform_file_path)
-        # create_sync_report(state, lims_session)
+        # create_sync_report(state_globals, lims_session)
 
-        trigger_file_name = f'{state["external"]["session_name"]}'
+        trigger_file_name = f'{state_globals["external"]["session_name"]}'
         print(f">>>> trigger_file_name:{trigger_file_name}")
 
         time.sleep(1)
@@ -2964,16 +2966,16 @@ def save_platform_json(state, manifest=False):
             print(f"lims session error:{e}")
 
 
-def create_sync_report(state, lims_session):
+def create_sync_report(state_globals, lims_session):
     try:
-        sync_report_name = f'{state["external"]["session_name"]}_report.pdf'
-        sync_report_path = os.path.join(state["external"]["local_lims_location"], sync_report_name)
+        sync_report_name = f'{state_globals["external"]["session_name"]}_report.pdf'
+        sync_report_path = os.path.join(state_globals["external"]["local_lims_location"], sync_report_name)
         kill_open_report()
         # TODO this doesn't work
     except Exception as E:
         print("Failed to kill the sync report")
     try:
-        sync_report = NeuropixelsReport(state["external"]["local_lims_location"])
+        sync_report = NeuropixelsReport(state_globals["external"]["local_lims_location"])
         sync_report.to_pdf(sync_report_path)
     except Exception as E:
         pass
@@ -2988,7 +2990,7 @@ def create_sync_report(state, lims_session):
         pass
 
 
-def get_platform_fields(state, manifest=False):
+def get_platform_fields(state_globals, manifest=False):
     # create the platform JSON file
 
     # print("Getting platform fields")
@@ -3031,145 +3033,145 @@ def get_platform_fields(state, manifest=False):
         "wheel_height": '',
     }
 
-    def platform_failed_message(name, manifest, state=None):
+    def platform_failed_message(name, manifest, state_globals=None):
         message = f'Failed to include {name} in the platform json...'
-        if manifest and (state and not ('hab' in state['external']['session_type'].lower())):
+        if manifest and (state_globals and not ('hab' in state_globals['external']['session_type'].lower())):
             logging.debug(message)
             # alert_text(message)
             print(message)
 
-    for platform_key, state_external_key in platform_fields_mapping.items():
+    for platform_key, state_globals_external_key in platform_fields_mapping.items():
         try:
-            if state_external_key == '':
-                state_external_key = platform_key
-            value = state['external'][state_external_key]
-            # print(f'Field found... {state_external_key} = {value}')
+            if state_globals_external_key == '':
+                state_globals_external_key = platform_key
+            value = state_globals['external'][state_globals_external_key]
+            # print(f'Field found... {state_globals_external_key} = {value}')
             if not (value is None):
                 # if '/' in value:
-                #    print(f'Whoops, we found a slash... {state_external_key} = {value}')
+                #    print(f'Whoops, we found a slash... {state_globals_external_key} = {value}')
                 platform[platform_key] = value
         except Exception as E:
-            platform_failed_message(platform_key, manifest, state)
+            platform_failed_message(platform_key, manifest, state_globals)
 
     try:
-        platform['workflow'] = state['resources']['workflow']['import']
+        platform['workflow'] = state_globals['resources']['workflow']['import']
     except Exception as E:
-        platform_failed_message('workflow', manifest, state)
+        platform_failed_message('workflow', manifest, state_globals)
 
     try:
-        platform["wfl_version"] = state["resources"]["workflow"]["wfl_version"]
+        platform["wfl_version"] = state_globals["resources"]["workflow"]["wfl_version"]
     except Exception as E:
-        platform_failed_message('wfl_version', manifest, state)
+        platform_failed_message('wfl_version', manifest, state_globals)
     # add the hardware configuration]
     try:
-        platform["HardwareConfiguration"] = state["hardware_config"]
+        platform["HardwareConfiguration"] = state_globals["hardware_config"]
     except Exception as E:
-        platform_failed_message('HardwareConfiguration', manifest, state)
+        platform_failed_message('HardwareConfiguration', manifest, state_globals)
 
     return platform
 
 
-def water_mouse_enter(state):
-    mouse_weight = float(state['external']['mouse_weight_post'])
-    get_water_supplement(state, mouse_weight)
+def water_mouse_enter(state_globals):
+    mouse_weight = float(state_globals['external']['mouse_weight_post'])
+    get_water_supplement(state_globals, mouse_weight)
 
 
-def water_mouse_input(state):
+def water_mouse_input(state_globals):
     print('npxc.water_mouse_enter')
-    state['external']['next_state'] = 'check_files1'
-    print(state['external']['next_state'])
-    handle_2_choice_button('overwrite_fid', 'foraging_ID_error', 'check_files1', state)
+    state_globals['external']['next_state'] = 'check_files1'
+    print(state_globals['external']['next_state'])
+    handle_2_choice_button('overwrite_fid', 'foraging_ID_error', 'check_files1', state_globals)
 
-    if not (state['external']['foraging_id']):
-        state['external']['next_state'] = 'foraging_ID_error'
-        print(state['external']['next_state'])
+    if not (state_globals['external']['foraging_id']):
+        state_globals['external']['next_state'] = 'foraging_ID_error'
+        print(state_globals['external']['next_state'])
 
 
-def water_mouse_exit(state):
-    if not ('session_finalized' in state['external']) or not (state['external']['session_finalized']):
+def water_mouse_exit(state_globals):
+    if not ('session_finalized' in state_globals['external']) or not (state_globals['external']['session_finalized']):
         try:
-            mouse_director_proxy.set_user_id(state["external"]["user_id"])
-            mouse_director_proxy.set_mouse_id(state["external"]["mouse_id"])
+            mouse_director_proxy.set_user_id(state_globals["external"]["user_id"])
+            mouse_director_proxy.set_mouse_id(state_globals["external"]["mouse_id"])
             # TODO @Ross I've decided to leave these together. If the mouse ID is incorrect then we shouldn't finalize automatically
             # What we should really do is grab all the values since thats the only way to know if they are set properly -
-            # assert(mouse_director_proxy.get_user_id() == state["external"]["user_id"]
-            # assert(mouse_director_proxy.get_mouse_id() == state["external"]["mouse_id"]
-            # assert(mouse_director_proxy.get_mouse_weight() == state["external"]["mouse_weight_post"]
+            # assert(mouse_director_proxy.get_user_id() == state_globals["external"]["user_id"]
+            # assert(mouse_director_proxy.get_mouse_id() == state_globals["external"]["mouse_id"]
+            # assert(mouse_director_proxy.get_mouse_weight() == state_globals["external"]["mouse_weight_post"]
             mouse_director_proxy.finalize_session('')
-            state['external']['session_finalized'] = True
+            state_globals['external']['session_finalized'] = True
 
         except Exception as E:
             message = 'Unable to finalize session. Please check the user ID, mouse ID and mosue weight and then finalize the session manually'
-            overrideable_error_state(state, 'water_mouse', override_state='check_files1', message=message)
+            overrideable_error_state(state_globals, 'water_mouse', override_state='check_files1', message=message)
     else:
         message = 'The WSE already finalized the session, so it did not attempt to finalize again.'
-        alert_text(message, state)
-    move_files(state)
-    save_notes(state)
-    save_platform_json(state, manifest=False)
+        alert_text(message, state_globals)
+    move_files(state_globals)
+    save_notes(state_globals)
+    save_platform_json(state_globals, manifest=False)
 
 
-def foraging_ID_error_input(state):
-    if not (state['external']['foraging_id']):
-        state['external']['next_state'] = 'foraging_ID_error'
-        handle_2_choice_button('retry', 'foraging_ID_error', 'check_files1', state)
+def foraging_ID_error_input(state_globals):
+    if not (state_globals['external']['foraging_id']):
+        state_globals['external']['next_state'] = 'foraging_ID_error'
+        handle_2_choice_button('retry', 'foraging_ID_error', 'check_files1', state_globals)
     else:
-        state['external']['next_state'] = 'check_files1'
+        state_globals['external']['next_state'] = 'check_files1'
 
 
-def load_mouse_enter(state):
-    if 'first' in state['external']['full_session_type']:
+def load_mouse_enter(state_globals):
+    if 'first' in state_globals['external']['full_session_type']:
         message = ("Since this is the first session you will have to "
                    "determine the wheel height for this mouse. "
                    "Set something that looks comfortable now, but plan to adjust during the expeirment")
-        alert_text(message, state)
-    elif not ('wheel_height' in state['external']):
+        alert_text(message, state_globals)
+    elif not ('wheel_height' in state_globals['external']):
         message = ("No wheel height found you will have to "
                    "determine the wheel height for this mouse. "
                    "Set something that looks comfortable now, but plan to adjust during the expeirment")
-        alert_text(message, state)
+        alert_text(message, state_globals)
 
-    if '1_day_before' in state['external']['full_session_type']:
+    if '1_day_before' in state_globals['external']['full_session_type']:
         message = ("Since you are tapping the coverslip with the probes today, "
                    "it is particularly important to make sure that the coverslip is cleaned")
-        alert_text(message, state)
+        alert_text(message, state_globals)
 
 
-    if 'day2' in state['external']['full_session_type'].lower():
-        alert_text('Remove extra agarose and ensure adequate silicon oil.', state)
+    if 'day2' in state_globals['external']['full_session_type'].lower():
+        alert_text('Remove extra agarose and ensure adequate silicon oil.', state_globals)
 
-def load_mouse_behavior(state):
+def load_mouse_behavior(state_globals):
     try:
         print('Attempting to send mouse ID to mouse director')
-        mouse_director_proxy.set_mouse_id(state["external"]["mouse_id"])
+        mouse_director_proxy.set_mouse_id(state_globals["external"]["mouse_id"])
     except Exception as E:
         alert_string = f'Failed to send mouse ID to mouse director'
-        alert_text(alert_string, state)
+        alert_text(alert_string, state_globals)
 
     try:
-        state['external']['mouse_weight_pre_float'] = float(state['external']['mouse_weight_pre'])
-        print(f"Converted mouse_weight_pre sring to float - {state['external']['mouse_weight_pre_float']}")
+        state_globals['external']['mouse_weight_pre_float'] = float(state_globals['external']['mouse_weight_pre'])
+        print(f"Converted mouse_weight_pre sring to float - {state_globals['external']['mouse_weight_pre_float']}")
     except Exception as E:
         message = 'The mouse weight must be a number. Please enter a number'
         return message
     else:
-        if 'previous_mouse_weight_pre' in state['external']:
+        if 'previous_mouse_weight_pre' in state_globals['external']:
             try:
-                old_weight = float(state['external']['previous_mouse_weight_pre'])
-                new_weight = float(state['external']['mouse_weight_pre_float'])
+                old_weight = float(state_globals['external']['previous_mouse_weight_pre'])
+                new_weight = float(state_globals['external']['mouse_weight_pre_float'])
                 mouse_weight_bound = get_from_config(['mouse_weight_bound'], default=.5)
                 if abs(old_weight - new_weight) > mouse_weight_bound:
                     message = (f"It looks like the current weight {new_weight} is more than {mouse_weight_bound}"
                         f" from the weight last session of {old_weight}. Are you sure this is the right mouse?")
 
-                    overrideable_error_state(state, 'load_mouse', override_state='lower_probe_cartridge',
+                    overrideable_error_state(state_globals, 'load_mouse', override_state='lower_probe_cartridge',
                                              message=message)
             except Exception as E:
                 message = 'Unable to verify mouse weight is reasonable'
-                alert_text(message, state)
+                alert_text(message, state_globals)
         else:
             try:
-                new_weight = float(state['external']['previous_mouse_weight_pre'])
+                new_weight = float(state_globals['external']['previous_mouse_weight_pre'])
                 lower = float(get_from_config(['mouse_weight_upper_bound'], default=15))
                 upper = float(get_from_config(['mouse_weight_lower_bound'], default=35))
                 if not ((new_weight > lower) and (new_weight < upper)):
@@ -3177,41 +3179,41 @@ def load_mouse_behavior(state):
                         f"It looks like the current weight {new_weight} is more than {upper} or less than {lower}"
                         f" Are you sure it was typed correctly?")
 
-                    overrideable_error_state(state, 'load_mouse', override_state='lower_probe_cartridge',
+                    overrideable_error_state(state_globals, 'load_mouse', override_state='lower_probe_cartridge',
                                              message=message)
             except Exception as E:
                 message = 'Unable to verify mouse weight is reasonable'
-                alert_text(message, state)
+                alert_text(message, state_globals)
 
 
-def pretest_wrapup(state):
+def pretest_wrapup(state_globals):
     # wrap thing sup in the same order as the experiment without validating pkls
     session_type = 'pretest'
-    copy_stim_pkls(state, session_type)
+    copy_stim_pkls(state_globals, session_type)
 
     wait_time = get_from_config(['pretest_stream_check_wait_time'], default=12)
-    failed = check_data_stream_size(state, wait_time=wait_time)
-    # if (dt.now() - state["external"]["pretest_start_time"]).seconds > 120:
-    #    failed = check_data_stream_size(state, wait_time=15)
+    failed = check_data_stream_size(state_globals, wait_time=wait_time)
+    # if (dt.now() - state_globals["external"]["pretest_start_time"]).seconds > 120:
+    #    failed = check_data_stream_size(state_globals, wait_time=15)
     #    if 'behavior_growing' in failed:
     #        message = 'The videos may have stopped recording. Please check that they exceed 2 minutes'
-    #        alert_text(message, state, log_level=logging.INFO)
+    #        alert_text(message, state_globals, log_level=logging.INFO)
     # else:
     #    message = 'Pretest ended before 2 minutes. Unable to confirm that video was still growing after 2 minutes'
-    #    alert_text(message, state)
+    #    alert_text(message, state_globals)
 
-    stop_common_experiment_monitoring(state)
-    videomon_copy_wrapup(state)
+    stop_common_experiment_monitoring(state_globals)
+    videomon_copy_wrapup(state_globals)
 
-    move_files(state)
+    move_files(state_globals)
 
-    run_validation(state, 'pretest')
-    failed.update(get_validation_results(state, 'pretest'))
+    run_validation(state_globals, 'pretest')
+    failed.update(get_validation_results(state_globals, 'pretest'))
 
-    # failed.update(state['external']['failure_messages'])
+    # failed.update(state_globals['external']['failure_messages'])
     if failed:
-        state['external']['next_state'] = 'pretest_error'
-        alert_from_error_dict(state, failed, primary_key=False)
+        state_globals['external']['next_state'] = 'pretest_error'
+        alert_from_error_dict(state_globals, failed, primary_key=False)
 
 
 streams_message = ("It looks like one of the streams may have stopped.\n\n"
@@ -3221,25 +3223,25 @@ streams_message = ("It looks like one of the streams may have stopped.\n\n"
                      "Reinitiating from the WSE causes issues so this is disabled."
             )
 
-def monitor_experiment_input(state):
+def monitor_experiment_input(state_globals):
     """
     Input test function for state monitor_experiment
     """
     # monitor the stim process
     print("monitor_experiment input")
 
-    # state['external']['next_state'] = 'end_experiment'
-    state["external"]["transition_result"] = True
-    state["external"]["status_message"] = "success"
-    state['external']['next_state'] = 'end_experiment'
+    # state_globals['external']['next_state'] = 'end_experiment'
+    state_globals["external"]["transition_result"] = True
+    state_globals["external"]["status_message"] = "success"
+    state_globals['external']['next_state'] = 'end_experiment'
     advancing = False
-    if 'monitor_experiment' in state['external'] and state['external']['monitor_experiment']:
-        state['external']['next_state'] = 'monitor_experiment'
+    if 'monitor_experiment' in state_globals['external'] and state_globals['external']['monitor_experiment']:
+        state_globals['external']['next_state'] = 'monitor_experiment'
         failed = False
         try:
             print('Attempting to monitor experiment')
-            print(state['external']['exp_monitor_time'])
-            exp_monitor_time = float(state['external']['exp_monitor_time'])
+            print(state_globals['external']['exp_monitor_time'])
+            exp_monitor_time = float(state_globals['external']['exp_monitor_time'])
             exp_monitor_time = exp_monitor_time * 60
             print(exp_monitor_time)
         except Exception as E:
@@ -3247,70 +3249,70 @@ def monitor_experiment_input(state):
             logging.debug(message, exc_info=True)
             return message
         else:
-            failed = monitor_experiment(state, wait_time=exp_monitor_time)
+            failed = monitor_experiment(state_globals, wait_time=exp_monitor_time)
             if failed:
                 print('monitor experiment failed!')
                 print(failed)
                 for key in failed:
                     if 'camstim' in key:
-                        #npxc.alert_from_error_dict(state, error_dict)
-                        state['external']['next_state'] = 'end_experiment'
+                        #npxc.alert_from_error_dict(state_globals, error_dict)
+                        state_globals['external']['next_state'] = 'end_experiment'
                         advancing = True
 
                 #message = streams_message
-                #alert_text(message, state)
-                fail_message_1 = alert_from_error_dict(state, failed, primary_key=False)
+                #alert_text(message, state_globals)
+                fail_message_1 = alert_from_error_dict(state_globals, failed, primary_key=False)
 
     else:
         advancing = True
-        if camstim_running(state):
+        if camstim_running(state_globals):
             time.sleep(20)
-            if camstim_running(state):
+            if camstim_running(state_globals):
                 message = 'Camstim seems to be running a stimulus. are you sure the stim is done?'
-                overrideable_error_state(state, 'experiment_running_timer', override_state='end_experiment',
+                overrideable_error_state(state_globals, 'experiment_running_timer', override_state='end_experiment',
                                               message=message)
     if advancing:
         print('attempting to copy pkls')
-        session_type = state['external']['full_session_type']
+        session_type = state_globals['external']['full_session_type']
         if 'hab' in session_type:
-            session_type = state['external']['session_type']
-        copy_stim_pkls(state, session_type)
+            session_type = state_globals['external']['session_type']
+        copy_stim_pkls(state_globals, session_type)
         failed = False
         try:
-            failed = check_pkls(state, session_type)
+            failed = check_pkls(state_globals, session_type)
         except Exception as E:
             message = 'Failed to check if all pkls were produced'
-            alert_text(message, state)
+            alert_text(message, state_globals)
             traceback.print_tb(E.__traceback__)
         if failed:
-            message = alert_from_error_dict(state, failed)
-            overrideable_error_state(state, 'experiment_running_timer', override_state='end_experiment')
-    # foraging_failed = check_experiment_foraging_id(state)
-    # failure_dict = check_experiment_stimulus_pkls(state)
+            message = alert_from_error_dict(state_globals, failed)
+            overrideable_error_state(state_globals, 'experiment_running_timer', override_state='end_experiment')
+    # foraging_failed = check_experiment_foraging_id(state_globals)
+    # failure_dict = check_experiment_stimulus_pkls(state_globals)
     # failure_dict.update(foraging_failed)
-    # message = alert_from_error_dict(state, failure_dict, primary_key='foraging_id', suppress_alert=True)
-    # state['external']['next_state'] = 'end_experiment'
+    # message = alert_from_error_dict(state_globals, failure_dict, primary_key='foraging_id', suppress_alert=True)
+    # state_globals['external']['next_state'] = 'end_experiment'
     # if foraging_failed:
-    #    overrideable_error_state(state, 'experiment_running_timer', message=message)
-    #    state['external']['next_state'] = 'foraging_ID_error'
+    #    overrideable_error_state(state_globals, 'experiment_running_timer', message=message)
+    #    state_globals['external']['next_state'] = 'foraging_ID_error'
     # elif pkls_failed:
-    #    overrideable_error_state(state, 'experiment_running_timer', message=message)
-    save_platform_json(state, manifest=False)
+    #    overrideable_error_state(state_globals, 'experiment_running_timer', message=message)
+    save_platform_json(state_globals, manifest=False)
 
 
-def probes_need_cleaning(state):
+def probes_need_cleaning(state_globals):
     probes_need_cleaning = False
-    exp_yesterday = 'probes_need_cleaning' in state['external'] and state['external'][
+    exp_yesterday = 'probes_need_cleaning' in state_globals['external'] and state_globals['external'][
         'probes_need_cleaning']
     exp_later_today = dt.today().weekday() == 2
     if exp_yesterday:
         message = ("It looks like there was an experiment yesterday. "
                    "Please make sure the probes have been dipped in MilliQ water")
-        alert_text(message, state)
+        alert_text(message, state_globals)
         probes_need_cleaning = True
     if exp_later_today:
         message = ("It looks like there may be an experiment later today. "
             "Please make sure to dip the probes in MilliQ water")
-        alert_text(message, state)
+        alert_text(message, state_globals)
         probes_need_cleaning = True
     return probes_need_cleaning
