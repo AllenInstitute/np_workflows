@@ -88,8 +88,9 @@ states:
       - type: note
         desc: move probes to target coords
     inputs:
-      - state: probe_dye_photo_doc
+      - state: pre_brain_surface_photo_doc
 
+  #! skip to working photo capture
   # 9) DiI application; check bumping, photodoc, confirm dye
   probe_dye_photo_doc:
     description: Probes in dye photo doc
@@ -140,7 +141,7 @@ states:
   pre_brain_surface_photo_doc:
     description: Pre lowering brain surface photo doc
     display:
-      - field: pre_brain_surface_image
+      - field: pre_insertion_image
         type: high_res_image
         desc: Pre-insertion photo doc
       - field: snapshot_ok # This is apparently unused

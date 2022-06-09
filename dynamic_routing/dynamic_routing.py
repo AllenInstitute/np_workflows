@@ -112,10 +112,14 @@ def init_input(state):
         state["external"]["next_state"] = "get_user_id"
 
 
+def get_user_id_entry(state):
+    pass
+    
 def get_user_id_input(state):
     """
       Description: The user will input their user name and it will ve validated against the LIMS db.
     """
+    state["user_name"] = "ben.hardcastle"
 
     # external contains values coming from the UI.  "user_id" is a key specified in the wfl file.
     user_name = state["external"]["user_id"]
@@ -125,7 +129,9 @@ def get_user_id_input(state):
             state)
     state["user_name"] = user_name # It is ok to save data into the state.
 
-
+def get_mouse_id_entry(state):
+    state["external"]["mouse_id"] = "366122"
+    
 def get_mouse_id_input(state):
     """
     input function for state get_mouse_id
