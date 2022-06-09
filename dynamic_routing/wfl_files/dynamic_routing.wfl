@@ -181,7 +181,7 @@ states:
   probe_surface_photo_doc:
     description: Probes at brain surface photo doc
     display:
-      - field: pre_insertion_image
+      - field: probes_at_surface_image 
         type: high_res_image
         desc: Pre-insertion photo doc
       - field: snapshot_ok # This is apparently unused
