@@ -65,10 +65,13 @@ def connect_to_services(state):
     io.write(ephys.start_ecephys_acquisition())
     #  Here we either need to test open ephys by trying to record or we get the status message.  awaiting testing.
     global mvr
-    mvr = MVRConnector(args=config['MVR'])
-    if not mvr._mvr_connected:
-        logging.info("Failed to connect to mvr")
-        component_errors.append(f"Failed to connect to MVR on {config['MVR']}")
+    try:
+        if not mvr._mvr_connected:
+            mvr = MVRConnector(args=config['MVR'])
+            logging.info("Failed to connect to mvr")
+            component_errors.append(f"Failed to connect to MVR on {config['MVR']}")
+    except Exception:
+        component_errors.append(f"Failed to connect to MVR.")
 
     global camstim_agent
     try:
@@ -79,21 +82,22 @@ def connect_to_services(state):
         component_errors.append(f"Failed to connect to Camstim Agent.")
 
     global sync
-    service = config['sync']
-    sync = zro.Proxy(f"{service['host']}:{service['port']}", timeout=service['timeout'])
     try:
+        service = config['sync']
+        sync = zro.Proxy(f"{service['host']}:{service['port']}", timeout=service['timeout'])
         logging.info(f'Sync Uptime: {sync.uptime}')
     except Exception:
         component_errors.append(f"Failed to connect to Sync.")
 
     
     global mouse_director
-    service = config['mouse_director']
-    mouse_director = zro.Proxy(f"{service['host']}:{service['port']}", timeout=service['timeout'])
     try:
+        service = config['mouse_director']
+        mouse_director = zro.Proxy(f"{service['host']}:{service['port']}", timeout=service['timeout'])
         logging.info(f'MouseDirector Uptime: {mouse_director.uptime}')
     except Exception:
         # component_errors.append(f"Failed to connect to MouseDirector.")
+        # TODO MDir currently not working - switch this line back on when fixes
         logging.info(" ** skipping connection to MouseDirector **")
         
     
@@ -120,7 +124,8 @@ def init_input(state):
 
 def get_user_id_entry(state):
     pass
-    
+
+
 def get_user_id_input(state):
     """
       Description: The user will input their user name and it will ve validated against the LIMS db.
