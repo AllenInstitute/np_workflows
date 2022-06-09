@@ -2,6 +2,7 @@ import inspect
 import json
 import logging
 import os
+import pdb
 
 # limstk functions are auto-generated so the ide might warn it can't see them.
 import shutil
@@ -31,7 +32,6 @@ camstim_agent: zro.Proxy
 sync: zro.Proxy
 mouse_director: zro.Proxy
 
-
 def fail_state(message: str, state: dict):
     """
     This is an example of how to create a single failure reporting function.  It inspects the stack to figure out which
@@ -52,23 +52,6 @@ def fail_state(message: str, state: dict):
     state["external"]["next_state"] = state_name
     state["external"]["msg_text"] = message
     logging.warning(f"{state_name} failed: {message}")
-
-
-def wait_on_snapshot():  # you could define this outside of the state of course.
-    while True:
-        for message in mvr.read():
-            try:
-                if message.get('mvr_broadcast', False) == "snapshot_taken":
-                    drive, filepath = os.path.splitdrive(message['snapshot_filepath'])
-                    experiment.pre_brain_surface_photo = f"\\\\{config['MVR']['host']}\\{drive[0]}${filepath}"
-                    sleep(1) # MVR has responded too quickly.  It hasn't let go of the file so we must wait.
-                    dest = shutil.copy(experiment.pre_brain_surface_photo, "C:/ProgramData/AIBS_MPE/dynamic_routing")
-                    logging.info(f"Copied: {experiment.pre_brain_surface_photo} -> {dest}")
-                    return True, dest
-                elif message.get('mvr_broadcast', False) == "snapshot_failed":
-                    return False, message['error_message']
-            except Exception as e:
-                return False, e
 
 
 def init_enter(state):
@@ -132,6 +115,9 @@ def init_input(state):
         state["external"]["next_state"] = "get_user_id"
 
 
+
+
+
 def get_user_id_entry(state):
     pass
     
@@ -188,28 +174,49 @@ def get_mouse_id_input(state):
                    f"Received\n")
     logging.info(log_message, extra={"weblog": True})
 
+def mvr_capture_on_enter(state):
+    """standard mvr image snapshot func, returning error mesg or img  """
+    mvr.take_snapshot()
+    
+    success, mesg_or_img = wait_on_snapshot()
+    if not success:
+        fail_state(f"Error taking snapshot: {mesg_or_img}",state)
+    else:
+        return mesg_or_img # return the captured image
+        
+        
+    def wait_on_snapshot():  
+        while True:
+            try:
+                for message in mvr.read():
+                    if message.get('mvr_broadcast', False) == "snapshot_taken":
+                        drive, filepath = os.path.splitdrive(message['snapshot_filepath'])
+                        source_photo_path = f"\\\\{config['MVR']['host']}\\{drive[0]}${filepath}"
+                        sleep(1) # MVR has responded too quickly.  It hasn't let go of the file so we must wait.
+                        dest_photo_path = shutil.copy(source_photo_path, "C:/ProgramData/AIBS_MPE/dynamic_routing")
+                        logging.info(f"Copied: {source_photo_path} -> {dest_photo_path}")
+                        return True, dest_photo_path
+                    elif message.get('mvr_broadcast', False) == "snapshot_failed":
+                        return False, message['error_message']
+            except Exception as e:
+                return False, e
+
+
+def binary_next_state_prompt(tf, next_state_true, next_state_false):
+    if state['external'].get('snapshot_retry', True):
+        state["external"]["next_state"] = next_state_true
+    else:
+        state["external"]["next_state"] = next_state_false
 
 def pre_brain_surface_photo_doc_enter(state):
-    mvr.take_snapshot()
-    success, mesg = wait_on_snapshot()
-    if not success:
-        fail_state(f"Error taking snapshot: {mesg}",state)
-    else:
-        state['external']['pre_insertion_image'] = mesg # display the captured image
-
-
-
+    # display new mvr image
+    state['external']['new_snapshot'] = mvr_capture_on_enter(state)
+        
 def pre_brain_surface_photo_doc_input(state):
-    """
-    In this state, the next transition depends on user input.  The fields snapshot_retry and snapshot_continue are
-    defined in the wfl file.  The item the user selected will be true, the others will be false.
-    Here, we just evaluate the user choice and set the next state as desired.
-    """
-    if state['external'].get('snapshot_retry', False):
-        state["external"]["next_state"] = "pre_brain_surface_photo_doc"
-    else:
-        state["external"]["next_state"] = "probe_insertion_instructions"
-
+    # prompt to retake mvr image
+    pdb.set_trace()
+    prompt = state['external'].get('snapshot_retry', False)
+    binary_next_state_prompt(next_state_true="pre_brain_surface_photo_doc", next_state_false="probe_insertion_instructions")
 
 """
 def probe_insertion_instructions_exit(state):
@@ -217,10 +224,16 @@ def probe_insertion_instructions_exit(state):
     experiment.platform_json.add_file(filename)
 """
 
-
-def flush_water_lines_input(state):
+def flush_lines_enter(state):
+    # pdb.set_trace()
+    # io["external"][] = "enter"
+    # fail_state("testing enter fail", state)
     ...
-
+    
+def flush_lines_input(state):
+    # pdb.set_trace()
+    fail_state("testing input fail", state)
+    # io["test2"] = "input"
 
 def run_stimulus_enter(state):
     """
