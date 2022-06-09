@@ -1,7 +1,7 @@
 ---
 wfl_version: 1.0
 
-import: neuropixel.neuropixel_workflow
+import: dynamic_routing.neuropixel_workflow
 entry_state: initialize
 
 #  Enter each phase of the workflow as a state
