@@ -66,8 +66,8 @@ def connect_to_services(state):
     #  Here we either need to test open ephys by trying to record or we get the status message.  awaiting testing.
     global mvr
     try:
+        mvr = MVRConnector(args=config['MVR'])
         if not mvr._mvr_connected:
-            mvr = MVRConnector(args=config['MVR'])
             logging.info("Failed to connect to mvr")
             component_errors.append(f"Failed to connect to MVR on {config['MVR']}")
     except Exception:
