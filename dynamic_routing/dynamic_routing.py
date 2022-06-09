@@ -53,21 +53,10 @@ def fail_state(message: str, state: dict):
     state["external"]["msg_text"] = message
     logging.warning(f"{state_name} failed: {message}")
 
-
-def init_enter(state):
-    """
-    Testing image display
-    """
-    state['external']["exp_logo"] = R"C:\progra~1\AIBS_MPE\workflow_launcher\dynamic_routing\logo.png"
-
-
-def init_input(state):
-    """
-    Since this is the first state, you might do some basic startup functionality in the enter state.
-    The expectation is these services are on (i.e., you have started them with RSC).  If the connection fails you can
+def connect_to_services(state):
+    """    The expectation is these services are on (i.e., you have started them with RSC).  If the connection fails you can
     send a message to the user with the fail_state() function above.
     """
-    
     global io
     io = state['resources']['io']
     
@@ -111,10 +100,21 @@ def init_input(state):
     #  At this point, You could send the user to an informative state to repair the remote services.
     if component_errors:
         fail_state('\n'.join(component_errors), state)
-    else:
-        state["external"]["next_state"] = "get_user_id"
 
 
+def init_enter(state):
+    """
+    Testing image display
+    """
+    state['external']["exp_logo"] = R"C:\progra~1\AIBS_MPE\workflow_launcher\dynamic_routing\logo.png"
+    connect_to_services(state)
+
+
+def init_input(state):
+    """
+    Since this is the first state, you might do some basic startup functionality in the enter state.
+    """
+    pass
 
 
 
@@ -219,11 +219,12 @@ def pre_brain_surface_photo_doc_input(state):
     prompt = state['external'].get('snapshot_retry', False)
     binary_next_state_prompt(state, prompt, next_if_true="pre_brain_surface_photo_doc", next_if_false="probe_insertion_instructions")
 
-"""
-def probe_insertion_instructions_exit(state):
-    filename = mvr.take_photo()
-    experiment.platform_json.add_file(filename)
-"""
+def pre_brain_surface_photo_doc_exit(state):
+    #  TODO add to platform json:  
+    # experiment.platform_json.add_file(dest_photo_path)
+    ...
+    
+
 
 def flush_lines_enter(state):
     # pdb.set_trace()
