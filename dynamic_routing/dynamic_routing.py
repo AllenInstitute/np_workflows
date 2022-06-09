@@ -178,13 +178,6 @@ def mvr_capture_on_enter(state):
     """standard mvr image snapshot func, returning error mesg or img  """
     mvr.take_snapshot()
     
-    success, mesg_or_img = wait_on_snapshot()
-    if not success:
-        fail_state(f"Error taking snapshot: {mesg_or_img}",state)
-    else:
-        return mesg_or_img # return the captured image
-        
-        
     def wait_on_snapshot():  
         while True:
             try:
@@ -200,23 +193,31 @@ def mvr_capture_on_enter(state):
                         return False, message['error_message']
             except Exception as e:
                 return False, e
-
-
-def binary_next_state_prompt(tf, next_state_true, next_state_false):
-    if state['external'].get('snapshot_retry', True):
-        state["external"]["next_state"] = next_state_true
+            
+    success, mesg_or_img = wait_on_snapshot()
+    if not success:
+        fail_state(f"Error taking snapshot: {mesg_or_img}",state)
     else:
-        state["external"]["next_state"] = next_state_false
+        return mesg_or_img # return the captured image
+        
+        
+def binary_next_state_prompt(state, tf, next_if_true, next_if_false):
+    if tf:
+        state["external"]["next_state"] = next_if_true
+    else:
+        state["external"]["next_state"] = next_if_false
+
 
 def pre_brain_surface_photo_doc_enter(state):
     # display new mvr image
     state['external']['new_snapshot'] = mvr_capture_on_enter(state)
         
+        
 def pre_brain_surface_photo_doc_input(state):
     # prompt to retake mvr image
-    pdb.set_trace()
+    # pdb.set_trace()
     prompt = state['external'].get('snapshot_retry', False)
-    binary_next_state_prompt(next_state_true="pre_brain_surface_photo_doc", next_state_false="probe_insertion_instructions")
+    binary_next_state_prompt(state, prompt, next_if_true="pre_brain_surface_photo_doc", next_if_false="probe_insertion_instructions")
 
 """
 def probe_insertion_instructions_exit(state):
@@ -232,8 +233,9 @@ def flush_lines_enter(state):
     
 def flush_lines_input(state):
     # pdb.set_trace()
-    fail_state("testing input fail", state)
+    # fail_state("testing input fail", state)
     # io["test2"] = "input"
+    ...
 
 def run_stimulus_enter(state):
     """

@@ -141,7 +141,7 @@ states:
   pre_brain_surface_photo_doc:
     description: Pre lowering brain surface photo doc
     display:
-      - field: pre_insertion_image
+      - field: new_snapshot
         type: high_res_image
         desc: Pre-insertion photo doc
       - field: snapshot_ok # This is apparently unused
