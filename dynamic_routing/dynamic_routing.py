@@ -90,9 +90,9 @@ def init_input(state):
         component_errors.append(f"Failed to connect to MVR on {config['MVR']}")
 
     global camstim_agent
-    service = config['camstim_agent']
-    camstim_agent = zro.Proxy(f"{service['host']}:{service['port']}", timeout=service['timeout'], serialization='json')
     try:
+        service = config['camstim_agent']
+        camstim_agent = zro.Proxy(f"{service['host']}:{service['port']}", timeout=service['timeout'], serialization='json')
         logging.info(f'Camstim Agent Uptime: {camstim_agent.uptime}')
     except Exception:
         component_errors.append(f"Failed to connect to Camstim Agent.")
@@ -124,9 +124,7 @@ def get_user_id_input(state):
     # external contains values coming from the UI.  "user_id" is a key specified in the wfl file.
     user_name = state["external"]["user_id"]
     if not limstk.user_details(user_name):
-        fail_state(
-            f"Could not find user {user_name} in LIMS.  You might get this error if you have never logged into LIMS",
-            state)
+        fail_state(f"Could not find user \"{user_name}\" in LIMS", state)
     state["user_name"] = user_name # It is ok to save data into the state.
     
 def get_mouse_id_input(state):
@@ -137,16 +135,18 @@ def get_mouse_id_input(state):
 
     # external contains values coming from the UI.  "mouse_id" is a key specified in the wfl file.
     mouse_id = state["external"]["mouse_id"]
-    mouse_result = limstk.donor_info_with_parent(mouse_id)
-
-    if "error" in mouse_result:
-        fail_state(f"Could not find mouse id {mouse_id} in LIMS", state)
+    
+    try:
+        mouse_result = limstk.donor_info_with_parent(mouse_id)
+    except: 
+        # mouse_result not returned if prev limstk query errors
+        fail_state(f"Could not find mouse id \"{mouse_id}\" in LIMS", state)
         return
 
     #  You might want to get data about this mouse from MTRain
     response = requests.get("http://mtrain:5000/get_script/", data=json.dumps({"LabTracks_ID": mouse_id}))
     if response.status_code != 200:
-        fail_state(f"Could not find mouse id {mouse_id} in MTrain", state)
+        fail_state(f"Could not find mouse id \"{mouse_id}\" in MTrain", state)
         return
 
     experiment.mouse_id = mouse_id
