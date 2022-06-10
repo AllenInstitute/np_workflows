@@ -42,12 +42,11 @@ global config
 config = mpeconfig.source_configuration('neuropixels', version='1.4.0')
 config.update(mpeconfig.source_configuration("dynamic_routing"))
 
-# pdb.set_trace()
+
 with open('dynamic_routing/config/neuropixels.yml') as f:
     yconfig = yaml.safe_load(f)
 config.update(yconfig)
-pdb.set_trace()
-
+# pdb.set_trace()
 experiment = DynamicRouting()
 
 # ---------------- Network Service Objects ----------------

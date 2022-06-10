@@ -46,7 +46,6 @@ from mpetk.zro import Proxy
 # import mpeconfig
 
 # config = mpeconfig.source_configuration('neuropixels', version='1.4.0')
-# mvr_writer = MVRConnector(args=config['MVR'])
 
 config: dict
 config = mpeconfig.source_configuration('neuropixels', version='1.4.0')
@@ -54,7 +53,12 @@ config.update(mpeconfig.source_configuration("dynamic_routing"))
 
 with open('dynamic_routing/config/neuropixels.yml') as f:
     yconfig = yaml.safe_load(f)
+
 config.update(yconfig)
+
+mvr_writer = MVRConnector(args=config['MVR'])
+
+
 global_processes = {}
 
 # ---------------- Network Service Objects ----------------
