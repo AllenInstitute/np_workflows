@@ -1,0 +1,66 @@
+components:
+  # Cam3d: # deprecated
+  #   desc: Cam3d
+  #   host: W10DTSM18278
+  #   port: 11000
+  #   version: 0.2.1
+  # Notes: # unused
+  #   desc: NotesApp
+  #   host: W10DTSM18278
+  #   port: 9999
+  #   version: 0.1.0
+  OpenEphys:  # old: should be unused once all old worflow code is updated
+    desc: OpenEphys
+    host: W10SV108131
+    version: 0.6.0
+  Stim:  # old: should be unused once all old worflow code is updated
+    desc: Stim # camstim 
+    host: W10SV111814
+    port: 5000
+    version: 0.2.4
+  Sync:  # old location: should be unused once all old worflow code is updated
+    desc: Sync
+    host: W10SVAD0139
+    port: 5000
+    version: 1.3.1 # unused?
+  # VideoMon: 
+  #   desc: VideoMon
+  #   host: W10DTSM18278
+  #   port: 5000
+  #   version: 0.1.10
+hardware:
+  behavior_camera_position:
+    center_x_mm: -178.0
+    center_y_mm: -12.0
+    center_z_mm: -18.0
+    rotation_x_deg: 5.76
+    rotation_y_deg: -3.86
+    rotation_z_deg: 0.0
+  eye_camera_position:
+    center_x_mm: 102.8
+    center_y_mm: 74.7
+    center_z_mm: 31.6
+    rotation_x_deg: 0
+    rotation_y_deg: 0
+    rotation_z_deg: 2.8
+  led_position:
+    center_x_mm: 246.0
+    center_y_mm: 92.3
+    center_z_mm: 52.6
+    rotation_x_deg: 0.0
+    rotation_y_deg: 0.0
+    rotation_z_deg: 0.0
+  screen_position:
+    center_x_mm: 118.6
+    center_y_mm: 86.2
+    center_z_mm: 31.6
+    rotation_x_deg: 0
+    rotation_y_deg: 0
+    rotation_z_deg: 0
+openephys_drives:
+  A: //W10DT05492/J
+  B: //W10DT05492/K
+  C: //W10DT05492/L
+  D: //W10DT05501/J
+  E: //W10DT05501/K
+  F: //W10DT05501/L

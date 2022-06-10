@@ -1,3 +1,5 @@
+import pdb
+
 from datetime import datetime as dt
 from datetime import timedelta as timedelta
 from datetime import date as date
@@ -24,25 +26,39 @@ import time
 import psutil
 import subprocess
 import glob
-from .MVRConnector import MVRConnector
-from math import floor
-from wfltk import middleware_messages_pb2 as wfltk_msgs
-import limstk
-import mpeconfig
-from . import ephys_edi_pb2 as ephys_messages
+
 from collections import namedtuple
 from pprint import pprint
 import shutil
-from zro import Proxy
 
+from . import ephys_edi_pb2 as ephys_messages
+from . import mvr, model, ephys_api
+from .mvr import MVRConnector
+from math import floor
+from wfltk import middleware_messages_pb2 as wfltk_msgs
+messages = wfltk_msgs
+import mpetk
+from mpetk import limstk, mpeconfig, zro
+from mpetk.zro import Proxy
+
+# import limstk
+# import mpeconfig
+
+# config = mpeconfig.source_configuration('neuropixels', version='1.4.0')
+# mvr_writer = MVRConnector(args=config['MVR'])
+
+config: dict
 config = mpeconfig.source_configuration('neuropixels', version='1.4.0')
-mvr_writer = MVRConnector(args=config['MVR'])
+config.update(mpeconfig.source_configuration("dynamic_routing"))
 
+with open('dynamic_routing/config.yaml') as f:
+    yconfig = yaml.safe_load(f)
+config.update(yconfig)
 global_processes = {}
 
 # ---------------- Network Service Objects ----------------
-mouse_director_proxy = None
 
+mouse_director_proxy = None
 
 
 
@@ -152,13 +168,13 @@ def initialize_enter(state_globals):
     establish_proxies(state_globals)
 
     global mouse_director_proxy
-
-    md_host = config['components']['MouseDirector']['host']
-    md_port = config['components']['MouseDirector']['port']
-    md_port = 9000
+    # TODO get current MD details 
+    md_host = config['mouse_director']['host']
+    md_port = config['mouse_director']['port']
+    
     port_string = f'{md_host}:{md_port}'
     print(f'connecting to MD on {port_string}')
-    mouse_director_proxy = Proxy(port_string, serialization='json')
+    mouse_director_proxy = Proxy(port_string, timeout=config['mouse_director']['timeout'], serialization='json')
 
     # message = mvr_writer._recv()
     # print(f'recv mssg: {message}')

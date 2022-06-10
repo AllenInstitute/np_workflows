@@ -8,12 +8,15 @@ import pdb
 import shutil
 import threading
 from time import sleep
-
-import mpetk.aibsmw.routerio.router
 import requests
+import yaml
+
+import mpetk
+import mpetk.aibsmw.routerio.router as router
 from mpetk import limstk, mpeconfig, zro
 from wfltk import middleware_messages_pb2 as messages
 
+from . import mvr, model, ephys_api
 from .ephys_api import ephys
 from .model import DynamicRouting  # It can make sense to have a class to store experiment data.
 from .mvr import MVRConnector  # This will eventually get incorporated into the workflow launcher
@@ -25,7 +28,7 @@ from .mvr import MVRConnector  # This will eventually get incorporated into the 
 config: dict = mpeconfig.source_configuration("dynamic_routing")
 experiment = DynamicRouting()
 
-io: mpetk.aibsmw.routerio.router.ZMQHandler
+io: router.ZMQHandler
 
 mvr: MVRConnector
 camstim_agent: zro.Proxy

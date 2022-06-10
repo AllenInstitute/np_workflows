@@ -1,8 +1,10 @@
 # -*- coding: latin-1 -*-
+import pdb
+import logging
+logging.warning("logging started")
 import datetime
 import inspect
 import json
-import logging
 import os
 import socket
 import threading
@@ -12,21 +14,48 @@ import webbrowser
 from datetime import datetime as dt
 from importlib import reload
 from pprint import pformat
-
-import limstk
+import pathlib
 import requests
 import zmq
-from wfltk import middleware_messages_pb2 as wfltk_msgs
-from zro import Proxy
+import yaml
 
-from neuropixel import npxcommon as npxc
+from . import mvr, model, ephys_api
+from .mvr import MVRConnector
+from .model import DynamicRouting  # It can make sense to have a class to store experiment data.
+from .ephys_api import ephys
+
+import mpetk
+from mpetk import limstk, mpeconfig, zro
+import mpetk.aibsmw.routerio.router as router
+from mpetk.zro import Proxy
+from wfltk import middleware_messages_pb2 as messages # name in new ver
+from wfltk import middleware_messages_pb2 as wfltk_msgs
+messages = wfltk_msgs
+
+from . import npxcommon as npxc
+
+# -------------- experiment-specific objects --------------
+global config
+
+config: dict
+config = mpeconfig.source_configuration('neuropixels', version='1.4.0')
+config.update(mpeconfig.source_configuration("dynamic_routing"))
+
+# pdb.set_trace()
+with open('dynamic_routing/config.yaml') as f:
+    yconfig = yaml.safe_load(f)
+config.update(yconfig)
+pdb.set_trace()
+
+experiment = DynamicRouting()
 
 # ---------------- Network Service Objects ----------------
-mouse_director_proxy = None
-camstim_proxy = None
-router = None
 
-
+router: router.ZMQHandler
+camstim_proxy: zro.Proxy = None
+mouse_director_proxy: zro.Proxy = None
+mvr_writer: mvr.MVRConnector
+sync: zro.Proxy
 
 # ------------------- UTILITY FUNCTIONS -------------------
 
