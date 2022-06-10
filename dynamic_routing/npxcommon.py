@@ -1,4 +1,5 @@
 import pdb
+import sys
 
 from datetime import datetime as dt
 from datetime import timedelta as timedelta
@@ -15,7 +16,6 @@ import os
 import logging
 from functools import partial
 import glob
-
 import zmq
 from PIL import Image
 import sys
@@ -31,6 +31,7 @@ from collections import namedtuple
 from pprint import pprint
 import shutil
 
+# sys.path.append("..")
 from . import ephys_edi_pb2 as ephys_messages
 from . import mvr, model, ephys_api
 from .mvr import MVRConnector
@@ -51,7 +52,7 @@ config: dict
 config = mpeconfig.source_configuration('neuropixels', version='1.4.0')
 config.update(mpeconfig.source_configuration("dynamic_routing"))
 
-with open('dynamic_routing/config.yaml') as f:
+with open('dynamic_routing/config/neuropixels.yml') as f:
     yconfig = yaml.safe_load(f)
 config.update(yconfig)
 global_processes = {}

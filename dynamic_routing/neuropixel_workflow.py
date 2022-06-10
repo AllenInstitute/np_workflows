@@ -1,5 +1,6 @@
 # -*- coding: latin-1 -*-
 import pdb
+import sys
 import logging
 logging.warning("logging started")
 import datetime
@@ -19,6 +20,7 @@ import requests
 import zmq
 import yaml
 
+# sys.path.append("..")
 from . import mvr, model, ephys_api
 from .mvr import MVRConnector
 from .model import DynamicRouting  # It can make sense to have a class to store experiment data.
@@ -37,12 +39,11 @@ from . import npxcommon as npxc
 # -------------- experiment-specific objects --------------
 global config
 
-config: dict
 config = mpeconfig.source_configuration('neuropixels', version='1.4.0')
 config.update(mpeconfig.source_configuration("dynamic_routing"))
 
 # pdb.set_trace()
-with open('dynamic_routing/config.yaml') as f:
+with open('dynamic_routing/config/neuropixels.yml') as f:
     yconfig = yaml.safe_load(f)
 config.update(yconfig)
 pdb.set_trace()
