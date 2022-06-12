@@ -45,11 +45,23 @@ class ephys:
         
         
     def set_data_file_path(self,path):
+        
+        recording = requests.get(self.http_recording).json()
+        
         # TODO update to set folder name / directory / append as reqd
         # testing: can set "append_text" , "prepend_text" , "parent_directory"
         # can't set "current_directory_name"
-        recording = requests.get(self.http_recording).json()
-        recording.update({'parent_directory':"C:\\Users\\"})
+        
+        sessionID = '0'*10 + "_"
+        mouseID = "_" + "366122" 
+        recording.update({'prepend_text':sessionID})
+        recording.update({'append_text':mouseID})
+        
+        #! folder name only seems to update when text field is clicked in gui:
+        #! does not take effect when starting a new recording
+        
+        recording.update({'current_directory_name':path})
+        
         return requests.put(self.http_recording, json.dumps(recording))
     
     
@@ -75,14 +87,16 @@ def request_open_ephys_status():
     return ephys().get_mode()
 
 def reset_open_ephys():
-    ephys().clear_open_ephys_name()
+    clear_open_ephys_name()
     time.sleep(.5)
-    ephys().start_ecephys_acquisition()
+    start_ecephys_acquisition()
     time.sleep(3)
-    ephys().stop_ecephys_recording()
+    stop_ecephys_recording()
     time.sleep(.5)
         
 
-    
 
-set_open_ephys_name(R"test")
+set_open_ephys_name("sessionID_yyyymmdd_mouseID")
+start_ecephys_recording()
+
+reset_open_ephys()
