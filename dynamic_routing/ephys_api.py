@@ -48,18 +48,15 @@ class ephys:
         
         recording = requests.get(self.http_recording).json()
         
-        # TODO update to set folder name / directory / append as reqd
-        # testing: can set "append_text" , "prepend_text" , "parent_directory"
-        # can't set "current_directory_name"
         
         sessionID = '0'*10 + "_"
         mouseID = "_" + "366122" 
         recording.update({'prepend_text':sessionID})
         recording.update({'append_text':mouseID})
-        
+     
+        # TODO update to set folder name / parent directory as reqd
         #! folder name only seems to update when text field is clicked in gui:
         #! does not take effect when starting a new recording
-        
         recording.update({'current_directory_name':path})
         
         return requests.put(self.http_recording, json.dumps(recording))
