@@ -1,41 +1,47 @@
 # -*- coding: latin-1 -*-
-import pdb
-import sys
-import logging
-logging.warning("logging started")
-import datetime
-import inspect
-import json
-import os
-import socket
-import threading
-import time
-import traceback
-import webbrowser
-from datetime import datetime as dt
-from importlib import reload
-from pprint import pformat
-import pathlib
-import requests
-import zmq
-import yaml
+try:
+    import pdb
+    import sys
+    import logging
+    # logging.warning("logging started")
+    import datetime
+    import inspect
+    import json
+    import os
+    import socket
+    import threading
+    import time
+    import traceback
+    import webbrowser
+    from datetime import datetime as dt
+    from importlib import reload
+    from pprint import pformat
+    import pathlib
+    import requests
+    import zmq
+    import yaml
 
-# sys.path.append("..")
-from . import mvr, model, ephys_api
-from .mvr import MVRConnector
-from .model import DynamicRouting  # It can make sense to have a class to store experiment data.
-from .ephys_api import ephys
+    # sys.path.append("..")
+    # pdb.set_trace()
+    from . import mvr, model, ephys_api
+    from .mvr import MVRConnector
+    from .model import DynamicRouting  # It can make sense to have a class to store experiment data.
+    from .ephys_api import EphysHTTP as ephys
 
-import mpetk
-from mpetk import limstk, mpeconfig, zro
-import mpetk.aibsmw.routerio.router as router
-from mpetk.zro import Proxy
-from wfltk import middleware_messages_pb2 as messages # name in new ver
-from wfltk import middleware_messages_pb2 as wfltk_msgs
-messages = wfltk_msgs
+    import mpetk
+    from mpetk import limstk, mpeconfig, zro
+    import mpetk.aibsmw.routerio.router as router
+    from mpetk.zro import Proxy
+    from wfltk import middleware_messages_pb2 as messages # name in new ver
+    from wfltk import middleware_messages_pb2 as wfltk_msgs
+    messages = wfltk_msgs
 
-from . import npxcommon as npxc
-
+    from . import npxcommon as npxc
+    
+except Exception as e:
+    # import errors aren't printed to console by default
+    print(e)
+    
 # -------------- experiment-specific objects --------------
 global config
 
@@ -186,6 +192,7 @@ def initialize_input(state_globals):
     """
     npxc.initialize_input(state_globals)
 
+    #! this is done in npxc too- delete
     global mouse_director_proxy
     md_host = npxc.config['components']['MouseDirector']['host']
     md_port = npxc.config['components']['MouseDirector']['port']

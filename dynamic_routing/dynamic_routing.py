@@ -2,7 +2,7 @@ import inspect
 import json
 import logging
 import os
-import pd   b
+import pdb
 #
 # limstk functions are auto-generated so the ide might warn it can't see them.
 import shutil
@@ -99,9 +99,9 @@ def connect_to_services(state):
         mouse_director = zro.Proxy(f"{service['host']}:{service['port']}", timeout=service['timeout'])
         logging.info(f'MouseDirector Uptime: {mouse_director.uptime}')
     except Exception:
-        # component_errors.append(f"Failed to connect to MouseDirector.")
+        component_errors.append(f"Failed to connect to MouseDirector.")
         # TODO MDir currently not working - switch this line back on when fixes
-        logging.info(" ** skipping connection to MouseDirector **")
+        # logging.info(" ** skipping connection to MouseDirector **")
         
     
     #  At this point, You could send the user to an informative state to repair the remote services.

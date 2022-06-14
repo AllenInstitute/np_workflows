@@ -6,7 +6,12 @@ import logging
 
 import requests
 import time
-from . import ephys_edi_pb2 as ephys_messages
+import sys
+sys.path.append("..")
+try:
+    from . import ephys_edi_pb2 as ephys_messages
+except:
+    ...
 from typing import Optional
 
 class EphysRouter:
@@ -49,7 +54,16 @@ class EphysRouter:
 
 
 class EphysHTTP:
-    server = f"http://localhost:37497/api"
+    try:
+        print(hostname:= "W10DT05501")
+        hostname = config["components"]["OpenEphys"]["host"]
+    except:
+        hostname = "localhost"
+        
+    hostname = "W10DT05501" #!np1 acq
+    print(hostname)
+    
+    server = f"http://{hostname}:37497/api"
     status_endpoint = f"{server}/status"
     recording_endpoint = f"{server}/recording"
     processors_endpoint = f"{server}/processors"
@@ -75,9 +89,9 @@ class EphysHTTP:
     def set_mode(mode: EphysModes) -> requests.Response:
         if not isinstance(mode, EphysHTTP.EphysModes):
             raise TypeError(f"Expected mode of type EphysModes but found {type(mode)}")
-        mode_msg = bytes('{"mode":"{0}"}'.format(mode.value), 'utf-8')
+        mode_msg = {"mode":mode.value}
         logging.info(f"sending: {mode_msg} --> {EphysHTTP.status_endpoint}")
-        return requests.put(EphysHTTP.status_endpoint, mode_msg)
+        return requests.put(EphysHTTP.status_endpoint, json.dumps(mode_msg))
 
     @staticmethod
     def get_data_file_path():
@@ -130,3 +144,6 @@ class EphysHTTP:
         time.sleep(3)
         EphysHTTP.stop_ecephys_recording()
         time.sleep(.5)
+        
+if __name__ == "__main__":
+    print(EphysHTTP.set_mode(EphysHTTP.EphysModes.idle).content)

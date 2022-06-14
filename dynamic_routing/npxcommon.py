@@ -173,18 +173,14 @@ def initialize_enter(state_globals):
     establish_proxies(state_globals)
 
     global mouse_director_proxy
-    # TODO get current MD details 
-    md_host = config['mouse_director']['host']
-    md_port = config['mouse_director']['port']
-    
-    port_string = f'{md_host}:{md_port}'
-    print(f'connecting to MD on {port_string}')
-    mouse_director_proxy = Proxy(port_string, timeout=config['mouse_director']['timeout'], serialization='json')
+    service = config['components']['MouseDirector'] # new
+    md_host = service['host']
+    md_port = service['port']
+    print(f'connecting to MD on {md_port}')
+    mouse_director_proxy = zro.Proxy(f"{service['host']}:{service['port']}", timeout=service['timeout'])
+    # TODO add to prev line ?   , serialization='json'  
+    logging.info(f'MouseDirector Uptime: {mouse_director_proxy.uptime}')
 
-    # message = mvr_writer._recv()
-    # print(f'recv mssg: {message}')
-
-    # if not(mvr_writer._mvr_connected):
     mvr_connected = False
     try:
         message = mvr_writer.get_version()
@@ -198,16 +194,7 @@ def initialize_enter(state_globals):
             mvr_connected = True
         except Exception as E:
             mvr_connected = False
-    # mvr_connected = mvr_writer._recv()
-    # print('mvr _recv: '+str(mvr_connected))
-    # mvr_connected = mvr_writer._mvr_connected
-    # print('mvr connected: '+str(mvr_connected))
-    # mvr_connected = mvr_writer._recv()
-    # print('mvr _recv: '+str(mvr_connected))
-    # mvr_connected = mvr_writer.set_automated_ui(True)
-    # print('mvr automated ui: '+str(mvr_connected))
-    # mvr_connected = mvr_writer._recv()
-    # print('mvr _recv: '+str(mvr_connected))
+            
     state_globals['external']['component_status']['MVR'] = mvr_connected
 
     # set up the neuropixel data location
@@ -411,31 +398,34 @@ def pretest_input(state_globals):
 
 def start_ecephys_recording(state_globals):
     print('Attempting to start ecephys acquisiton')
-    send_ecephys_message(state_globals, 'recording', command=1)
+    # send_ecephys_message(state_globals, 'recording', command=1)
     # time.sleep(15) - the process can take this long but its annoying to have the WSE wait...
+    ephys_api.EphysHTTP.start_ecephys_recording()
 
 
 def stop_ecephys_recording(state_globals):
     print('Attempting to stop ecephys acquisiton')
-    send_ecephys_message(state_globals, 'recording', command=0)
-
+    # send_ecephys_message(state_globals, 'recording', command=0)
+    ephys_api.EphysHTTP.stop_ecephys_recording()
 
 def start_ecephys_acquisition(state_globals):
     print('Attempting to start ecephys acquisiton')
-    message = send_ecephys_message(state_globals, 'acquisition', command=1)
+    # message = send_ecephys_message(state_globals, 'acquisition', command=1)
     # time.sleep(15) - the process can take this long but its annoying to have the WSE wait...
-    return message
+    return ephys_api.EphysHTTP.start_ecephys_acquisition()
 
 
 def stop_ecephys_acquisition(state_globals):
     print('Attempting to stop ecephys acquisiton')
-    send_ecephys_message(state_globals, 'acquisition', command=0)
+    # send_ecephys_message(state_globals, 'acquisition', command=0)
+    ephys_api.EphysHTTP.stop_ecephys_acquisition()
 
 
 def set_open_ephys_name(state_globals):
     try:
         print('Attempting to set openephys session name to ' + str(state_globals["external"]["session_name"]))
-        send_ecephys_message(state_globals, 'set_data_file_path', path=state_globals["external"]["session_name"])
+        # send_ecephys_message(state_globals, 'set_data_file_path', path=state_globals["external"]["session_name"])
+        ephys_api.EphysHTTP.set_data_file_path(path=state_globals["external"]["session_name"])
     except Exception as E:
         print(f'Failed to set open ephys name: {E}')
 
@@ -443,7 +433,8 @@ def set_open_ephys_name(state_globals):
 def clear_open_ephys_name(state_globals):
     try:
         print('Attempting to clear openephys session name')
-        send_ecephys_message(state_globals, 'set_data_file_path', path='')
+        # send_ecephys_message(state_globals, 'set_data_file_path', path='')
+        ephys_api.EphysHTTP.clear_open_ephys_name()
     except Exception as E:
         print(f'Failed to set open ephys name: {E}')
 
@@ -451,7 +442,8 @@ def clear_open_ephys_name(state_globals):
 def request_open_ephys_status(state_globals):
     try:
         print('checking open ephys status')
-        message = send_ecephys_message(state_globals, 'REQUEST_SYSTEM_STATUS', path='')
+        # message = send_ecephys_message(state_globals, 'REQUEST_SYSTEM_STATUS', path='')
+        message = ephys_api.EphysHTTP.request_open_ephys_status()
     except Exception as E:
         print(f'Failed to set open ephys name: {E}')
     return message
