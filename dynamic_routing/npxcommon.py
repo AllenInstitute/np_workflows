@@ -236,6 +236,7 @@ def initialize_enter(state_globals):
     print('config: ' + str(state_globals['openephys_drives']))
 
     local_lims_head = config['mapped_lims_location']
+    pdb.set_trace()
     os.makedirs(local_lims_head, exist_ok=True)
     state_globals["external"]["local_lims_head"] = local_lims_head
 
