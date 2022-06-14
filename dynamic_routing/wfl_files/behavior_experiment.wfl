@@ -1988,8 +1988,8 @@ states:
             type: note
             desc: The WSE will create the manifest when you click to the next state
       inputs:
-          - desc: initiate_data_processing
-            state: initiate_data_processing
+          - desc: copy_files_to_network
+            state: copy_files_to_network
       revert:
           options:
             - desc: Revert to check_files1
@@ -2002,8 +2002,8 @@ states:
             type: check_box
             desc: The WSE will check the platform json has been generated when you click to the next state
       inputs:
-          - desc: initiate_data_processing
-            state: initiate_data_processing
+          - desc: copy_files_to_network
+            state: copy_files_to_network
           - desc: files_error2
             state: files_error2
       revert:
@@ -2027,15 +2027,16 @@ states:
                     next: check_files2
                   - field: components_override
                     desc: Override and copy only existing files
-                    next: initiate_data_processing
+                    next: copy_files_to_network
       inputs:
           - desc: check_files2
             state: check_files2
           - desc: create_manifest_and_platform_json
             state: create_manifest_and_platform_json
-          - desc: initiate_data_processing
-            state: initiate_data_processing
+          - desc: copy_files_to_network
+            state: copy_files_to_network
 
+  # this should be skipped
   initiate_data_processing:
       description: initiate data processing
       display:
@@ -2052,6 +2053,7 @@ states:
             - desc: Revert to create_manifest_and_platform_json
               state: create_manifest_and_platform_json
 
+  # this should be skipped
   data_error:
       description: data error
       display:
@@ -2072,8 +2074,8 @@ states:
       inputs:
           - desc: initiate_data_processing
             state: initiate_data_processing
-          - desc: copy_files_to_network
-            state: copy_files_to_network
+          # - desc: copy_files_to_network
+          #   state: copy_files_to_network
 
   copy_files_to_network:
       description: copy files to network
@@ -2095,8 +2097,8 @@ states:
             state: ready_to_check_network
       revert:
           options:
-            - desc: Revert to initiate_data_processing
-              state: initiate_data_processing
+            - desc: Revert to copy_files_to_network
+              state: copy_files_to_network
 
   ready_to_check_network:
       description: check files network

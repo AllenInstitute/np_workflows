@@ -2830,7 +2830,7 @@ def check_files2_input(state_globals):
     if stop:
         state_globals["external"]["next_state"] = "files_error2"
     else:
-        state_globals["external"]["next_state"] = "initiate_data_processing"
+        state_globals["external"]["next_state"] = "copy_files_to_network"
     state_globals["external"]["transition_result"] = True
     state_globals["external"]["status_message"] = "success"
 
@@ -2854,7 +2854,7 @@ def files_error2_input(state_globals):
         state_globals["external"]["next_state"] = "create_manifest_and_platform_json"
         state_globals["external"].pop("create_files2_retry", None)
     else:
-        state_globals["external"]["next_state"] = "initiate_data_processing"
+        state_globals["external"]["next_state"] = "copy_files_to_network"
     state_globals["external"]["transition_result"] = True
     state_globals["external"]["status_message"] = "success"
 
