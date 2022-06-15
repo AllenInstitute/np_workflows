@@ -212,10 +212,10 @@ hardware:
     rotation_x_deg: 0.0
     rotation_y_deg: 0.0
     rotation_z_deg: 0.0
-local_lims_head: \\w10DTSM18306\c$\ProgramData\AIBS_MPE\neuropixels_data
+local_lims_head: \\W10SV108131\c$\ProgramData\AIBS_MPE\neuropixels_data
 local_lims_location: ''
-local_trigger_dir: \\w10DTSM18306\c$\ProgramData\AIBS_MPE\neuropixels\lims_trigger
-mapped_lims_location: \\w10DTSM18306\c$\ProgramData\AIBS_MPE\neuropixels_data
+local_trigger_dir: \\W10SV108131\c$\ProgramData\AIBS_MPE\neuropixels\lims_trigger
+mapped_lims_location: \\W10SV108131\c$\ProgramData\AIBS_MPE\neuropixels_data
 openephys_drives:
   A: //W10DT05501/A
   B: //W10DT05501/A

@@ -48,7 +48,8 @@ from mpetk.zro import Proxy
 # config = mpeconfig.source_configuration('neuropixels', version='1.4.0')
 
 config: dict
-config = mpeconfig.source_configuration('neuropixels', version='1.4.0')
+config = mpeconfig.source_configuration('neuropixels', version='1.4.0') 
+#! #TODO line above is temporary, we want to consolidate config settings into one file 
 config.update(mpeconfig.source_configuration("dynamic_routing"))
 
 with open('dynamic_routing/config/neuropixels.yml') as f:
@@ -166,9 +167,9 @@ def initialize_enter(state_globals):
     state_globals['external']['lowering_distance'] = get_from_config(['lowering_distance'], default=r"200um/min")
     state_globals['external']['lowering_speed'] = get_from_config(['lowering_speed'], default='1000um')
 
-    key = 'Post Processing Validation Agent'
-    if not (key in config['components']):
-        config['components'][key] = {'desc': key, 'host': 'localhost', 'port': 1234, 'version': '0.1.0'}
+    # key = 'Post Processing Validation Agent'
+    # if not (key in config['components']):
+    #     config['components'][key] = {'desc': key, 'host': 'localhost', 'port': 1234, 'version': '0.1.0'}
 
     establish_proxies(state_globals)
 
@@ -177,13 +178,14 @@ def initialize_enter(state_globals):
     md_host = service['host']
     md_port = service['port']
     print(f'connecting to MD on {md_port}')
-    mouse_director_proxy = zro.Proxy(f"{service['host']}:{service['port']}", timeout=service['timeout'])
-    # TODO add to prev line ?   , serialization='json'  
+    mouse_director_proxy = zro.Proxy(f"{service['host']}:{service['port']}", timeout=service['timeout'], serialization='json')
     logging.info(f'MouseDirector Uptime: {mouse_director_proxy.uptime}')
 
     mvr_connected = False
     try:
-        message = mvr_writer.get_version()
+        message = mvr_writer.get_version() #! not working: 
+        # Version check error:'<' not supported between instances of 'NoneType' and 'str'
+
         print(f'connection message: {message}')
         mvr_connected = True
     except Exception as E:
@@ -2156,9 +2158,10 @@ def establish_proxies(state_globals):
 def check_components(state_globals):
     print('Checking components')
     compStatusArray = {}
+    # pdb.set_trace()
     for key, value in config['components'].items():
 
-        if 'port' in value:
+        if 'port' in value and 'Processing' not in key:
             compStatusArray[key] = False
             # Ping the remote computers to make sure they are alive...in dummy mode, will just be ping localhost, but we want to have the functionality here
             ping_result = os.system('ping %s -n 1' % (value["host"],))
@@ -2192,6 +2195,8 @@ def check_components(state_globals):
                     if not ('msg_text' in state_globals['external']) or not (
                         message in state_globals['external']['msg_text']):
                         alert_text(message, state_globals)
+        elif 'Processing' in key:
+            print(f'skipping connection to {key}')
         else:  # the open ephys interface goes through the workflow router program, so need to set this up differently
             if not ('hab' in state_globals['external']['session_type']):
                 compStatusArray[key] = False

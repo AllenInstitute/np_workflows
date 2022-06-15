@@ -46,6 +46,7 @@ except Exception as e:
 global config
 
 config = mpeconfig.source_configuration('neuropixels', version='1.4.0')
+#! #TODO line above is temporary, we want to consolidate config settings into one file 
 config.update(mpeconfig.source_configuration("dynamic_routing"))
 
 
@@ -193,10 +194,10 @@ def initialize_input(state_globals):
     npxc.initialize_input(state_globals)
 
     #! this is done in npxc too- delete
-    global mouse_director_proxy
-    md_host = npxc.config['components']['MouseDirector']['host']
-    md_port = npxc.config['components']['MouseDirector']['port']
-    mouse_director_proxy = Proxy(f'{md_host}:{md_port}')
+    # global mouse_director_proxy
+    # md_host = npxc.config['components']['MouseDirector']['host']
+    # md_port = npxc.config['components']['MouseDirector']['port']
+    # mouse_director_proxy = Proxy(f'{md_host}:{md_port}')
 
     global camstim_proxy
     host = npxc.config["components"]["Stim"]["host"]
