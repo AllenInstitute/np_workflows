@@ -427,11 +427,11 @@ def set_open_ephys_name(state_globals):
         
         folder_str = state_globals["external"]["session_name"]
        	mouseID = state["external"]["mouse_id"]
-	    sessionID = state["external"]["ecephys_session_id"] 
-	    date = state_globals["external"]["sessionNameTimestamp"]
+        sessionID = state["external"]["ecephys_session_id"] 
+        date = state_globals["external"]["sessionNameTimestamp"]
      
         #! TODO this is filename we want (or provide path with folder_str only, no prepend/append)
-        ephys_api.EphysHTTP.set_data_file_path(path=mouseID],
+        ephys_api.EphysHTTP.set_data_file_path(path=mouseID,
                                                prepend_text=sessionID+"_",
                                                append_text="_"+date)
        
