@@ -1,42 +1,39 @@
+import csv
+import glob
+import inspect
+import itertools
+import json
+import logging
+import os
 import pdb
+import shutil
+import subprocess
 import sys
-
+import time
+import traceback
+from collections import namedtuple
+from datetime import date as date
 from datetime import datetime as dt
 from datetime import timedelta as timedelta
-from datetime import date as date
-
-import inspect
-import traceback
-
-import requests
-import json
-import yaml
-from shutil import copyfile, disk_usage
-import os
-import logging
 from functools import partial
-import glob
+from math import floor
+from pprint import pprint
+from shutil import copyfile, disk_usage
+
+import numpy
+import psutil
+import requests
+import yaml
 import zmq
 from PIL import Image
-import sys
-import numpy
-import csv
-import itertools
-import time
-import psutil
-import subprocess
-import glob
-
-from collections import namedtuple
-from pprint import pprint
-import shutil
+from wfltk import middleware_messages_pb2 as wfltk_msgs
 
 # sys.path.append("..")
+from . import ephys_api
 from . import ephys_edi_pb2 as ephys_messages
-from . import mvr, model, ephys_api
+from . import model, mvr
 from .mvr import MVRConnector
-from math import floor
-from wfltk import middleware_messages_pb2 as wfltk_msgs
+
 messages = wfltk_msgs
 import mpetk
 from mpetk import limstk, mpeconfig, zro
@@ -427,7 +424,23 @@ def set_open_ephys_name(state_globals):
     try:
         print('Attempting to set openephys session name to ' + str(state_globals["external"]["session_name"]))
         # send_ecephys_message(state_globals, 'set_data_file_path', path=state_globals["external"]["session_name"])
-        ephys_api.EphysHTTP.set_data_file_path(path=state_globals["external"]["session_name"])
+        
+        folder_str = state_globals["external"]["session_name"]
+       	mouseID = state["external"]["mouse_id"]
+	    sessionID = state["external"]["ecephys_session_id"] 
+	    date = state_globals["external"]["sessionNameTimestamp"]
+     
+        #! TODO this is filename we want (or provide path with folder_str only, no prepend/append)
+        ephys_api.EphysHTTP.set_data_file_path(path=mouseID],
+                                               prepend_text=sessionID+"_",
+                                               append_text="_"+date)
+       
+        #! we can only append/prepend currently, cannot set path
+        # we'll send sessionID and date, and request user checks/enters mouseID in opephys for now 
+        ephys_api.EphysHTTP.set_data_file_path(prepend_text=sessionID,
+                                               append_text=date)                                        
+                                               
+                                               
     except Exception as E:
         print(f'Failed to set open ephys name: {E}')
 
@@ -2033,7 +2046,7 @@ def copy_stim_pkls(state_globals, session_type):
         try:
             host = r'\\' + config['components']['Stim']['host']
             stim_output_path = os.path.join(host, "output")  # TODO put in config
-            file_list = get_new_files_list(stim_output_path, num_files)
+            file_list = f(stim_output_path, num_files)
             print(f">>>> file_list:{file_list}")
             warnings = {}
             for file in file_list:

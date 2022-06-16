@@ -1,18 +1,18 @@
 import json
-
+import logging
+import sys
+import time
 from enum import Enum
 
-import logging
-
 import requests
-import time
-import sys
+
 sys.path.append("..")
 try:
     from . import ephys_edi_pb2 as ephys_messages
 except:
     ...
 from typing import Optional
+
 
 class EphysRouter:
     @staticmethod
@@ -99,13 +99,14 @@ class EphysHTTP:
         return requests.get(EphysHTTP.recording_endpoint).json()['current_directory_name']
 
     @staticmethod
-    def set_data_file_path(path:str, prepend_text: Optional[str] = None, append_text: Optional[str] = None):
+    def set_data_file_path(path: Optional[str], prepend_text: Optional[str] = None, append_text: Optional[str] = None):
         recording = requests.get(EphysHTTP.recording_endpoint).json()
+        if path:
+            recording['current_directory_name'] = path
         if prepend_text:
             recording['prepend_text'] = prepend_text
         if append_text:
             recording['append_text'] = append_text
-        recording['current_directory_name'] = path
         return requests.put(EphysHTTP.recording_endpoint, json.dumps(recording))
 
     @staticmethod

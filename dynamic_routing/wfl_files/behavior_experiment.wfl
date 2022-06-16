@@ -221,7 +221,7 @@ states:
       display:
           - field: session_name
             type: branch_radio_button
-            desc: Use auto-generated ecephys session id, or enter custom session id
+            desc: UPDATE June2022! Enter mouseID as "custom" directory_name in openEphys! \nUse auto-generated ecephys session id, or enter custom session id
             options:
               - field: session_name
                 desc: session_name
