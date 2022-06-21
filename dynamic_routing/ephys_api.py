@@ -52,6 +52,8 @@ class Ephys(ABC):
     
     
 class EphysRouter(Ephys):
+    """ Original ZMQ protobuf implementation - requires ephys_edi_pb2.py from ephys_edi.proto """ 
+    
     @staticmethod
     def start_ecephys_recording():
         return ephys_messages.recording(command=1)
@@ -81,16 +83,18 @@ class EphysRouter(Ephys):
         return ephys_messages.request_system_status(path='')
 
     @staticmethod
-    def reset_open_ephys(io):
-        io.write(EphysRouter.clear_open_ephys_name())
+    def reset_open_ephys():
+        EphysRouter.clear_open_ephys_name()
         time.sleep(.5)
-        io.write(EphysRouter.start_ecephys_recording())
+        EphysRouter.start_ecephys_recording()
         time.sleep(3)
-        io.write(EphysRouter.stop_ecephys_recording())
+        EphysRouter.stop_ecephys_recording()
         time.sleep(.5)
 
 
 class EphysHTTP(Ephys):
+    """ Interface for HTTP server introduced in open ephys v0.6.0 (2022) """
+    
     try:
         hostname = config["components"]["OpenEphys"]["host"]
     except:
