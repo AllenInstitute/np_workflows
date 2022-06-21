@@ -3,18 +3,55 @@ import logging
 import sys
 import time
 from enum import Enum
+from typing import Optional
+from abc import ABC
 
 import requests
 
 sys.path.append("..")
 try:
+    # get protobufs module if available, for Router implementation
     from . import ephys_edi_pb2 as ephys_messages
 except:
     ...
-from typing import Optional
 
+class Ephys(ABC):
+    """ Base class for communication with open ephys """
+    
+    @abstractmethod
+    def start_ecephys_recording():
+        pass
+    
+    @abstractmethod
+    def stop_ecephys_recording():
+        pass
 
-class EphysRouter:
+    @abstractmethod
+    def start_ecephys_acquisition():
+        pass
+
+    @abstractmethod
+    def stop_ecephys_acquisition():
+        pass
+
+    @abstractmethod
+    def set_open_ephys_name(path):
+        pass
+
+    @abstractmethod
+    def clear_open_ephys_name():
+        pass
+
+    @abstractmethod
+    def request_open_ephys_status():
+        pass
+
+    @abstractmethod
+    def reset_open_ephys():
+        pass
+    
+    
+class EphysRouter(Ephys):
     @staticmethod
     def start_ecephys_recording():
         return ephys_messages.recording(command=1)
@@ -53,7 +90,7 @@ class EphysRouter:
         time.sleep(.5)
 
 
-class EphysHTTP:
+class EphysHTTP(Ephys):
     try:
         hostname = config["components"]["OpenEphys"]["host"]
     except:
