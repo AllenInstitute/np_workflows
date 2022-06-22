@@ -29,10 +29,10 @@ from PIL import Image
 from wfltk import middleware_messages_pb2 as wfltk_msgs
 
 # sys.path.append("..")
-from . import ephys_api
-from . import ephys_edi_pb2 as ephys_messages
+from . import ephys_edi_pb2 as ephys_messages #! TODO remove this - communicate through API instead
 from . import model, mvr
 from .mvr import MVRConnector
+from .ephys_api import EphysHTTP as Ephys
 
 messages = wfltk_msgs
 import mpetk
@@ -399,25 +399,25 @@ def start_ecephys_recording(state_globals):
     print('Attempting to start ecephys acquisiton')
     # send_ecephys_message(state_globals, 'recording', command=1)
     # time.sleep(15) - the process can take this long but its annoying to have the WSE wait...
-    ephys_api.EphysHTTP.start_ecephys_recording()
+    Ephys.start_ecephys_recording()
 
 
 def stop_ecephys_recording(state_globals):
     print('Attempting to stop ecephys acquisiton')
     # send_ecephys_message(state_globals, 'recording', command=0)
-    ephys_api.EphysHTTP.stop_ecephys_recording()
+    Ephys.stop_ecephys_recording()
 
 def start_ecephys_acquisition(state_globals):
     print('Attempting to start ecephys acquisiton')
     # message = send_ecephys_message(state_globals, 'acquisition', command=1)
     # time.sleep(15) - the process can take this long but its annoying to have the WSE wait...
-    return ephys_api.EphysHTTP.start_ecephys_acquisition()
+    return Ephys.start_ecephys_acquisition()
 
 
 def stop_ecephys_acquisition(state_globals):
     print('Attempting to stop ecephys acquisiton')
     # send_ecephys_message(state_globals, 'acquisition', command=0)
-    ephys_api.EphysHTTP.stop_ecephys_acquisition()
+    Ephys.stop_ecephys_acquisition()
 
 
 def set_open_ephys_name(state_globals):
@@ -426,7 +426,7 @@ def set_open_ephys_name(state_globals):
         # send_ecephys_message(state_globals, 'set_data_file_path', path=state_globals["external"]["session_name"])
         
         folder_str = state_globals["external"]["session_name"]
-       	mouseID = state["external"]["mouse_id"]
+        mouseID = state["external"]["mouse_id"]
         sessionID = state["external"]["ecephys_session_id"] 
         date = state_globals["external"]["sessionNameTimestamp"]
      
@@ -437,7 +437,7 @@ def set_open_ephys_name(state_globals):
        
         #! we can only append/prepend currently, cannot set path
         # we'll send sessionID and date, and request user checks/enters mouseID in opephys for now 
-        ephys_api.EphysHTTP.set_data_file_path(prepend_text=sessionID,
+        Ephys.set_open_ephys_name(prepend_text=sessionID,
                                                append_text=date)                                        
                                                
                                                
@@ -449,7 +449,7 @@ def clear_open_ephys_name(state_globals):
     try:
         print('Attempting to clear openephys session name')
         # send_ecephys_message(state_globals, 'set_data_file_path', path='')
-        ephys_api.EphysHTTP.clear_open_ephys_name()
+        Ephys.clear_open_ephys_name()
     except Exception as E:
         print(f'Failed to set open ephys name: {E}')
 
@@ -458,7 +458,7 @@ def request_open_ephys_status(state_globals):
     try:
         print('checking open ephys status')
         # message = send_ecephys_message(state_globals, 'REQUEST_SYSTEM_STATUS', path='')
-        message = ephys_api.EphysHTTP.request_open_ephys_status()
+        message = Ephys.request_open_ephys_status()
     except Exception as E:
         print(f'Failed to set open ephys name: {E}')
     return message

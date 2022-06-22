@@ -26,7 +26,7 @@ try:
     from . import mvr, model, ephys_api
     from .mvr import MVRConnector
     from .model import DynamicRouting  # It can make sense to have a class to store experiment data.
-    from .ephys_api import EphysHTTP as ephys
+    from .ephys_api import EphysHTTP as Ephys # TODO unused - can move from npxcommon to workflow
 
     import mpetk
     from mpetk import limstk, mpeconfig, zro

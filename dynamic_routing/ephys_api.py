@@ -3,18 +3,57 @@ import logging
 import sys
 import time
 from enum import Enum
+from typing import Optional
+from abc import ABC
 
 import requests
 
 sys.path.append("..")
 try:
+    # get protobufs module if available, for Router implementation
     from . import ephys_edi_pb2 as ephys_messages
 except:
     ...
-from typing import Optional
 
+class Ephys(ABC):
+    """ Base class for communication with open ephys """
+    
+    @abstractmethod
+    def start_ecephys_recording():
+        pass
+    
+    @abstractmethod
+    def stop_ecephys_recording():
+        pass
 
-class EphysRouter:
+    @abstractmethod
+    def start_ecephys_acquisition():
+        pass
+
+    @abstractmethod
+    def stop_ecephys_acquisition():
+        pass
+
+    @abstractmethod
+    def set_open_ephys_name(path):
+        pass
+
+    @abstractmethod
+    def clear_open_ephys_name():
+        pass
+
+    @abstractmethod
+    def request_open_ephys_status():
+        pass
+
+    @abstractmethod
+    def reset_open_ephys():
+        pass
+    
+    
+class EphysRouter(Ephys):
+    """ Original ZMQ protobuf implementation - requires ephys_edi_pb2.py from ephys_edi.proto """ 
+    
     @staticmethod
     def start_ecephys_recording():
         return ephys_messages.recording(command=1)
@@ -44,24 +83,22 @@ class EphysRouter:
         return ephys_messages.request_system_status(path='')
 
     @staticmethod
-    def reset_open_ephys(io):
-        io.write(EphysRouter.clear_open_ephys_name())
+    def reset_open_ephys():
+        EphysRouter.clear_open_ephys_name()
         time.sleep(.5)
-        io.write(EphysRouter.start_ecephys_recording())
+        EphysRouter.start_ecephys_recording()
         time.sleep(3)
-        io.write(EphysRouter.stop_ecephys_recording())
+        EphysRouter.stop_ecephys_recording()
         time.sleep(.5)
 
 
-class EphysHTTP:
+class EphysHTTP(Ephys):
+    """ Interface for HTTP server introduced in open ephys v0.6.0 (2022) """
+    
     try:
-        print(hostname:= "W10DT05501")
         hostname = config["components"]["OpenEphys"]["host"]
     except:
         hostname = "localhost"
-        
-    hostname = "W10DT05501" #!np1 acq
-    print(hostname)
     
     server = f"http://{hostname}:37497/api"
     status_endpoint = f"{server}/status"
@@ -94,22 +131,6 @@ class EphysHTTP:
         return requests.put(EphysHTTP.status_endpoint, json.dumps(mode_msg))
 
     @staticmethod
-    def get_data_file_path():
-        # TODO update to get folder name / directory / append as reqd
-        return requests.get(EphysHTTP.recording_endpoint).json()['current_directory_name']
-
-    @staticmethod
-    def set_data_file_path(path: Optional[str], prepend_text: Optional[str] = None, append_text: Optional[str] = None):
-        recording = requests.get(EphysHTTP.recording_endpoint).json()
-        if path:
-            recording['current_directory_name'] = path
-        if prepend_text:
-            recording['prepend_text'] = prepend_text
-        if append_text:
-            recording['append_text'] = append_text
-        return requests.put(EphysHTTP.recording_endpoint, json.dumps(recording))
-
-    @staticmethod
     def start_ecephys_recording():
         return EphysHTTP.set_mode(EphysHTTP.EphysModes.record)
 
@@ -126,8 +147,15 @@ class EphysHTTP:
         return EphysHTTP.set_mode(EphysHTTP.EphysModes.idle)
 
     @staticmethod
-    def set_open_ephys_name(path: str,  prepend_text: Optional[str] = None, append_text: Optional[str] = None):
-        return EphysHTTP.set_data_file_path(path=path, prepend_text=prepend_text, append_text=append_text)
+    def set_open_ephys_name(path: Optional[str] = None,  prepend_text: Optional[str] = None, append_text: Optional[str] = None):
+        recording = requests.get(EphysHTTP.recording_endpoint).json()
+        if path:
+            recording['current_directory_name'] = path
+        if prepend_text:
+            recording['prepend_text'] = prepend_text
+        if append_text:
+            recording['append_text'] = append_text
+        return requests.put(EphysHTTP.recording_endpoint, json.dumps(recording))
 
     @staticmethod
     def clear_open_ephys_name():
@@ -145,6 +173,3 @@ class EphysHTTP:
         time.sleep(3)
         EphysHTTP.stop_ecephys_recording()
         time.sleep(.5)
-        
-if __name__ == "__main__":
-    print(EphysHTTP.set_mode(EphysHTTP.EphysModes.idle).content)
