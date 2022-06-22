@@ -2487,7 +2487,7 @@ def get_new_files(state_globals, manifest=False):
                         files_dict[name] = {'filename': file_name}
                     file_paths_dict[name] = filepath
                     if manifest:
-                        manifest.add_to_manifest(filepath)
+                        manifest.add_to_manifest(filepath, remove_source = False)
                         print(f'{name} location found here: {filepath}')
                 else:
                     # error = True
@@ -2529,7 +2529,7 @@ def get_probe_dirs(state_globals, manifest=False):
                         file_paths_dict[lims_key] = probe_dir
                         if manifest:
                             print(f'adding to manifest: {probe_dir}')
-                            manifest.add_to_manifest(probe_dir)
+                            manifest.add_to_manifest(probe_dir, remove_source = False)
                     else:
                         if manifest:
                             print(f"Probe {probe} not at surface...not adding to the platform json or manifest")
@@ -2556,7 +2556,7 @@ def get_probe_dirs(state_globals, manifest=False):
                     file_paths_dict[name] = probe_dir
                     if not (slot in slots_in_manifest) and manifest:
                         print(f'adding to manifest: {probe_dir}')
-                        manifest.add_to_manifest(probe_dir)
+                        manifest.add_to_manifest(probe_dir, remove_source = False)
                         slots_in_manifest.append(slot)
                 else:
                     # error = True
@@ -2984,7 +2984,7 @@ def save_platform_json(state_globals, manifest=False):
 
     # create the sync report file
     if manifest:
-        lims_session.add_to_manifest(platform_file_path)
+        lims_session.add_to_manifest(platform_file_path, remove_source = False)
         # create_sync_report(state_globals, lims_session)
 
         trigger_file_name = f'{state_globals["external"]["session_name"]}'
@@ -3012,7 +3012,7 @@ def create_sync_report(state_globals, lims_session):
         pass
     try:
         if os.path.isfile(sync_report_path):
-            lims_session.add_to_manifest(sync_report_path)
+            lims_session.add_to_manifest(sync_report_path, remove_source = False)
             print(f"sync_report_path:{sync_report_path}")
         else:
             error = True

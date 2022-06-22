@@ -326,5 +326,5 @@ def write_manifest():
     lims_session = limstk.Session("neuropixel", "neuropixels", id=experiment.session_id)
     lims_session.trigger_data["sessionid"] = experiment.session_id
     lims_session.trigger_data["location"] = lims_session.path_data["location"]
-    # ims_session.add_to_manifest(platform_file_path)
+    # ims_session.add_to_manifest(platform_file_path, remove_source = False)
     # lims_session.write_manifest(trigger_filename=trigger_file_name)
