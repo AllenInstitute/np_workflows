@@ -2046,7 +2046,7 @@ def copy_stim_pkls(state_globals, session_type):
         try:
             host = r'\\' + config['components']['Stim']['host']
             stim_output_path = os.path.join(host, "output")  # TODO put in config
-            file_list = f(stim_output_path, num_files)
+            file_list = get_new_files_list(stim_output_path, num_files)
             print(f">>>> file_list:{file_list}")
             warnings = {}
             for file in file_list:
