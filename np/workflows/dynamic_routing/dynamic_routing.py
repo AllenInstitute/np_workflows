@@ -10,16 +10,17 @@ import threading
 from time import sleep
 import requests
 import yaml
+from ...models import model
 
 import mpetk
 import mpetk.aibsmw.routerio.router as router
 from mpetk import limstk, mpeconfig, zro
 from wfltk import middleware_messages_pb2 as messages
 
-from . import mvr, model, ephys_api
-from .ephys_api import ephys
-from .model import DynamicRouting  # It can make sense to have a class to store experiment data.
-from .mvr import MVRConnector  # This will eventually get incorporated into the workflow launcher
+from ... import mvr, ephys_api
+from ...ephys_api import ephys
+from ...models.model import DynamicRouting  # It can make sense to have a class to store experiment data.
+from ...mvr import MVRConnector  # This will eventually get incorporated into the workflow launcher
 
 # Setup your typical components; the config, services, and perhaps some typical models for an experiment.
 # An alternative is to store these in the state.  However, this is one of those times that globals are ok because

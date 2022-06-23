@@ -1,4 +1,7 @@
 # -*- coding: latin-1 -*-
+from ...models import model
+
+
 try:
     import pdb
     import sys
@@ -23,10 +26,10 @@ try:
 
     # sys.path.append("..")
     # pdb.set_trace()
-    from . import mvr, model, ephys_api
-    from .mvr import MVRConnector
-    from .model import DynamicRouting  # It can make sense to have a class to store experiment data.
-    from .ephys_api import EphysHTTP as Ephys # TODO unused - can move from npxcommon to workflow
+    from ... import mvr, ephys_api
+    from ..mvr import MVRConnector
+    from ...models.model import DynamicRouting  # It can make sense to have a class to store experiment data.
+    from ..ephys_api import EphysHTTP as Ephys # TODO unused - can move from npxcommon to workflow
 
     import mpetk
     from mpetk import limstk, mpeconfig, zro
@@ -36,7 +39,7 @@ try:
     from wfltk import middleware_messages_pb2 as wfltk_msgs
     messages = wfltk_msgs
 
-    from . import npxcommon as npxc
+    from .. import npxcommon as npxc
     
 except Exception as e:
     # import errors aren't printed to console by default

@@ -26,11 +26,12 @@ import requests
 import yaml
 import zmq
 from PIL import Image
+from ..models import model
 from wfltk import middleware_messages_pb2 as wfltk_msgs
 
 # sys.path.append("..")
-from . import ephys_edi_pb2 as ephys_messages #! TODO remove this - communicate through API instead
-from . import model, mvr
+from .. import ephys_edi_pb2 as ephys_messages #! TODO remove this - communicate through API instead
+from .. import mvr
 from .mvr import MVRConnector
 from .ephys_api import EphysHTTP as Ephys
 
