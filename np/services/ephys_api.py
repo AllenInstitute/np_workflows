@@ -1,10 +1,11 @@
 import json
 import logging
+
 import sys
 import time
 from enum import Enum
 from typing import Optional
-from abc import ABC
+from abc import ABC, abstractmethod
 
 import requests
 
@@ -52,7 +53,7 @@ class Ephys(ABC):
     
     
 class EphysRouter(Ephys):
-    """ Original ZMQ protobuf implementation - requires ephys_edi_pb2.py from ephys_edi.proto """ 
+    """ Original ZMQ protobuf implementation - requires ephys_edi_pb2.py output from ephys_edi.proto """ 
     
     @staticmethod
     def start_ecephys_recording():
@@ -104,7 +105,8 @@ class EphysHTTP(Ephys):
     status_endpoint = f"{server}/status"
     recording_endpoint = f"{server}/recording"
     processors_endpoint = f"{server}/processors"
-
+    message_endpoint = f"{server}/message"
+    
     class EphysModes(Enum):
         idle = "IDLE"
         acquire = "ACQUIRE"
@@ -116,6 +118,7 @@ class EphysHTTP(Ephys):
         EphysHTTP.status_endpoint = f"{EphysHTTP.server}/status"
         EphysHTTP.recording_endpoint = f"{EphysHTTP.server}/recording"
         EphysHTTP.processors_endpoint = f"{EphysHTTP.server}/processors"
+        EphysHTTP.message_endpoint = f"{EphysHTTP.server}/message"
 
     @staticmethod
     def get_mode() -> requests.Response:
@@ -148,9 +151,18 @@ class EphysHTTP(Ephys):
 
     @staticmethod
     def set_open_ephys_name(path: Optional[str] = None,  prepend_text: Optional[str] = None, append_text: Optional[str] = None):
+        
         recording = requests.get(EphysHTTP.recording_endpoint).json()
+        
         if path:
-            recording['current_directory_name'] = path
+            if path == "":
+                path = "_" # filename cannot be zero length
+            if "." in path:
+                m = f"setting open ephys directory name - cannot contain periods: {path}"                
+                print(m)
+                raise ValueError(m)
+            recording['base_text'] = path
+            
         if prepend_text:
             recording['prepend_text'] = prepend_text
         if append_text:
@@ -159,7 +171,7 @@ class EphysHTTP(Ephys):
 
     @staticmethod
     def clear_open_ephys_name():
-        return EphysHTTP.set_data_file_path(path='')
+        return EphysHTTP.set_open_ephys_name(path="", prepend_text="", append_text="")
 
     @staticmethod
     def request_open_ephys_status():
@@ -170,6 +182,51 @@ class EphysHTTP(Ephys):
         EphysHTTP.clear_open_ephys_name()
         time.sleep(.5)
         EphysHTTP.start_ecephys_acquisition()
-        time.sleep(3)
+        time.sleep(1)
         EphysHTTP.stop_ecephys_recording()
         time.sleep(.5)
+        EphysHTTP.stop_ecephys_acquisition()
+        time.sleep(.5)
+        
+    """"  
+    @staticmethod
+    def set_ref(ext_tip="TIP"):
+        # for port in [0, 1, 2]: 
+        #     for slot in [0, 1, 2]: 
+                
+        slot = 2 #! Test
+        port = 100 #! Test
+        dock = 0 # TODO may be 1 or 2 with firmware upgrade 
+        tip_ref_msg = {"text": f"NP REFERENCE {slot} {port} {dock} {ext_tip}"}
+        #logging.info(f"sending ...
+        print(f"sending: {tip_ref_msg} --> {EphysHTTP.message_endpoint}")
+        # return 
+        requests.put(EphysHTTP.message_endpoint, json.dumps(tip_ref_msg))
+        time.sleep(3)
+    """
+    
+    
+# TODO set up everything possible from here to avoid accidentally changed settings ? 
+# probe channels
+# sampling rate 
+# tip ref
+# signal chain?
+# acq drive letters
+
+"""
+if __name__ == "__main__":
+    r = requests.get(EphysHTTP.recording_endpoint)
+    print((r.json()['current_directory_name'], r.json()['prepend_text'], r.json()['append_text']))
+        
+    r = EphysHTTP.set_open_ephys_name(path = "mouseID_", prepend_text="sessionID", append_text="_date")
+    print((r.json()['current_directory_name'], r.json()['prepend_text'], r.json()['append_text']))
+    
+    r = EphysHTTP.set_open_ephys_name(path = "mouse", prepend_text="session", append_text="date")
+    print((r.json()['current_directory_name'], r.json()['prepend_text'], r.json()['append_text']))
+    
+    print((r.json()['base_text'])) # fails as of 06/23 https://github.com/open-ephys/plugin-GUI/pull/514
+"""
+
+    
+
+    
