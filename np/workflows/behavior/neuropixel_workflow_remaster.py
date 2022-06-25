@@ -24,11 +24,11 @@ try:
     from datetime import datetime as dt
     from importlib import reload
     from pprint import pformat
-
-    import mpetk.aibsmw.routerio.router as router
     import requests
     import yaml
     import zmq
+    
+    import mpetk.aibsmw.routerio.router as router
     from mpetk import limstk, mpeconfig, zro
     from mpetk.zro import Proxy
     from np.models.model import \
@@ -71,7 +71,7 @@ mouse_director_proxy: zro.Proxy = None
 mvr_writer: mvr.MVRConnector
 sync: zro.Proxy
 
-# ------------------- UTILITY FUNCTIONS -------------------
+# ------------------- UTILITY FUNCTIONS --------Flims-----------
 
 def fail_state(message: str, state: dict):
     """
@@ -204,10 +204,11 @@ def initialize_input(state_globals):
     npxc.initialize_input(state_globals)
 
     #! this is done in npxc too- delete
-    # global mouse_director_proxy
-    # md_host = npxc.config['components']['MouseDirector']['host']
-    # md_port = npxc.config['components']['MouseDirector']['port']
-    # mouse_director_proxy = Proxy(f'{md_host}:{md_port}')
+    global mouse_director_proxy
+    md_host = npxc.config['components']['MouseDirector']['host']
+    md_port = npxc.config['components']['MouseDirector']['port']
+    #! should md_host be localhost, not vidmon?
+    mouse_director_proxy = Proxy(f'{md_host}:{md_port}')
 
     global camstim_proxy
     host = npxc.config["components"]["Stim"]["host"]
@@ -246,6 +247,7 @@ def initialize_input(state_globals):
     state_globals["external"]["session_type_option_string"] = ', '.join(experiment_sessions)
     state_globals["external"]["session_types_options"] = experiment_sessions
 
+    state_globals["external"]["next_state"] = "scan_mouse_id"
     if failed:
         alert_string = f'The following proxies are not available: {", ".join(failed)}'
         npxc.overrideable_error_state(state_globals, 'initialize', 'scan_mouse_id', message=alert_string)
@@ -255,12 +257,13 @@ def initialize_input(state_globals):
             state_globals["external"]["status_message"] = "success"
             state_globals["external"]["local_log"] = f'User {state_globals["external"]["user_id"]} found in LIMS'
         else:
-            print('Failed user ID test')
+            state_globals["external"]["next_state"] = "initialize"
             fail_state(f'No LIMS ID for User:{state_globals["external"]["user_id"]} found in LIMS', state_globals)
     except (KeyError, IndexError):
+        print('Failed user ID test')
         fail_state(f'No LIMS ID for User:{state_globals["external"]["user_id"]} found in LIMS', state_globals)
+        state_globals["external"]["next_state"] = "initialize"    
 
-    state_globals["external"]["next_state"] = "scan_mouse_id"
     npxc.probes_need_cleaning(state_globals)
 
 @state_transition
@@ -671,7 +674,7 @@ def ecephys_id_check_enter(state_globals):
     """
     Input test function for state ecephys_id_check
     """
-    state_globals['external']["oephys_dir"] = os.path.join(os.getcwd(), "np/images/logo_np_vis.png")# R"C:\progra~1\AIBS_MPE\workflow_launcher\dynamic_routing\oephys_dir.png"
+    state_globals['external']["oephys_dir"] = os.path.join(os.getcwd(), "np/images/oephys_dir.png")# R"C:\progra~1\AIBS_MPE\workflow_launcher\dynamic_routing\oephys_dir.png"
 
 @state_transition
 def ecephys_id_check_input(state_globals):

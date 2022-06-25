@@ -1,5 +1,5 @@
-git checkout np
-git pull origin np
+@REM git checkout np
+@REM git pull origin np
 
 robocopy .\np\ c:\progra~1\AIBS_MPE\workflow_launcher\np\ /MIR /E
 
