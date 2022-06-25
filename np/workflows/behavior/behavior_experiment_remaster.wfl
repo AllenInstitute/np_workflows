@@ -26,8 +26,8 @@ states:
     inputs:
       - desc: scan_mouse_id
         state: scan_mouse_id
-      - desc: components_error
-        state: components_error
+      # - desc: components_error
+      #   state: components_error
 
   components_error:
     description: components error

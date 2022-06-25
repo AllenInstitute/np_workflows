@@ -246,7 +246,6 @@ def initialize_input(state_globals):
     state_globals["external"]["session_type_option_string"] = ', '.join(experiment_sessions)
     state_globals["external"]["session_types_options"] = experiment_sessions
 
-    state_globals["external"]["next_state"] = "scan_mouse_id"
     if failed:
         alert_string = f'The following proxies are not available: {", ".join(failed)}'
         npxc.overrideable_error_state(state_globals, 'initialize', 'scan_mouse_id', message=alert_string)
@@ -261,6 +260,7 @@ def initialize_input(state_globals):
     except (KeyError, IndexError):
         fail_state(f'No LIMS ID for User:{state_globals["external"]["user_id"]} found in LIMS', state_globals)
 
+    state_globals["external"]["next_state"] = "scan_mouse_id"
     npxc.probes_need_cleaning(state_globals)
 
 @state_transition
