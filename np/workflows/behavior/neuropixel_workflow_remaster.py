@@ -174,6 +174,8 @@ def default_exit(state_globals, label):
 def initialize_enter(state_globals):
     state_globals['external']['session_type'] = 'behavior_experiment'
     state_globals['external']['msg_text'] = 'No message defined.'
+   
+    """
     Processing_Agents = npxc.get_processing_agents(state_globals)
     for agent, params in Processing_Agents.items():
         key = 'Neuropixels Processing Agent '+agent
@@ -189,6 +191,7 @@ def initialize_enter(state_globals):
                                   'host': computer,
                                   'port': port,
                                   'version': '0.0.1'}
+    """
 
     npxc.initialize_enter(state_globals)
 

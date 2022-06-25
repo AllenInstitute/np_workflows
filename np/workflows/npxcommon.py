@@ -2165,7 +2165,7 @@ def copy_stim_pkls(state_globals, session_type):
 def establish_proxies(state_globals):
     state_globals['component_proxies'] = {}
     for key, value in config['components'].items():
-        if 'port' in value:
+        if 'port' in value and 'Notes' not in key:
             print(
                 f'Creating Proxy for device:{key} at host:{value["host"]} port:{value["port"]} device name:{value["desc"]}')
             port = str(value["port"])
@@ -2185,7 +2185,7 @@ def check_components(state_globals):
     # pdb.set_trace()
     for key, value in config['components'].items():
 
-        if 'port' in value and 'Processing' not in key:
+        if 'port' in value and 'Processing' not in key and 'Notes' not in key:
             compStatusArray[key] = False
             # Ping the remote computers to make sure they are alive...in dummy mode, will just be ping localhost, but we want to have the functionality here
             ping_result = os.system('ping %s -n 1' % (value["host"],))
@@ -2243,7 +2243,7 @@ def check_components(state_globals):
 
 
 def confirm_components(state_globals):
-    print('confirming complonents')
+    print('confirming components')
     check_components(state_globals)
     failed = []
     for name, status in state_globals['external']['component_status'].items():
