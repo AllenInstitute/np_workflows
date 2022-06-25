@@ -1,4 +1,5 @@
 import csv
+import datetime
 import glob
 import inspect
 import itertools
@@ -12,7 +13,6 @@ import sys
 import time
 import traceback
 from collections import namedtuple
-import datetime
 from datetime import date as date
 from datetime import datetime as dt
 from datetime import timedelta as timedelta
@@ -26,15 +26,16 @@ import psutil
 import requests
 import yaml
 import zmq
-from PIL import Image
 from np.models import model
-from wfltk import middleware_messages_pb2 as wfltk_msgs
-
 # sys.path.append("..")
-from np.services import ephys_edi_pb2 as ephys_messages #! TODO remove this - communicate through API instead
+from np.services import \
+    ephys_edi_pb2 as \
+    ephys_messages  # ! TODO remove this - communicate through API instead
 from np.services import mvr
-from np.services.mvr import MVRConnector
 from np.services.ephys_api import EphysHTTP as Ephys
+from np.services.mvr import MVRConnector
+from PIL import Image
+from wfltk import middleware_messages_pb2 as wfltk_msgs
 
 messages = wfltk_msgs
 import mpetk
@@ -61,8 +62,8 @@ def jsonrep(o):
     if isinstance(o, datetime.datetime):
         return o.__repr__()
     
-with open('np/config/config_dev.json') as f:
-    json.dump(f, default=jsonrep, indent = 4)
+with open('np/config/dump.json','w') as f:
+    json.dump(config, f, default=jsonrep, indent = 4)
     
 mvr_writer = MVRConnector(args=config['MVR'])
 
