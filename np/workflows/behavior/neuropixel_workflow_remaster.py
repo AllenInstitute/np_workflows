@@ -3,7 +3,7 @@
 import pdb
 import sys
 
-pdb.set_trace()
+# pdb.set_trace()
 # sys.path.append("...")
 # sys.path.append("..")
 
@@ -55,12 +55,14 @@ config = mpeconfig.source_configuration('neuropixels', version='1.4.0')
 config.update(mpeconfig.source_configuration("dynamic_routing"))
 
 
-with open('dynamic_routing/config/neuropixels.yml') as f:
+with open('np/config/neuropixels.yml') as f:
     yconfig = yaml.safe_load(f)
 config.update(yconfig)
 # pdb.set_trace()
-experiment = DynamicRouting()
 
+
+experiment = DynamicRouting()
+ 
 # ---------------- Network Service Objects ----------------
 
 router: router.ZMQHandler
@@ -666,7 +668,7 @@ def ecephys_id_check_enter(state_globals):
     """
     Input test function for state ecephys_id_check
     """
-    state_globals['external']["oephys_dir"] = R"C:\progra~1\AIBS_MPE\workflow_launcher\dynamic_routing\oephys_dir.png"
+    state_globals['external']["oephys_dir"] = os.path.join(os.getcwd(), "np/images/logo_np_vis.png")# R"C:\progra~1\AIBS_MPE\workflow_launcher\dynamic_routing\oephys_dir.png"
 
 @state_transition
 def ecephys_id_check_input(state_globals):

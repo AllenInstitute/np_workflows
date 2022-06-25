@@ -12,6 +12,7 @@ import sys
 import time
 import traceback
 from collections import namedtuple
+import datetime
 from datetime import date as date
 from datetime import datetime as dt
 from datetime import timedelta as timedelta
@@ -55,6 +56,14 @@ with open('np/config/neuropixels.yml') as f:
 
 config.update(yconfig)
 
+pdb.set_trace()
+def jsonrep(o):
+    if isinstance(o, datetime.datetime):
+        return o.__repr__()
+    
+with open('np/config/config_dev.json') as f:
+    json.dump(f, default=jsonrep, indent = 4)
+    
 mvr_writer = MVRConnector(args=config['MVR'])
 
 
