@@ -26,14 +26,14 @@ try:
     from functools import partial
     from pprint import pformat, pprint
     from shutil import copyfile
+
+    # pdb.set_trace()
+    import mpetk.aibsmw.routerio.router as router
     import numpy
     import psutil
     import requests
     import yaml
     import zmq
-    
-    pdb.set_trace()
-    import mpetk.aibsmw.routerio.router as router
     from mpetk import limstk, mpeconfig, zro
     from mpetk.zro import Proxy
     from np.models.model import \
@@ -154,6 +154,7 @@ def initialize_input(state_globals):
     md_host = npxc.config['components']['MouseDirector']['host']
     md_port = npxc.config['components']['MouseDirector']['port']
     #! should md_host be localhost, not vidmon?
+    md_host = 'localhost'
     mouse_director_proxy = Proxy(f'{md_host}:{md_port}')  # TODO: config this
 
     global camstim_proxy
@@ -508,20 +509,20 @@ def date_string_check_input(state):
     print(f"local lims lication: {local_lims_location}")
     os.makedirs(local_lims_location, exist_ok=True)
 
-    try:
-        notes_proxy = state["component_proxies"]["Notes"]
-        notes_proxy.setID(str(state["external"]["mouse_id"]), str(state["external"]["session_name"]))
-        notes_proxy.setNoSurgery(True)
-        state["external"]["status_message"] = "success"
-        state["external"]["component_status"]["Notes"] = True
-    except KeyError:
-        fail_state('SurgeryNotes proxy is not defined.', state)
-        state["external"]["component_status"]["Notes"] = False
-        return
-    except Exception:
-        fail_state('Error setting mouse and session name in SurgeryNotes', state)
-        state["external"]["component_status"]["Notes"] = False
-        return
+    # try:
+    #     notes_proxy = state["component_proxies"]["Notes"]
+    #     notes_proxy.setID(str(state["external"]["mouse_id"]), str(state["external"]["session_name"]))
+    #     notes_proxy.setNoSurgery(True)
+    #     state["external"]["status_message"] = "success"
+    #     state["external"]["component_status"]["Notes"] = True
+    # except KeyError:
+    #     fail_state('SurgeryNotes proxy is not defined.', state)
+    #     state["external"]["component_status"]["Notes"] = False
+    #     return
+    # except Exception:
+    #     fail_state('Error setting mouse and session name in SurgeryNotes', state)
+    #     state["external"]["component_status"]["Notes"] = False
+    #     return
 
     mapped_lims_location = f"{npxc.config['mapped_lims_location']}/{state['external']['session_name']}"
     state["external"]["mapped_lims_location"] = mapped_lims_location

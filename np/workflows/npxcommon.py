@@ -2784,7 +2784,10 @@ def save_notes(state_globals):
     except Exception as e:
         print(f'Notes proxy failure:{e}!')
         state_globals['external']['status_message'] = f'Notes Proxy Failure:{e}'
-        state_globals['external']['component_status']["Notes"] = False
+        try:
+            state_globals['external']['component_status']["Notes"] = False
+        except:
+            pass
 
 
 def overrideable_error_state(state_globals, retry_state, override_state=None, message=None):
