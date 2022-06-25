@@ -1,9 +1,13 @@
 # -*- coding: latin-1 -*-
+import pdb
+import sys
+pdb.set_trace()
+sys.path.append("...")
+sys.path.append("..")
+
 from ...models import model
 
-
 try:
-    import pdb
     import sys
     import logging
     # logging.warning("logging started")
@@ -24,8 +28,6 @@ try:
     import zmq
     import yaml
 
-    # sys.path.append("..")
-    # pdb.set_trace()
     from ... import mvr, ephys_api
     from ..mvr import MVRConnector
     from ...models.model import DynamicRouting  # It can make sense to have a class to store experiment data.

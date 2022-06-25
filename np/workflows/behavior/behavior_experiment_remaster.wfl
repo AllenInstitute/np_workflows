@@ -1,7 +1,7 @@
 ---
 wfl_version: 1.0
 
-import: dynamic_routing.neuropixel_workflow
+import: np.workflows.behavior.neuropixel_workflow_remaster
 entry_state: initialize
 
 #  Enter each phase of the workflow as a state
