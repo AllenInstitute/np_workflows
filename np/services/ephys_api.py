@@ -1,18 +1,17 @@
 import json
 import logging
-
 import sys
 import time
+from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Optional
-from abc import ABC, abstractmethod
 
 import requests
 
 sys.path.append("..")
 try:
     # get protobufs module if available, for Router implementation
-    from . import ephys_edi_pb2 as ephys_messages
+    from np.services import ephys_edi_pb2 as ephys_messages
 except:
     ...
 

@@ -1,21 +1,22 @@
 # -*- coding: latin-1 -*-
+
 import pdb
 import sys
-pdb.set_trace()
-sys.path.append("...")
-sys.path.append("..")
 
-from ...models import model
+pdb.set_trace()
+# sys.path.append("...")
+# sys.path.append("..")
 
 try:
-    import sys
-    import logging
     # logging.warning("logging started")
     import datetime
     import inspect
     import json
+    import logging
     import os
+    import pathlib
     import socket
+    import sys
     import threading
     import time
     import traceback
@@ -23,25 +24,24 @@ try:
     from datetime import datetime as dt
     from importlib import reload
     from pprint import pformat
-    import pathlib
-    import requests
-    import zmq
-    import yaml
 
-    from ... import mvr, ephys_api
-    from ..mvr import MVRConnector
-    from ...models.model import DynamicRouting  # It can make sense to have a class to store experiment data.
-    from ..ephys_api import EphysHTTP as Ephys # TODO unused - can move from npxcommon to workflow
-
-    import mpetk
-    from mpetk import limstk, mpeconfig, zro
     import mpetk.aibsmw.routerio.router as router
+    import requests
+    import yaml
+    import zmq
+    from mpetk import limstk, mpeconfig, zro
     from mpetk.zro import Proxy
-    from wfltk import middleware_messages_pb2 as messages # name in new ver
+    from np.models.model import \
+        DynamicRouting  # It can make sense to have a class to store experiment data.
+    from np.services import mvr
+    from np.services.ephys_api import \
+        EphysHTTP as Ephys  # TODO unused - can move from npxcommon to workflow
+    from np.services.mvr import MVRConnector
+    from wfltk import middleware_messages_pb2 as messages  # name in new ver
     from wfltk import middleware_messages_pb2 as wfltk_msgs
     messages = wfltk_msgs
 
-    from .. import npxcommon as npxc
+    from np.workflows import npxcommon as npxc
     
 except Exception as e:
     # import errors aren't printed to console by default

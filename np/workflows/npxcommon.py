@@ -26,14 +26,14 @@ import requests
 import yaml
 import zmq
 from PIL import Image
-from ..models import model
+from np.models import model
 from wfltk import middleware_messages_pb2 as wfltk_msgs
 
 # sys.path.append("..")
-from .. import ephys_edi_pb2 as ephys_messages #! TODO remove this - communicate through API instead
-from .. import mvr
-from .mvr import MVRConnector
-from .ephys_api import EphysHTTP as Ephys
+from np.services import ephys_edi_pb2 as ephys_messages #! TODO remove this - communicate through API instead
+from np.services import mvr
+from np.services.mvr import MVRConnector
+from np.services.ephys_api import EphysHTTP as Ephys
 
 messages = wfltk_msgs
 import mpetk
@@ -50,7 +50,7 @@ config = mpeconfig.source_configuration('neuropixels', version='1.4.0')
 #! #TODO line above is temporary, we want to consolidate config settings into one file 
 config.update(mpeconfig.source_configuration("dynamic_routing"))
 
-with open('dynamic_routing/config/neuropixels.yml') as f:
+with open('np/config/neuropixels.yml') as f:
     yconfig = yaml.safe_load(f)
 
 config.update(yconfig)
