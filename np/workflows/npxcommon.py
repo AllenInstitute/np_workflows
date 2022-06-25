@@ -57,7 +57,7 @@ with open('np/config/neuropixels.yml') as f:
 
 config.update(yconfig)
 
-pdb.set_trace()
+# pdb.set_trace()
 def jsonrep(o):
     if isinstance(o, datetime.datetime):
         return o.__repr__()
