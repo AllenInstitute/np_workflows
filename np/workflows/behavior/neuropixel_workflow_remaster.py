@@ -173,7 +173,7 @@ def default_exit(state_globals, label):
 @state_transition
 def initialize_enter(state_globals):
     state_globals['external']['session_type'] = 'behavior_experiment'
-    state_globals['external']['msg_text'] = 'No message defined.'
+    state_globals['external']['msg_text'] = 'username not found'
    
     """
     Processing_Agents = npxc.get_processing_agents(state_globals)
