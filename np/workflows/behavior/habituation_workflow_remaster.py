@@ -792,6 +792,7 @@ def brain_surface_focus_input(state_globals):
     Input test function for state brain_surface_focus
     """
     # take a photo here from CamViewer3d
+
     if state_globals['external']['dummy_mode']:
         surface_1_left_path = os.path.join(state_globals['external']['mapped_lims_location'], (state_globals['external']["session_name"] + '_surface-image2-left.png'))
         surface_1_right_path = os.path.join(state_globals['external']['mapped_lims_location'], (state_globals['external']["session_name"] + '_surface-image2-right.png'))
@@ -818,7 +819,11 @@ def brain_surface_focus_input(state_globals):
 
         try:
             proxy.save_left_image(surface_1_left_path)
-            proxy.save_right_image(surface_1_right_path)
+            # proxy.save_right_image(surface_1_right_path)
+            # state_globals['external']['new_snapshot'] = npxc.mvr_capture_on_enter(state_globals,surface_1_left_path) 
+            # npxc.mvr_capture_on_enter(state_globals,surface_1_left_path)
+            # npxc.mvr_capture_on_enter(state_globals,surface_1_right_path)
+
 
             state_globals['external']['status_message'] = 'success'
             state_globals['external']['local_log'] = f'Surface_1_Path:{surface_1_local_path}'

@@ -1,32 +1,40 @@
-import inspect
-import json
-import logging
-import os
 import pdb
-#
-# limstk functions are auto-generated so the ide might warn it can't see them.
-import shutil
-import threading
-from time import sleep
-import requests
-import yaml
-from ...models import model
+# pdb.set_trace()
+try:
+    import inspect
+    import json
+    import logging
+    import os
+    #
+    # limstk functions are auto-generated so the ide might warn it can't see them.
+    import shutil
+    import threading
+    from time import sleep
 
-import mpetk
-import mpetk.aibsmw.routerio.router as router
-from mpetk import limstk, mpeconfig, zro
-from wfltk import middleware_messages_pb2 as messages
+    import mpetk
+    import mpetk.aibsmw.routerio.router as router
+    import requests
+    import yaml
+    from mpetk import limstk, mpeconfig, zro
+    from np.models import model
+    from np.models.model import \
+        DynamicRouting  # It can make sense to have a class to store experiment data.
 
-from ... import mvr, ephys_api
-from ...ephys_api import ephys
-from ...models.model import DynamicRouting  # It can make sense to have a class to store experiment data.
-from ...mvr import MVRConnector  # This will eventually get incorporated into the workflow launcher
-
+    from np.services.ephys_api import EphysHTTP as ephys
+    from np.services.mvr import \
+        MVRConnector  # This will eventually get incorporated into the workflow launcher
+    from wfltk import middleware_messages_pb2 as messages
+    
+except Exception as e:
+    # import errors aren't printed to console by default
+    print(e)
+    
 # Setup your typical components; the config, services, and perhaps some typical models for an experiment.
 # An alternative is to store these in the state.  However, this is one of those times that globals are ok because
 # these values are "read only" and used ubiquitously.
 
 config: dict = mpeconfig.source_configuration("dynamic_routing")
+
 experiment = DynamicRouting()
 
 io: router.ZMQHandler
@@ -66,8 +74,8 @@ def connect_to_services(state):
     
     component_errors = []
     
-    io.write(ephys.start_ecephys_acquisition())
-    #  Here we either need to test open ephys by trying to record or we get the status message.  awaiting testing.
+    # TODO Here we either need to test open ephys by trying to record or we get the status message.  awaiting testing.
+    
     global mvr
     try:
         mvr = MVRConnector(args=config['MVR'])

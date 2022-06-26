@@ -65,9 +65,20 @@ def jsonrep(o):
 with open('np/config/dump.json','w') as f:
     json.dump(config, f, default=jsonrep, indent = 4)
     
-mvr_writer = MVRConnector(args=config['MVR'])
+# mvr_writer = MVRConnector(args=config['MVR'])
 
-
+global mvr_writer
+try:
+    mvr_writer = MVRConnector(args=config['MVR'])
+    if not mvr._mvr_connected:
+        print("Failed to connect to MVR")
+        logging.info("Failed to connect to mvr")
+        # component_errors.append(f"Failed to connect to MVR on {config['MVR']}")
+except Exception:
+    print("Failed to connect to mvr")
+    logging.info("Failed to connect to mvr")
+    # component_errors.append(f"Failed to connect to MVR.")
+        
 global_processes = {}
 
 # ---------------- Network Service Objects ----------------
@@ -128,6 +139,37 @@ def make_keys_and_values_strings(dict_in):
         new_dict[str(key)] = str(value)
     return new_dict
 
+
+def mvr_capture_on_enter(state_globals,photo_path=None):
+    """standard mvr image snapshot func, returning error mesg or img  """
+    mvr_writer.take_snapshot()
+    
+    def wait_on_snapshot():  
+        while True: #TODO add timeout to prevent infinite loop
+            # try:
+            for message in mvr_writer.read():
+                pdb.set_trace()
+                if message.get('mvr_broadcast', False) == "snapshot_taken":
+                    drive, filepath = os.path.splitdrive(message['snapshot_filepath'])
+                    source_photo_path = f"\\\\{config['MVR']['host']}\\{drive[0]}${filepath}"
+                    sleep(1) # MVR has responded too quickly.  It hasn't let go of the file so we must wait.
+                    dest_photo_path = shutil.copy(source_photo_path, photo_path or "C:/ProgramData/AIBS_MPE/wfltk/temp")
+                    logging.info(f"Copied: {source_photo_path} -> {dest_photo_path}")
+                    return True, dest_photo_path
+                elif message.get('mvr_broadcast', False) == "snapshot_failed":
+                    return False, message['error_message']
+            # except Exception as e:
+            #     return False, e
+            
+    success, mesg_or_img = wait_on_snapshot()
+    if not success:
+        try:
+            fail_state(f"Error taking snapshot: {mesg_or_img}",state_globals)
+        except: 
+            pass
+    else:
+        return mesg_or_img # return the captured image
+      
 
 def initialize_input(state_globals):
     try:

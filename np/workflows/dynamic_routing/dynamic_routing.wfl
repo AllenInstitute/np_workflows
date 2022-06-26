@@ -2,14 +2,13 @@
 wfl_version: 1.0
 
 # This is the module that will be imported for this files workflow
-import: dynamic_routing.dynamic_routing
+import: np.workflows.dynamic_routing.dynamic_routing
 
 # Define the first / entry state
 entry_state: init #! init
 
 #  Enter each phase of the workflow as a state
 states:
-  
   # 2) check components: MVR, OpenEphys, Stim, Sync, MouseDirector
   init:
     description: Experiment Initialization
@@ -44,7 +43,7 @@ states:
         type: text_entry
         desc: Enter mouse LabTracks ID, then click the right arrow to continue.
     inputs:
-      - state: flush_lines #load_mouse
+      - state: pre_brain_surface_photo_doc #load_mouse
 
   # 4) *stretch goal: query mTrain for mouse Regimen, set mouse stage
 
@@ -181,7 +180,7 @@ states:
   probe_surface_photo_doc:
     description: Probes at brain surface photo doc
     display:
-      - field: probes_at_surface_image 
+      - field: probes_at_surface_image
         type: high_res_image
         desc: Pre-insertion photo doc
       - field: snapshot_ok # This is apparently unused
@@ -247,7 +246,7 @@ states:
       - field: None
         type: note
         desc: Press the green "next" arrow when it becomes available. #! can we auto-advance or do this in the background?
-    inputs: 
+    inputs:
       - state: settle_timer
 
   # 17) pre-stimulus timer #! minus time elapsed since probes reached final depth?
@@ -349,12 +348,11 @@ states:
     description: water mouse and small data management
     inputs:
       - state: network_backup
-  # the following can be done behind the scenes during mouse removal screen: 
-      # dedicated screens could display if an error occurs, with the chance to retry 
+  # the following can be done behind the scenes during mouse removal screen:
+  # dedicated screens could display if an error occurs, with the chance to retry
   # 25) Move files (collect files listed below into the Sync computer neuropixels data directory)
   # 27) check files
   # 28) make manifest and platform json (note: manifest should be created after platform json is finalized)
-
 
   # 30) network backup
   # 29) *stretch goal: kick off data joint processing

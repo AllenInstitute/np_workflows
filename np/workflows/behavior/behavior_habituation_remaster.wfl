@@ -506,7 +506,7 @@ states:
         desc: Tick this box after initiating probe lowering (intermediate first, then engaged)
       - field: none
         type: check_box
-        desc: Fill reservoir syringe EXACTLY to the mark appropriate for today's drop size
+        desc: Fill reservoir syringe to the mark appropriate for today's drop size
     inputs:
       - desc: Brain Surface Focus
         state: brain_surface_focus
