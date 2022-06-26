@@ -9,6 +9,25 @@ entry_state: init #! init
 
 #  Enter each phase of the workflow as a state
 states:
+  resume:
+    description: Restore last wfl
+    display:
+      - field: prompt # This is apparently unused
+        type: branch_radio_button
+        desc: Resume from previous session?
+        options:
+          - field: resume
+            desc: Restore data
+            next: restore
+          - field: new
+            desc: Start new workflow
+            next: init
+            default: True
+
+  restore:
+    description: empty
+    display: empty
+
   # 2) check components: MVR, OpenEphys, Stim, Sync, MouseDirector
   init:
     description: Experiment Initialization
