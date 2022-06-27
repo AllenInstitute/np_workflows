@@ -490,21 +490,12 @@ def set_open_ephys_name(state_globals):
         # send_ecephys_message(state_globals, 'set_data_file_path', path=state_globals["external"]["session_name"])
         
         folder_str = state_globals["external"]["session_name"]
-        mouseID = state["external"]["mouse_id"]
-        sessionID = state["external"]["ecephys_session_id"] 
+        mouseID = state_globals["external"]["mouse_id"]
+        sessionID = state_globals["external"]["ecephys_session_id"] 
         date = state_globals["external"]["sessionNameTimestamp"]
      
-        #! TODO this is filename we want (or provide path with folder_str only, no prepend/append)
-        ephys_api.EphysHTTP.set_data_file_path(path=mouseID,
-                                               prepend_text=sessionID+"_",
-                                               append_text="_"+date)
-       
-        #! we can only append/prepend currently, cannot set path
-        # we'll send sessionID and date, and request user checks/enters mouseID in opephys for now 
-        Ephys.set_open_ephys_name(prepend_text=sessionID,
-                                               append_text=date)                                        
-                                               
-                                               
+        Ephys.set_open_ephys_name(path=mouseID,prepend_text=sessionID+"_", append_text="_"+date)
+
     except Exception as E:
         print(f'Failed to set open ephys name: {E}')
 

@@ -1,5 +1,6 @@
 import json
 import logging
+import socket
 import sys
 import time
 from abc import ABC, abstractmethod
@@ -97,8 +98,15 @@ class EphysHTTP(Ephys):
     
     try:
         hostname = config["components"]["OpenEphys"]["host"]
-    except:
-        hostname = "localhost"
+    except (NameError,KeyError):
+        pc = socket.gethostname()
+        acq = {
+            "W10DTSM112719":"W10DT05515", # NP0
+            "W10DTSM18306":"W10DT05501", # NP1
+            "W10DTSM18307":"W10DT05517", # NP2
+            "W10DTMJ0AK6GM":"W10SV108131", #ben-desktop:btTest
+        }
+        hostname = acq.get(pc,"localhost")
     
     server = f"http://{hostname}:37497/api"
     status_endpoint = f"{server}/status"
@@ -187,7 +195,7 @@ class EphysHTTP(Ephys):
         EphysHTTP.stop_ecephys_acquisition()
         time.sleep(.5)
         
-    """"  
+    """  
     @staticmethod
     def set_ref(ext_tip="TIP"):
         # for port in [0, 1, 2]: 
