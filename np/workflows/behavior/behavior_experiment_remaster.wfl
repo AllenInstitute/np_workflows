@@ -742,9 +742,9 @@ states:
   diI_photoDocumentation:
     description: DiI photodoc
     display:
-      - field: surface_1_file_location
-        type: image
-        desc: Image Display
+      # - field: surface_1_file_location
+      #   type: image
+      #   desc: Image Display
       - field: pre_experiment_image_accept
         type: branch_radio_button
         desc: Accept Image?
@@ -864,9 +864,9 @@ states:
   insert_probes_start:
     description: Insert Probes
     display:
-      - field: surface_2_file_location
-        type: image
-        desc: Image Display
+      # - field: surface_2_file_location
+      #   type: image
+      #   desc: Image Display
       - field: image_2_accept
         type: branch_radio_button
         desc: Accept Image?
@@ -890,9 +890,9 @@ states:
       - field: isi_image_path
         type: image
         desc: ISI Image Display
-      - field: surface_2_file_location
-        type: image
-        desc: Image Display
+      # - field: surface_2_file_location
+      #   type: image
+      #   desc: Image Display
       - field: isi_image_match
         type: check_box
         desc: Does image match the ISI image?
@@ -980,9 +980,9 @@ states:
   photodoc_confirm3:
     description: confirm photodoc 3
     display:
-      - field: surface_3_file_location
-        type: image
-        desc: Image Display
+      # - field: surface_3_file_location
+      #   type: image
+      #   desc: Image Display
       - field: photodoc3_image_accept
         type: branch_radio_button
         desc: Accept Image?
@@ -1277,9 +1277,9 @@ states:
   insertion_photodocumentation:
     description: brain surface photo documentation
     display:
-      - field: surface_4_file_location
-        type: image
-        desc: Image Display
+      # - field: surface_4_file_location
+      #   type: image
+      #   desc: Image Display
       - field: brain_surface_documentation
         type: branch_radio_button
         desc: Evidence of Bleeding
@@ -1304,9 +1304,9 @@ states:
   pre_experiment_bleeding_severity:
     description: bleeding severity notes
     display:
-      - field: surface_3_file_location
-        type: image
-        desc: Image Display
+      # - field: surface_3_file_location
+      #   type: image
+      #   desc: Image Display
       - field: None
         type: note
         desc: Tick boxes for probes with bleeding due to insertion (not caused by surgery)
@@ -1677,9 +1677,9 @@ states:
   remove_probes_start:
     description: post experiment photodoc review
     display:
-      - field: surface_5_file_location
-        type: image
-        desc: Image Display
+      # - field: surface_5_file_location
+      #   type: image
+      #   desc: Image Display
       - field: brain_surface_documentation
         type: branch_radio_button
         desc: Evidence of Bleeding
@@ -1731,9 +1731,9 @@ states:
   post_removal_image:
     description: post removal image check
     display:
-      - field: surface_6_file_location
-        type: image
-        desc: Image Display
+      # - field: surface_6_file_location
+      #   type: image
+      #   desc: Image Display
       - field: pre_experiment_image_accept
         type: branch_radio_button
         desc: Accept Image?
@@ -1758,9 +1758,9 @@ states:
   post_experiment_bleeding_severity:
     description: post experiment bleeding severity notes
     display:
-      - field: surface_6_file_location
-        type: image
-        desc: Image Display
+      # - field: surface_6_file_location
+      #   type: image
+      #   desc: Image Display
       - field: None
         type: note
         desc: Tick the boxes of probes with bleeding due to insertion (not caused by insertion or surgery)
