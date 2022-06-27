@@ -24,11 +24,11 @@ try:
     from datetime import datetime as dt
     from importlib import reload
     from pprint import pformat
+
+    import mpetk.aibsmw.routerio.router as router
     import requests
     import yaml
     import zmq
-    
-    import mpetk.aibsmw.routerio.router as router
     from mpetk import limstk, mpeconfig, zro
     from mpetk.zro import Proxy
     from np.models.model import \
@@ -893,97 +893,103 @@ def diI_photoDoc_setup_input(state):
     """
     Input test function for state diI_photoDoc_setup
     """
-    if state["external"]["dummy_mode"]:
-        pre_experiment_left_path = os.path.join(
-            state["external"]["mapped_lims_location"],
-            (state["external"]["session_name"] + "_surface-image1-left.png"),
-        )
-        pre_experiment_right_path = os.path.join(
-            state["external"]["mapped_lims_location"],
-            (state["external"]["session_name"] + "_surface-image1-right.png"),
-        )
-        pre_experiment_local_path = os.path.join(
+    mapped_lims_location = f"{npxc.config['mapped_lims_location']}"
+    try:
+        if state["external"]["dummy_mode"]:
+            pre_experiment_left_path = os.path.join(
+                mapped_lims_location,
+                (state["external"]["session_name"] + "_surface-image1-left.png"),
+            )
+            pre_experiment_right_path = os.path.join(
+                mapped_lims_location,
+                (state["external"]["session_name"] + "_surface-image1-right.png"),
+            )
+            pre_experiment_local_path = os.path.join(
+                state["external"]["local_lims_location"],
+                (state["external"]["session_name"] + "_surface-image1-left.png"),
+            )
+        else:
+            pre_experiment_left_path = f'{mapped_lims_location}/{state["external"]["session_name"]}_surface-image1-left.png'
+            pre_experiment_right_path = f'{mapped_lims_location}/{state["external"]["session_name"]}_surface-image1-right.png'
+            pre_experiment_local_path = f'{state["external"]["local_lims_location"]}/{state["external"]["session_name"]}_surface-image1-left.png'
+        pre_experiment_left_local_path = os.path.join(
             state["external"]["local_lims_location"],
             (state["external"]["session_name"] + "_surface-image1-left.png"),
         )
-    else:
-        pre_experiment_left_path = f'{state["external"]["mapped_lims_location"]}/{state["external"]["session_name"]}_surface-image1-left.png'
-        pre_experiment_right_path = f'{state["external"]["mapped_lims_location"]}/{state["external"]["session_name"]}_surface-image1-right.png'
-        pre_experiment_local_path = f'{state["external"]["local_lims_location"]}/{state["external"]["session_name"]}_surface-image1-left.png'
-    pre_experiment_left_local_path = os.path.join(
-        state["external"]["local_lims_location"],
-        (state["external"]["session_name"] + "_surface-image1-left.png"),
-    )
-    pre_experiment_right_local_path = os.path.join(
-        state["external"]["local_lims_location"],
-        (state["external"]["session_name"] + "_surface-image1-right.png"),
-    )
-    try:
-        proxy = state["component_proxies"]["Cam3d"]
-
-        print(">>>>>>> pre-experiment_image")
-        print(f"pre_experiment_left_path:{pre_experiment_left_path}")
-        print(f"pre_experiment_right_path:{pre_experiment_right_path}")
-        print(f"pre_experiment_local_path:{pre_experiment_local_path}")
-        print("<<<<<<<")
-
-        state["external"][
-            "surface_1_left_name"
-        ] = f'{state["external"]["session_name"]}_surface-image1-left.png'
-        state["external"][
-            "surface_1_right_name"
-        ] = f'{state["external"]["session_name"]}_surface-image1-right.png'
-
+        pre_experiment_right_local_path = os.path.join(
+            state["external"]["local_lims_location"],
+            (state["external"]["session_name"] + "_surface-image1-right.png"),
+        )
         try:
-            proxy.save_left_image(pre_experiment_left_path)
-            proxy.save_right_image(pre_experiment_right_path)
+            proxy = state["component_proxies"]["Cam3d"]
 
-            state["external"]["status_message"] = "success"
-            state["external"]["local_log"] = f"Surface_1_Path:{pre_experiment_local_path}"
+            print(">>>>>>> pre-experiment_image")
+            print(f"pre_experiment_left_path:{pre_experiment_left_path}")
+            print(f"pre_experiment_right_path:{pre_experiment_right_path}")
+            print(f"pre_experiment_local_path:{pre_experiment_local_path}")
+            print("<<<<<<<")
+
+            state["external"][
+                "surface_1_left_name"
+            ] = f'{state["external"]["session_name"]}_surface-image1-left.png'
+            state["external"][
+                "surface_1_right_name"
+            ] = f'{state["external"]["session_name"]}_surface-image1-right.png'
+
+            try:
+                proxy.save_left_image(pre_experiment_left_path)
+                proxy.save_right_image(pre_experiment_right_path)
+
+                state["external"]["status_message"] = "success"
+                state["external"]["local_log"] = f"Surface_1_Path:{pre_experiment_local_path}"
+            except Exception as e:
+                print(f"Cam3d take photo failure:{e}!")
+                state["external"]["status_message"] = f"Cam3d take photo failure:{e}"
+                state["external"]["component_status"]["Cam3d"] = False
         except Exception as e:
-            print(f"Cam3d take photo failure:{e}!")
-            state["external"]["status_message"] = f"Cam3d take photo failure:{e}"
+            print(f"Cam3d proxy failure:{e}!")
+            state["external"]["status_message"] = f"Cam3d proxy failure:{e}"
             state["external"]["component_status"]["Cam3d"] = False
-    except Exception as e:
-        print(f"Cam3d proxy failure:{e}!")
-        state["external"]["status_message"] = f"Cam3d proxy failure:{e}"
-        state["external"]["component_status"]["Cam3d"] = False
 
-    # check for the image files...make sure they were taken succesfully
-    left_image_result = os.path.isfile(pre_experiment_left_local_path)
-    right_image_result = os.path.isfile(pre_experiment_right_local_path)
+        # check for the image files...make sure they were taken succesfully
+        left_image_result = os.path.isfile(pre_experiment_left_local_path)
+        right_image_result = os.path.isfile(pre_experiment_right_local_path)
 
-    image_error_message = "Image Error:"
+        image_error_message = "Image Error:"
 
-    if not left_image_result:
-        image_error_message += " Left Image Not Taken!"
+        if not left_image_result:
+            image_error_message += " Left Image Not Taken!"
 
-    if not right_image_result:
-        image_error_message += " Right Image Not Taken!"
+        if not right_image_result:
+            image_error_message += " Right Image Not Taken!"
 
-    if not (
-        left_image_result and right_image_result):  # if one of the images not take successfully, force the warning box
-        state["external"]["alert"] = {
-            "msg_text": image_error_message,
-            "severity": "Critical",
-            "informative_text": "Check Cam3d Viewer, and restart if necessary.  Retake Image",
-        }
+        if not (
+            left_image_result and right_image_result):  # if one of the images not take successfully, force the warning box
+            state["external"]["alert"] = {
+                "msg_text": image_error_message,
+                "severity": "Critical",
+                "informative_text": "Check Cam3d Viewer, and restart if necessary.  Retake Image",
+            }
 
-    state["external"]["local_log"] = f"pre_experiment_path:{pre_experiment_local_path}"
-    state["external"][
-        "surface_1_file_location"
-    ] = pre_experiment_local_path  # this is what gets displayed in the GUI
-    if not(os.path.exists(pre_experiment_local_path)):
-        time.sleep(5)
+        state["external"]["local_log"] = f"pre_experiment_path:{pre_experiment_local_path}"
+        # state["external"][
+        #     "surface_1_file_location"
+        # ] = pre_experiment_local_path  # this is what gets displayed in the GUI
+        state["external"][
+            "surface_1_file_location"
+        ] = R"C:\ProgramData\AIBS_MPE\mvr\data\USB!_20220625T194920.jpg"  # this is what gets displayed in the GUI
         if not(os.path.exists(pre_experiment_local_path)):
-            message = 'You may need to click the blue botton and blue triangle on Cam3d or restart it, Please also confirm there is only one camviewer gui open'
-            npxc.alert_text(message, state)
-    state["external"]["surface_1_left_local_file_location"] = pre_experiment_left_local_path
-    state["external"]["surface_1_right_local_file_location"] = pre_experiment_right_local_path
-
-    # state_globals['external']['next_state'] = 'diI_photoDocumentation'
-    state["external"]["transition_result"] = True
-    state["external"]["status_message"] = "success"
+            time.sleep(5)
+            if not(os.path.exists(pre_experiment_local_path)):
+                message = 'You may need to click the blue botton and blue triangle on Cam3d or restart it, Please also confirm there is only one camviewer gui open'
+                npxc.alert_text(message, state)
+        state["external"]["surface_1_left_local_file_location"] = pre_experiment_left_local_path
+        state["external"]["surface_1_right_local_file_location"] = pre_experiment_right_local_path
+        
+    except:
+        # state_globals['external']['next_state'] = 'diI_photoDocumentation'
+        state["external"]["transition_result"] = True
+        state["external"]["status_message"] = "success"
 
 
 
