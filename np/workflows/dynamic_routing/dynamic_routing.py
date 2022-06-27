@@ -258,12 +258,12 @@ def get_mouse_id_input(state):
 
 def mvr_capture_on_enter(state_globals,photo_path=None):
     """standard mvr image snapshot func, returning error mesg or img  """
-    mvr_writer.take_snapshot()
+    mvr.take_snapshot()
     
     def wait_on_snapshot():  
         while True: #TODO add timeout to prevent infinite loop
             # try:
-            for message in mvr_writer.read():
+            for message in mvr.read():
                 pdb.set_trace()
                 if message.get('mvr_broadcast', False) == "snapshot_taken":
                     drive, filepath = os.path.splitdrive(message['snapshot_filepath'])
@@ -298,7 +298,7 @@ def binary_next_state_prompt(state, tf, next_if_true, next_if_false):
 @state_transition
 def pre_brain_surface_photo_doc_enter(state):
     # display new mvr image
-    pdb.set_trace()
+    
     state['external']['new_snapshot'] = mvr_capture_on_enter(state)
 
 
