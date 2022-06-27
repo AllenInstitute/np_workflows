@@ -1,4 +1,5 @@
 import pdb
+import socket
 
 # pdb.set_trace()
 try:
@@ -35,8 +36,17 @@ except Exception as e:
 # these values are "read only" and used ubiquitously.
 
 config: dict = mpeconfig.source_configuration("dynamic_routing")
+
+pc = socket.gethostname()
+acq = {
+    "W10DTSM112719":"W10DTSM112722", # NP0
+    "W10DTSM18306":"W10DTSM18278", # NP1
+    "W10DTSM18307":"W10DTSM18280", # NP2
+    "W10DTMJ0AK6GM":"W10SV108131", #ben-desktop:btTest
+}
+hostname = acq.get(pc,"localhost")
 config['MVR'] = {
-    "host": "W10DTSM18278",  # NP1
+    "host": hostname,  
     "port": 50000
 }
 
@@ -245,35 +255,36 @@ def get_mouse_id_input(state):
     logging.info(log_message, extra={"weblog": True})
 
 
-def mvr_capture_on_enter(state):
+
+def mvr_capture_on_enter(state_globals,photo_path=None):
     """standard mvr image snapshot func, returning error mesg or img  """
-    mvr.take_snapshot()
-
-    def wait_on_snapshot():
-        while True:
-            try:
-                for message in mvr.read():
-                    if message.get('mvr_broadcast', False) == "snapshot_taken":
-                        drive, filepath = os.path.splitdrive(
-                            message['snapshot_filepath'])
-                        source_photo_path = f"\\\\{config['MVR']['host']}\\{drive[0]}${filepath}"
-                        # MVR has responded too quickly.  It hasn't let go of the file so we must wait.
-                        sleep(1)
-                        dest_photo_path = shutil.copy(
-                            source_photo_path, "C:/ProgramData/AIBS_MPE/dynamic_routing")
-                        logging.info(
-                            f"Copied: {source_photo_path} -> {dest_photo_path}")
-                        return True, dest_photo_path
-                    elif message.get('mvr_broadcast', False) == "snapshot_failed":
-                        return False, message['error_message']
-            except Exception as e:
-                return False, e
-
+    mvr_writer.take_snapshot()
+    
+    def wait_on_snapshot():  
+        while True: #TODO add timeout to prevent infinite loop
+            # try:
+            for message in mvr_writer.read():
+                pdb.set_trace()
+                if message.get('mvr_broadcast', False) == "snapshot_taken":
+                    drive, filepath = os.path.splitdrive(message['snapshot_filepath'])
+                    source_photo_path = f"\\\\{config['MVR']['host']}\\{drive[0]}${filepath}"
+                    sleep(1) # MVR has responded too quickly.  It hasn't let go of the file so we must wait.
+                    dest_photo_path = shutil.copy(source_photo_path, photo_path or "C:/ProgramData/AIBS_MPE/wfltk/temp")
+                    logging.info(f"Copied: {source_photo_path} -> {dest_photo_path}")
+                    return True, dest_photo_path
+                elif message.get('mvr_broadcast', False) == "snapshot_failed":
+                    return False, message['error_message']
+            # except Exception as e:
+            #     return False, e
+            
     success, mesg_or_img = wait_on_snapshot()
     if not success:
-        fail_state(f"Error taking snapshot: {mesg_or_img}", state)
+        try:
+            fail_state(f"Error taking snapshot: {mesg_or_img}",state_globals)
+        except: 
+            pass
     else:
-        return mesg_or_img  # return the captured image
+        return mesg_or_img # return the captured image
 
 
 @state_transition
@@ -287,6 +298,7 @@ def binary_next_state_prompt(state, tf, next_if_true, next_if_false):
 @state_transition
 def pre_brain_surface_photo_doc_enter(state):
     # display new mvr image
+    pdb.set_trace()
     state['external']['new_snapshot'] = mvr_capture_on_enter(state)
 
 

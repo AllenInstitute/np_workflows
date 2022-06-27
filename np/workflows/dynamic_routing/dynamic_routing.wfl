@@ -20,7 +20,7 @@ states:
         desc: Preparing the "Dynamic Routing" experiment.  Press next to continue
         # can this be auto-advanced w/out pressing button?
     inputs:
-      - state: resume
+      - state: pre_brain_surface_photo_doc
 
   resume:
     description: Restore last wfl
