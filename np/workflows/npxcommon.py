@@ -169,6 +169,17 @@ def mvr_capture_on_enter(state_globals,photo_path=None):
             pass
     else:
         return mesg_or_img # return the captured image
+    
+    
+def save_state(state_globals):
+    print('>> save_state <<')
+
+    pass
+
+
+def load_previous_state():
+    print('>> load_previous_state <<')
+    return state_globals
       
 
 def initialize_input(state_globals):

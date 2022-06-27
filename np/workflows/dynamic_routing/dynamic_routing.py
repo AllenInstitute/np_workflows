@@ -128,32 +128,41 @@ def connect_to_services(state):
 
 
 def state_transition(state_transition_function):
-    def wrapper(state, *args):
+    def wrapper(state):
+
         transition_type = state_transition_function.__name__.split('_')[-1]
         npxc.save_state(state)
-        state_transition_function(state_globals, args)
+        state_transition_function(state)
         return None
     return wrapper
 
 
+@state_transition
 def resume_enter(state):
     pass
 
 
+@state_transition
 def resume_input(state):
-    prompt = prompt = state['external'].get('prompt', False)
-    if prompt:
-        state = load_previous_state()
+    prompt = state['external'].get('prompt', False)
+    if prompt is True:
+        state = npxc.load_previous_state()
+    else:
+        pdb.set_trace()
+        state['external']['next_state'] = state['external']['next_state']
 
 
+@state_transition
 def restore_enter(state):
     pass
 
 
+@state_transition
 def restore_input(state):
     pass
 
 
+@state_transition
 def init_enter(state):
     """
     Testing image display
@@ -165,6 +174,7 @@ def init_enter(state):
     state["external"]["mouse_id"] = "366122"
 
 
+@state_transition
 def init_input(state):
     """
     Since this is the first state, you might do some basic startup functionality in the enter state.
@@ -172,10 +182,12 @@ def init_input(state):
     pass
 
 
+@state_transition
 def get_user_id_entry(state):
     pass
 
 
+@state_transition
 def get_user_id_input(state):
     """
       Description: The user will input their user name and it will ve validated against the LIMS db.
@@ -192,6 +204,7 @@ def get_user_id_input(state):
         pass
 
 
+@state_transition
 def get_mouse_id_input(state):
     """
     input function for state get_mouse_id
@@ -263,6 +276,7 @@ def mvr_capture_on_enter(state):
         return mesg_or_img  # return the captured image
 
 
+@state_transition
 def binary_next_state_prompt(state, tf, next_if_true, next_if_false):
     if tf:
         state["external"]["next_state"] = next_if_true
@@ -270,11 +284,13 @@ def binary_next_state_prompt(state, tf, next_if_true, next_if_false):
         state["external"]["next_state"] = next_if_false
 
 
+@state_transition
 def pre_brain_surface_photo_doc_enter(state):
     # display new mvr image
     state['external']['new_snapshot'] = mvr_capture_on_enter(state)
 
 
+@state_transition
 def pre_brain_surface_photo_doc_input(state):
     # prompt to retake mvr image
     # pdb.set_trace()
@@ -283,12 +299,14 @@ def pre_brain_surface_photo_doc_input(state):
                              next_if_false="probe_insertion_instructions")
 
 
+@state_transition
 def pre_brain_surface_photo_doc_exit(state):
     #  TODO add to platform json:
     # experiment.platform_json.add_file(dest_photo_path)
     ...
 
 
+@state_transition
 def flush_lines_enter(state):
     # pdb.set_trace()
     # io["external"][] = "enter"
@@ -296,6 +314,7 @@ def flush_lines_enter(state):
     ...
 
 
+@state_transition
 def flush_lines_input(state):
     # pdb.set_trace()
     # fail_state("testing input fail", state)
@@ -303,6 +322,7 @@ def flush_lines_input(state):
     ...
 
 
+@state_transition
 def run_stimulus_enter(state):
     """
     This is a typical method to start recordings and stimulus but is also a model of how to handle user events.
@@ -352,6 +372,7 @@ def run_stimulus_enter(state):
     t.start()
 
 
+@state_transition
 def wait_on_sync_enter(state):
     #  This is in the enter state because we want to do things before the user sees the screen (like turn off arrow)
     state["resources"]["io"].write(messages.state_busy(
@@ -369,6 +390,7 @@ def wait_on_sync_enter(state):
     t.start()
 
 
+@state_transition
 def settle_timer_enter(state):
     #  This is in the enter state because we want to do things before the user sees the screen (like turn off arrow)
     state["resources"]["io"].write(messages.state_busy(

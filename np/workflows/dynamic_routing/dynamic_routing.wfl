@@ -9,6 +9,19 @@ entry_state: init #! init
 
 #  Enter each phase of the workflow as a state
 states:
+  # 2) check components: MVR, OpenEphys, Stim, Sync, MouseDirector
+  init:
+    description: Experiment Initialization
+    display:
+      # - field: exp_logo
+      #   type: image
+      #   desc: logo
+      - type: note
+        desc: Preparing the "Dynamic Routing" experiment.  Press next to continue
+        # can this be auto-advanced w/out pressing button?
+    inputs:
+      - state: resume
+
   resume:
     description: Restore last wfl
     display:
@@ -21,25 +34,17 @@ states:
             next: restore
           - field: new
             desc: Start new workflow
-            next: init
+            next: get_user_id
             default: True
-
-  restore:
-    description: empty
-    display: empty
-
-  # 2) check components: MVR, OpenEphys, Stim, Sync, MouseDirector
-  init:
-    description: Experiment Initialization
-    display:
-      # - field: exp_logo
-      #   type: image
-      #   desc: logo
-      - type: note
-        desc: Preparing the "Dynamic Routing" experiment.  Press next to continue
-        # can this be auto-advanced w/out pressing button?
     inputs:
+      - state: restore
       - state: get_user_id
+
+  # restore:
+  #   description: empty
+  #   display:
+  #   inputs:
+  #     - state: resume
 
   # 1) Get user id
   get_user_id:
