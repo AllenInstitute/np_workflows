@@ -975,9 +975,7 @@ def diI_photoDoc_setup_input(state):
         # state["external"][
         #     "surface_1_file_location"
         # ] = pre_experiment_local_path  # this is what gets displayed in the GUI
-        state["external"][
-            "surface_1_file_location"
-        ] = R"C:\ProgramData\AIBS_MPE\mvr\data\USB!_20220625T194920.jpg"  # this is what gets displayed in the GUI
+
         if not(os.path.exists(pre_experiment_local_path)):
             time.sleep(5)
             if not(os.path.exists(pre_experiment_local_path)):
