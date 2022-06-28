@@ -6,6 +6,7 @@ import itertools
 import json
 import logging
 import os
+import pathlib
 import pdb
 import shutil
 import subprocess
@@ -139,37 +140,37 @@ def make_keys_and_values_strings(dict_in):
         new_dict[str(key)] = str(value)
     return new_dict
 
-
-def mvr_capture_on_enter(state_globals,photo_path=None):
+def mvr_capture(state_globals,photo_path="C:/ProgramData/AIBS_MPE/wfltk/temp/last_snapshot.jpg", timeout=30):
     """standard mvr image snapshot func, returning error mesg or img  """
     mvr_writer.take_snapshot()
     
-    def wait_on_snapshot():  
-        while True: #TODO add timeout to prevent infinite loop
-            # try:
+    def wait_on_snapshot(): 
+        t0 = time.time()
+        while time.time()-t0 < timeout:
             for message in mvr_writer.read():
-                pdb.set_trace()
-                if message.get('mvr_broadcast', False) == "snapshot_taken":
-                    drive, filepath = os.path.splitdrive(message['snapshot_filepath'])
-                    source_photo_path = f"\\\\{config['MVR']['host']}\\{drive[0]}${filepath}"
-                    sleep(1) # MVR has responded too quickly.  It hasn't let go of the file so we must wait.
-                    dest_photo_path = shutil.copy(source_photo_path, photo_path or "C:/ProgramData/AIBS_MPE/wfltk/temp")
+                if message.get('mvr_response', "") == "take_snapshot_initiated":
+                    source_photo_path = get_newest_mvr_img(config['MVR']['host'])
+                    time.sleep(1) # MVR has responded too quickly.  It hasn't let go of the file so we must wait.
+                    pathlib.Path(photo_path).parent.mkdir(parents=True, exist_ok=True)
+                    dest_photo_path = shutil.copy2(source_photo_path, photo_path)
                     logging.info(f"Copied: {source_photo_path} -> {dest_photo_path}")
                     return True, dest_photo_path
-                elif message.get('mvr_broadcast', False) == "snapshot_failed":
-                    return False, message['error_message']
+                else:
+                    return False, message.get('mvr_response', "snapshot_failed") 
             # except Exception as e:
             #     return False, e
             
     success, mesg_or_img = wait_on_snapshot()
+
     if not success:
         try:
-            fail_state(f"Error taking snapshot: {mesg_or_img}",state_globals)
+            # fail_state(...)
+            print(f"Error taking snapshot: {mesg_or_img}",state_globals)
         except: 
             pass
     else:
         return mesg_or_img # return the captured image
-    
+
     
 def save_state(state_globals):
     print('>> save_state <<')
@@ -177,7 +178,7 @@ def save_state(state_globals):
     pass
 
 
-def load_previous_state():
+def load_previous_state(state_globals):
     print('>> load_previous_state <<')
     return state_globals
       
@@ -393,6 +394,30 @@ def assess_previous_sessions(state_globals):
     save_platform_json(state_globals, manifest=False)
 
 
+def get_created_timestamp_from_file(file, date_format='%Y%m%d%H%M'):
+
+    t = os.path.getctime(str(file))
+    # t = os.path.getmtime(file)
+    t = time.localtime(t)
+    t = time.strftime(date_format, t)
+
+    return t
+
+
+def get_newest_mvr_img(host):
+    img_output_dir = pathlib.Path(f"//{host}/c/ProgramData/AIBS_MPE/mvr/data")
+    paths_all = pathlib.Path(img_output_dir).glob('*.jpg')
+    time_created = 0
+    for path in paths_all:
+        if time_created < int(get_created_timestamp_from_file(path)):
+            newest_file = path
+    return str(newest_file)
+        
+        
+        
+
+
+    
 def get_most_recent_session(session_dict, state_globals):
     exp_dates = {}
     last_date = 0
