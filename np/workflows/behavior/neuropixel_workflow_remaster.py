@@ -596,20 +596,19 @@ def date_string_check_input(state):
     local_lims_location = session_name_directory
     os.makedirs(local_lims_location, exist_ok=True)
 
-    try:
-        notes_proxy = state["component_proxies"]["Notes"]
-        notes_proxy.setID(str(state["external"]["mouse_id"]), str(state["external"]["session_name"]))
-        notes_proxy.setNoSurgery(True)
-        state["external"]["status_message"] = "success"
-        state["external"]["component_status"]["Notes"] = True
-    except KeyError:
-        fail_state('SurgeryNotes proxy is not defined.', state)
-        state["external"]["component_status"]["Notes"] = False
-        return
-    except Exception:
-        fail_state('Error setting mouse and session name in SurgeryNotes', state)
-        state["external"]["component_status"]["Notes"] = False
-        return
+    # try:
+    #     notes_proxy = state["component_proxies"]["Notes"]
+    #     notes_proxy.setID(str(state["external"]["mouse_id"]), str(state["external"]["session_name"]))
+    #     notes_proxy.setNoSurgery(True)
+    #     state["external"]["status_message"] = "success"
+    #     state["external"]["component_status"]["Notes"] = True
+    # except KeyError:
+    #     fail_state('SurgeryNotes proxy is not defined.', state)
+    #     state["external"]["component_status"]["Notes"] = False
+    # except Exception:
+    #     fail_state('Error setting mouse and session name in SurgeryNotes', state)
+    #     state["external"]["component_status"]["Notes"] = False
+
 
     mapped_lims_location = f"{npxc.config['mapped_lims_location']}/{state['external']['session_name']}"
     state["external"]["mapped_lims_location"] = mapped_lims_location
@@ -893,15 +892,14 @@ def diI_photoDoc_setup_input(state):
     """
     Input test function for state diI_photoDoc_setup
     """
-    mapped_lims_location = f"{npxc.config['mapped_lims_location']}"
     try:
         if state["external"]["dummy_mode"]:
             pre_experiment_left_path = os.path.join(
-                mapped_lims_location,
+                state["external"]["mapped_lims_location"],
                 (state["external"]["session_name"] + "_surface-image1-left.png"),
             )
             pre_experiment_right_path = os.path.join(
-                mapped_lims_location,
+                state["external"]["mapped_lims_location"],
                 (state["external"]["session_name"] + "_surface-image1-right.png"),
             )
             pre_experiment_local_path = os.path.join(
@@ -909,8 +907,8 @@ def diI_photoDoc_setup_input(state):
                 (state["external"]["session_name"] + "_surface-image1-left.png"),
             )
         else:
-            pre_experiment_left_path = f'{mapped_lims_location}/{state["external"]["session_name"]}_surface-image1-left.png'
-            pre_experiment_right_path = f'{mapped_lims_location}/{state["external"]["session_name"]}_surface-image1-right.png'
+            pre_experiment_left_path = f'{state["external"]["mapped_lims_location"]}/{state["external"]["session_name"]}_surface-image1-left.png'
+            pre_experiment_right_path = f'{state["external"]["mapped_lims_location"]}/{state["external"]["session_name"]}_surface-image1-right.png'
             pre_experiment_local_path = f'{state["external"]["local_lims_location"]}/{state["external"]["session_name"]}_surface-image1-left.png'
         pre_experiment_left_local_path = os.path.join(
             state["external"]["local_lims_location"],
@@ -921,7 +919,6 @@ def diI_photoDoc_setup_input(state):
             (state["external"]["session_name"] + "_surface-image1-right.png"),
         )
         try:
-            proxy = state["component_proxies"]["Cam3d"]
 
             print(">>>>>>> pre-experiment_image")
             print(f"pre_experiment_left_path:{pre_experiment_left_path}")
@@ -937,8 +934,8 @@ def diI_photoDoc_setup_input(state):
             ] = f'{state["external"]["session_name"]}_surface-image1-right.png'
 
             try:
-                proxy.save_left_image(pre_experiment_left_path)
-                proxy.save_right_image(pre_experiment_right_path)
+                npxc.mvr_capture(state,pre_experiment_left_path)
+                npxc.mvr_capture(state,pre_experiment_right_path)
 
                 state["external"]["status_message"] = "success"
                 state["external"]["local_log"] = f"Surface_1_Path:{pre_experiment_local_path}"
@@ -972,9 +969,9 @@ def diI_photoDoc_setup_input(state):
             }
 
         state["external"]["local_log"] = f"pre_experiment_path:{pre_experiment_local_path}"
-        # state["external"][
-        #     "surface_1_file_location"
-        # ] = pre_experiment_local_path  # this is what gets displayed in the GUI
+        state["external"][
+            "surface_1_file_location"
+        ] = pre_experiment_local_path  # this is what gets displayed in the GUI
 
         if not(os.path.exists(pre_experiment_local_path)):
             time.sleep(5)
@@ -1260,8 +1257,8 @@ def brain_surface_focus_input(state_globals):
         ] = f'{state_globals["external"]["session_name"]}_surface-image2-right.png'
 
         try:
-            proxy.save_left_image(surface_2_left_path)
-            proxy.save_right_image(surface_2_right_path)
+            npxc.mvr_capture(state_globals,surface_2_left_path)
+            npxc.mvr_capture(state_globals,surface_2_right_path)
 
             state_globals["external"]["status_message"] = "success"
             state_globals["external"]["local_log"] = f"Surface_2_Path:{surface_2_local_path}"
@@ -1515,9 +1512,9 @@ def photodoc_setup3_input(state_globals):
 
         try:
             print(f"saving left image to {surface_3_left_path}")
-            proxy.save_left_image(surface_3_left_path)
+            npxc.mvr_capture(state_globals,surface_3_left_path)
             print(f"saving left image to {surface_3_right_path}")
-            proxy.save_right_image(surface_3_right_path)
+            npxc.mvr_capture(state_globals,surface_3_right_path)
 
             state_globals["external"]["status_message"] = "success"
             state_globals["external"]["local_log"] = f"Surface_3_Path:{surface_3_local_path}"
@@ -1862,8 +1859,8 @@ def photodoc_setup4_input(state_globals):
     try:
         proxy = state_globals["component_proxies"]["Cam3d"]
         try:
-            proxy.save_left_image(surface_4_left_path)  # will be replaced by the real call to cam3d
-            proxy.save_right_image(surface_4_right_path)  # will be replaced by the real call to cam3d
+            npxc.mvr_capture(state_globals,surface_4_left_path)  # will be replaced by the real call to cam3d
+            npxc.mvr_capture(state_globals,surface_4_right_path)  # will be replaced by the real call to cam3d
             state_globals["external"]["status_message"] = "success"
         except Exception as e:
             print(f"Cam3d take photo failure:{e}!")
@@ -2392,9 +2389,9 @@ def end_experiment_photodocumentation_input(state_globals):
         proxy = state_globals["component_proxies"]["Cam3d"]
         try:
             print(f"taking surface 5 left:{surface_5_left_path}")
-            result = proxy.save_left_image(surface_5_left_path)
+            result = npxc.mvr_capture(state_globals,surface_5_left_path)
             print(f"taking surface 5 right:{surface_5_right_path}")
-            result = proxy.save_right_image(surface_5_right_path)
+            result = npxc.mvr_capture(state_globals,surface_5_right_path)
             state_globals["external"]["status_message"] = "success"
         except Exception as e:
             state_globals["external"]["status_message"] = f"Cam3d take photo failure:{e}"
@@ -2511,8 +2508,8 @@ def post_removal_photodocumentation_input(state_globals):
     try:
         proxy = state_globals["component_proxies"]["Cam3d"]
         try:
-            result = proxy.save_left_image(surface_6_left_path)
-            result = proxy.save_right_image(surface_6_right_path)
+            result = npxc.mvr_capture(state_globals,surface_6_left_path)
+            result = npxc.mvr_capture(state_globals,surface_6_right_path)
             state_globals["external"]["status_message"] = "success"
         except Exception as e:
             state_globals["external"]["status_message"] = f"Cam3d take photo failure:{e}"

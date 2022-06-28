@@ -47,7 +47,6 @@ from mpetk.zro import Proxy
 # import mpeconfig
 
 # config = mpeconfig.source_configuration('neuropixels', version='1.4.0')
-
 config: dict
 config = mpeconfig.source_configuration('neuropixels', version='1.4.0') 
 #! #TODO line above is temporary, we want to consolidate config settings into one file 

@@ -523,7 +523,6 @@ def date_string_check_input(state):
     #     fail_state('Error setting mouse and session name in SurgeryNotes', state)
     #     state["external"]["component_status"]["Notes"] = False
     #     return
-
     mapped_lims_location = f"{npxc.config['mapped_lims_location']}/{state['external']['session_name']}"
     state["external"]["mapped_lims_location"] = mapped_lims_location
     state["external"]["local_lims_location"] = local_lims_location
@@ -806,7 +805,7 @@ def brain_surface_focus_input(state_globals):
         surface_1_left_local_path = os.path.join(state_globals['external']['local_lims_location'], (state_globals['external']["session_name"] + '_surface-image2-left.png'))
         surface_1_right_local_path = os.path.join(state_globals['external']['local_lims_location'], (state_globals['external']["session_name"] + '_surface-image2-right.png'))
     try:
-        proxy = state_globals['component_proxies']['Cam3d']
+        # proxy = state_globals['component_proxies']['Cam3d']
 
         print('>>>>>>> brain_surface_image')
         print(f'surface_1_left_path:{surface_1_left_path}')
@@ -818,11 +817,11 @@ def brain_surface_focus_input(state_globals):
         state_globals['external']['surface_1_right_name'] = f'{state_globals["external"]["session_name"]}_surface-image1-right.png'
 
         try:
-            proxy.save_left_image(surface_1_left_path)
+            # proxy.save_left_image(surface_1_left_path)
             # proxy.save_right_image(surface_1_right_path)
             # state_globals['external']['new_snapshot'] = npxc.mvr_capture_on_enter(state_globals,surface_1_left_path) 
-            # npxc.mvr_capture_on_enter(state_globals,surface_1_left_path)
-            # npxc.mvr_capture_on_enter(state_globals,surface_1_right_path)
+            npxc.mvr_capture(state_globals,surface_1_left_path)
+            npxc.mvr_capture(state_globals,surface_1_right_path)
 
 
             state_globals['external']['status_message'] = 'success'

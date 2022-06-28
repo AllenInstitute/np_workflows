@@ -1,9 +1,10 @@
 import pdb
-import socket
 
 # pdb.set_trace()
 try:
     import inspect
+    import time
+    import socket
     import json
     import logging
     import os
@@ -13,7 +14,7 @@ try:
     import threading
     from time import sleep
 
-    import mpetk
+    # import mpetk
     import mpetk.aibsmw.routerio.router as router
     import np.workflows.npxcommon as npxc
     import requests
@@ -147,32 +148,31 @@ def state_transition(state_transition_function):
     return wrapper
 
 
-@state_transition
+#@state_transition
 def resume_enter(state):
     pass
 
 
-@state_transition
+#@state_transition
 def resume_input(state):
     prompt = state['external'].get('prompt', False)
     if prompt is True:
         state = npxc.load_previous_state()
     else:
-        pdb.set_trace()
         state['external']['next_state'] = state['external']['next_state']
 
 
-@state_transition
+#@state_transition
 def restore_enter(state):
     pass
 
 
-@state_transition
+#@state_transition
 def restore_input(state):
     pass
 
 
-@state_transition
+#@state_transition
 def init_enter(state):
     """
     Testing image display
@@ -184,7 +184,7 @@ def init_enter(state):
     state["external"]["mouse_id"] = "366122"
 
 
-@state_transition
+#@state_transition
 def init_input(state):
     """
     Since this is the first state, you might do some basic startup functionality in the enter state.
@@ -192,12 +192,12 @@ def init_input(state):
     pass
 
 
-@state_transition
+#@state_transition
 def get_user_id_entry(state):
     pass
 
 
-@state_transition
+#@state_transition
 def get_user_id_input(state):
     """
       Description: The user will input their user name and it will ve validated against the LIMS db.
@@ -214,7 +214,7 @@ def get_user_id_input(state):
         pass
 
 
-@state_transition
+#@state_transition
 def get_mouse_id_input(state):
     """
     input function for state get_mouse_id
@@ -256,27 +256,25 @@ def get_mouse_id_input(state):
 
 
 
-def mvr_capture_on_enter(state_globals,photo_path=None):
+def mvr_capture(state_globals,photo_path="C:/ProgramData/AIBS_MPE/wfltk/temp/last_snapshot.jpg", timeout=30):
     """standard mvr image snapshot func, returning error mesg or img  """
+    # pdb.set_trace()         
     mvr.take_snapshot()
     
-    def wait_on_snapshot():  
-        while True: #TODO add timeout to prevent infinite loop
-            # try:
+    def wait_on_snapshot(): 
+        t0 = time.time()
+        while time.time()-t0 < timeout:
             for message in mvr.read():
-                pdb.set_trace()
-                if message.get('mvr_broadcast', False) == "snapshot_taken":
-                    drive, filepath = os.path.splitdrive(message['snapshot_filepath'])
-                    source_photo_path = f"\\\\{config['MVR']['host']}\\{drive[0]}${filepath}"
+                if message.get('mvr_response', "") == "take_snapshot_initiated":
+                    source_photo_path = npxc.get_newest_mvr_img(config['MVR']['host'])
                     sleep(1) # MVR has responded too quickly.  It hasn't let go of the file so we must wait.
-                    dest_photo_path = shutil.copy(source_photo_path, photo_path or "C:/ProgramData/AIBS_MPE/wfltk/temp")
+                    dest_photo_path = shutil.copy2(source_photo_path, photo_path)
                     logging.info(f"Copied: {source_photo_path} -> {dest_photo_path}")
                     return True, dest_photo_path
-                elif message.get('mvr_broadcast', False) == "snapshot_failed":
-                    return False, message['error_message']
+                elif message.get('mvr_response', "") == "snapshot_failed":
+                    return False, message['error_message']  
             # except Exception as e:
             #     return False, e
-            
     success, mesg_or_img = wait_on_snapshot()
     if not success:
         try:
@@ -287,7 +285,7 @@ def mvr_capture_on_enter(state_globals,photo_path=None):
         return mesg_or_img # return the captured image
 
 
-@state_transition
+#@state_transition
 def binary_next_state_prompt(state, tf, next_if_true, next_if_false):
     if tf:
         state["external"]["next_state"] = next_if_true
@@ -295,14 +293,14 @@ def binary_next_state_prompt(state, tf, next_if_true, next_if_false):
         state["external"]["next_state"] = next_if_false
 
 
-@state_transition
+#@state_transition
 def pre_brain_surface_photo_doc_enter(state):
     # display new mvr image
-    
-    state['external']['new_snapshot'] = mvr_capture_on_enter(state)
+    # pdb.set_trace()
+    state['external']['new_snapshot'] = npxc.mvr_capture(state)
 
 
-@state_transition
+#@state_transition
 def pre_brain_surface_photo_doc_input(state):
     # prompt to retake mvr image
     # pdb.set_trace()
@@ -311,14 +309,14 @@ def pre_brain_surface_photo_doc_input(state):
                              next_if_false="probe_insertion_instructions")
 
 
-@state_transition
+#@state_transition
 def pre_brain_surface_photo_doc_exit(state):
     #  TODO add to platform json:
     # experiment.platform_json.add_file(dest_photo_path)
     ...
 
 
-@state_transition
+#@state_transition
 def flush_lines_enter(state):
     # pdb.set_trace()
     # io["external"][] = "enter"
@@ -326,7 +324,7 @@ def flush_lines_enter(state):
     ...
 
 
-@state_transition
+#@state_transition
 def flush_lines_input(state):
     # pdb.set_trace()
     # fail_state("testing input fail", state)
@@ -334,7 +332,7 @@ def flush_lines_input(state):
     ...
 
 
-@state_transition
+#@state_transition
 def run_stimulus_enter(state):
     """
     This is a typical method to start recordings and stimulus but is also a model of how to handle user events.
@@ -384,7 +382,7 @@ def run_stimulus_enter(state):
     t.start()
 
 
-@state_transition
+#@state_transition
 def wait_on_sync_enter(state):
     #  This is in the enter state because we want to do things before the user sees the screen (like turn off arrow)
     state["resources"]["io"].write(messages.state_busy(
@@ -402,7 +400,7 @@ def wait_on_sync_enter(state):
     t.start()
 
 
-@state_transition
+#@state_transition
 def settle_timer_enter(state):
     #  This is in the enter state because we want to do things before the user sees the screen (like turn off arrow)
     state["resources"]["io"].write(messages.state_busy(
