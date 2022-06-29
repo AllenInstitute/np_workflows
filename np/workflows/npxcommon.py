@@ -514,6 +514,7 @@ def set_open_ephys_name(state_globals):
         print('Attempting to set openephys session name to ' + str(state_globals["external"]["session_name"]))
         # send_ecephys_message(state_globals, 'set_data_file_path', path=state_globals["external"]["session_name"])
         
+        # TODO shift naming to workflow, and consider using path = session_name, instead of prepend_base_append to avoid adding '_' sep
         folder_str = state_globals["external"]["session_name"]
         mouseID = state_globals["external"]["mouse_id"]
         sessionID = state_globals["external"]["ecephys_session_id"] 
@@ -2294,16 +2295,16 @@ def check_components(state_globals):
         else:  # the open ephys interface goes through the workflow router program, so need to set this up differently
             if not ('hab' in state_globals['external']['session_type']):
                 compStatusArray[key] = False
-                state_globals['resources']['io'].add_message_bundle(ephys_messages)
-                state_globals['resources']['io'].register_for_message('system_info', handle_message)
-                state_globals['resources']['io'].register_for_message('system_status', handle_message)
-                state_globals['resources']['io'].register_for_message('set_data_file_path', handle_message)
-                state_globals['resources']['io'].register_for_message('acquisition', handle_message)
-                state_globals['resources']['io'].register_for_message('recording', handle_message)
+                # request_open_ephys_status() #state_globals['resources']['io'].add_message_bundle(ephys_messages)
+                # state_globals['resources']['io'].register_for_message('system_info', handle_message)
+                # state_globals['resources']['io'].register_for_message('system_status', handle_message)
+                # state_globals['resources']['io'].register_for_message('set_data_file_path', handle_message)
+                # state_globals['resources']['io'].register_for_message('acquisition', handle_message)
+                # state_globals['resources']['io'].register_for_message('recording', handle_message)
 
                 # and now request the system info
-                message = ephys_messages.request_system_info()
-                state_globals['resources']['io'].write(message)
+                message = request_open_ephys_status(state_globals) # = ephys_messages.request_system_info()
+                # state_globals['resources']['io'].write(message)
                 compStatusArray[key] = True
 
     state_globals["external"]["drive_memory_low"] = False

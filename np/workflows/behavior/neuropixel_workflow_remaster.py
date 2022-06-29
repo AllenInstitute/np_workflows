@@ -2113,6 +2113,8 @@ def check_data_dirs_enter(state_globals):
 @state_transition
 def check_data_dirs_input(state_globals):
     #npxc.set_open_ephys_name(state_globals)
+    npxc.clear_open_ephys_name(state_globals)
+    time.sleep(1)
     npxc.start_ecephys_recording(state_globals)
     time.sleep(3)
     npxc.stop_ecephys_recording(state_globals)
