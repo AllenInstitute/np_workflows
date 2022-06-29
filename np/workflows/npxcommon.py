@@ -139,37 +139,38 @@ def make_keys_and_values_strings(dict_in):
         new_dict[str(key)] = str(value)
     return new_dict
 
+
 def mvr_capture(state_globals,photo_path="C:/ProgramData/AIBS_MPE/wfltk/temp/last_snapshot.jpg", timeout=30):
     """standard mvr image snapshot func, returning error mesg or img  """
     mvr_writer.take_snapshot()
     
-    def wait_on_snapshot(): 
+    def wait_on_snapshot():
+        return_msg = "snapshot timed out"
         t0 = time.time()
         while time.time()-t0 < timeout:
-            for message in mvr_writer.read():
-                if message.get('mvr_response', "") == "take_snapshot_initiated":
-                    source_photo_path = get_newest_mvr_img(config['MVR']['host'])
-                    time.sleep(1) # MVR has responded too quickly.  It hasn't let go of the file so we must wait.
-                    pathlib.Path(photo_path).parent.mkdir(parents=True, exist_ok=True)
-                    dest_photo_path = shutil.copy2(source_photo_path, photo_path)
-                    logging.info(f"Copied: {source_photo_path} -> {dest_photo_path}")
-                    return True, dest_photo_path
-                else:
-                    return False, message.get('mvr_response', "snapshot_failed") 
-            # except Exception as e:
-            #     return False, e
-            
+            try:
+                for message in mvr_writer.read():
+                    if message.get('mvr_broadcast', "") == "snapshot_taken":
+                        drive, filepath = os.path.splitdrive(message['snapshot_filepath'])
+                        source_photo_path = f"\\\\{config['MVR']['host']}\\{drive[0]}${filepath}"
+                        # MVR has responded too quickly.  It hasn't let go of the file so we must wait.
+                        time.sleep(1)
+                        pathlib.Path(photo_path).parent.mkdir(parents=True, exist_ok=True)
+                        dest_photo_path = shutil.copy(source_photo_path, photo_path)
+                        logging.info(f"Copied: {source_photo_path} -> {dest_photo_path}")
+                        return True, dest_photo_path
+                    elif message.get('mvr_broadcast', "") == "snapshot_failed":
+                        return False, message['error_message'] or "snapshot failed"
+            except Exception as e:
+                return_msg = e
+        return False, return_msg
+    
     success, mesg_or_img = wait_on_snapshot()
-
     if not success:
-        try:
-            # fail_state(...)
-            print(f"Error taking snapshot: {mesg_or_img}",state_globals)
-        except: 
-            pass
+        fail_state(f"Error taking snapshot: {mesg_or_img}", state_globals)
     else:
-        return mesg_or_img # return the captured image
-
+        return mesg_or_img  # return the captured image
+  
     
 def save_state(state_globals):
     print('>> save_state <<')
