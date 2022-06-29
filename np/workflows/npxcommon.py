@@ -2303,9 +2303,12 @@ def check_components(state_globals):
                 # state_globals['resources']['io'].register_for_message('recording', handle_message)
 
                 # and now request the system info
-                message = request_open_ephys_status(state_globals) # = ephys_messages.request_system_info()
-                # state_globals['resources']['io'].write(message)
-                compStatusArray[key] = True
+                try: 
+                    message = request_open_ephys_status(state_globals) # = ephys_messages.request_system_info()
+                    # state_globals['resources']['io'].write(message)
+                    compStatusArray[key] = True
+                except:
+                    message = 'Open Ephys Interface did not respond. Is it running?'
 
     state_globals["external"]["drive_memory_low"] = False
     if disk_usage(state_globals["external"]["local_lims_head"]).free < 80 * (10 ** 9):
