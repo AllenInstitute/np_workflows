@@ -936,7 +936,7 @@ def diI_photoDoc_setup_input(state):
             try:
                 npxc.mvr_capture(state,pre_experiment_left_path)
                 npxc.mvr_capture(state,pre_experiment_right_path)
-
+                pre_experiment_local_path = pre_experiment_left_local_path
                 state["external"]["status_message"] = "success"
                 state["external"]["local_log"] = f"Surface_1_Path:{pre_experiment_local_path}"
             except Exception as e:
@@ -1259,6 +1259,8 @@ def brain_surface_focus_input(state_globals):
         try:
             npxc.mvr_capture(state_globals,surface_2_left_path)
             npxc.mvr_capture(state_globals,surface_2_right_path)
+            
+            surface_2_local_path = surface_2_left_path
 
             state_globals["external"]["status_message"] = "success"
             state_globals["external"]["local_log"] = f"Surface_2_Path:{surface_2_local_path}"
@@ -1515,6 +1517,8 @@ def photodoc_setup3_input(state_globals):
             npxc.mvr_capture(state_globals,surface_3_left_path)
             print(f"saving left image to {surface_3_right_path}")
             npxc.mvr_capture(state_globals,surface_3_right_path)
+            
+            surface_3_local_path = surface_3_left_path
 
             state_globals["external"]["status_message"] = "success"
             state_globals["external"]["local_log"] = f"Surface_3_Path:{surface_3_local_path}"
@@ -1861,6 +1865,7 @@ def photodoc_setup4_input(state_globals):
         try:
             npxc.mvr_capture(state_globals,surface_4_left_path)  # will be replaced by the real call to cam3d
             npxc.mvr_capture(state_globals,surface_4_right_path)  # will be replaced by the real call to cam3d
+            surface_4_local_path = surface_4_left_path
             state_globals["external"]["status_message"] = "success"
         except Exception as e:
             print(f"Cam3d take photo failure:{e}!")
@@ -2113,8 +2118,8 @@ def check_data_dirs_enter(state_globals):
 @state_transition
 def check_data_dirs_input(state_globals):
     #npxc.set_open_ephys_name(state_globals)
-    npxc.clear_open_ephys_name(state_globals)
-    time.sleep(1)
+    # npxc.clear_open_ephys_name(state_globals)
+    # time.sleep(1)
     npxc.start_ecephys_recording(state_globals)
     time.sleep(3)
     npxc.stop_ecephys_recording(state_globals)
@@ -2394,6 +2399,7 @@ def end_experiment_photodocumentation_input(state_globals):
             result = npxc.mvr_capture(state_globals,surface_5_left_path)
             print(f"taking surface 5 right:{surface_5_right_path}")
             result = npxc.mvr_capture(state_globals,surface_5_right_path)
+            surface_5_local_path = surface_5_left_path
             state_globals["external"]["status_message"] = "success"
         except Exception as e:
             state_globals["external"]["status_message"] = f"Cam3d take photo failure:{e}"
@@ -2512,6 +2518,7 @@ def post_removal_photodocumentation_input(state_globals):
         try:
             result = npxc.mvr_capture(state_globals,surface_6_left_path)
             result = npxc.mvr_capture(state_globals,surface_6_right_path)
+            surface_6_local_path = surface_6_left_path
             state_globals["external"]["status_message"] = "success"
         except Exception as e:
             state_globals["external"]["status_message"] = f"Cam3d take photo failure:{e}"
