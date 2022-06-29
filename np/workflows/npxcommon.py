@@ -2124,7 +2124,8 @@ def copy_stim_pkls(state_globals, session_type):
 
         try:
             host = r'\\' + config['components']['Stim']['host']
-            stim_output_path = os.path.join(host, "output")  # TODO put in config
+            # stim_output_path = os.path.join(host, "output")  # TODO put in config
+            stim_output_path = str(pathlib.Path(camstim_proxy.session_output_path).parent)
             file_list = get_new_files_list(stim_output_path, num_files)
             print(f">>>> file_list:{file_list}")
             warnings = {}
