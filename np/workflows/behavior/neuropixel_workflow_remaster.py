@@ -1195,14 +1195,14 @@ def lower_probe_cartridge_input(state_globals):
     state_globals["external"]["transition_result"] = True
     state_globals["external"]["status_message"] = "success"
     npxc.save_platform_json(state_globals, manifest=False)
-    try:
-        proxy = state_globals["component_proxies"]["Notes"]
-        try:
-            npxc.rename_mlog(state_globals)
-        except Exception as e:
-            print(f"Notes rename log failure:{e}!")
-    except Exception as e:
-        print(f"Notes proxy failure:{e}!")
+    # try:
+    #     proxy = state_globals["component_proxies"]["Notes"]
+    #     try:
+    #         npxc.rename_mlog(state_globals)
+    #     except Exception as e:
+    #         print(f"Notes rename log failure:{e}!")
+    # except Exception as e:
+    #     print(f"Notes proxy failure:{e}!")
 
 
 @state_transition
@@ -1241,7 +1241,6 @@ def brain_surface_focus_input(state_globals):
         (state_globals["external"]["session_name"] + "_surface-image2-right.png"),
     )
     try:
-        proxy = state_globals["component_proxies"]["Cam3d"]
 
         print(">>>>>>> brain_surface_image")
         print(f"surface_2_left_path:{surface_2_left_path}")
@@ -1497,7 +1496,6 @@ def photodoc_setup3_input(state_globals):
         (state_globals["external"]["session_name"] + "_surface-image3-right.png"),
     )
     try:
-        proxy = state_globals["component_proxies"]["Cam3d"]
 
         print(">>>>>>> pre_insertion_surface")
         print(f"surface_3_left_path:{surface_3_left_path}")
@@ -1861,7 +1859,6 @@ def photodoc_setup4_input(state_globals):
     ] = f'{state_globals["external"]["session_name"]}_surface-image4-right.png'
 
     try:
-        proxy = state_globals["component_proxies"]["Cam3d"]
         try:
             npxc.mvr_capture(state_globals,surface_4_left_path)  # will be replaced by the real call to cam3d
             npxc.mvr_capture(state_globals,surface_4_right_path)  # will be replaced by the real call to cam3d
@@ -2393,7 +2390,6 @@ def end_experiment_photodocumentation_input(state_globals):
     ] = f'{state_globals["external"]["session_name"]}_surface-image5-right.png'
 
     try:
-        proxy = state_globals["component_proxies"]["Cam3d"]
         try:
             print(f"taking surface 5 left:{surface_5_left_path}")
             result = npxc.mvr_capture(state_globals,surface_5_left_path)
@@ -2514,7 +2510,6 @@ def post_removal_photodocumentation_input(state_globals):
     ] = f'{state_globals["external"]["session_name"]}_surface-image6-right.png'
 
     try:
-        proxy = state_globals["component_proxies"]["Cam3d"]
         try:
             result = npxc.mvr_capture(state_globals,surface_6_left_path)
             result = npxc.mvr_capture(state_globals,surface_6_right_path)
