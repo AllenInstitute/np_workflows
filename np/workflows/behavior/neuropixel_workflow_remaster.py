@@ -950,7 +950,7 @@ def diI_photoDoc_setup_input(state):
 
         # check for the image files...make sure they were taken succesfully
         left_image_result = os.path.isfile(pre_experiment_left_path)
-        right_image_result = os.path.isfile(pre_experiment_left_path)
+        right_image_result = os.path.isfile(pre_experiment_right_path)
 
         image_error_message = "Image Error:"
 
@@ -979,7 +979,7 @@ def diI_photoDoc_setup_input(state):
                 message = 'You may need to click the blue botton and blue triangle on Cam3d or restart it, Please also confirm there is only one camviewer gui open'
                 npxc.alert_text(message, state)
         state["external"]["surface_1_left_local_file_location"] = pre_experiment_left_path
-        state["external"]["surface_1_right_local_file_location"] = pre_experiment_left_path
+        state["external"]["surface_1_right_local_file_location"] = pre_experiment_right_path
         
     except:
         # state_globals['external']['next_state'] = 'diI_photoDocumentation'
@@ -1275,7 +1275,7 @@ def brain_surface_focus_input(state_globals):
 
     # check for the image files...make sure they were taken succesfully
     left_image_result = os.path.isfile(surface_2_left_path)
-    right_image_result = os.path.isfile(surface_2_left_path)
+    right_image_result = os.path.isfile(surface_2_right_path)
 
     image_error_message = "Image Error:"
 
@@ -1303,7 +1303,7 @@ def brain_surface_focus_input(state_globals):
             message = 'You may need to click the blue button and blue triangle on Cam3d or restart it, Please also confirm there is only one camviewer gui open'
             npxc.alert_text(message, state_globals)
     state_globals["external"]["surface_2_left_local_file_location"] = surface_2_left_path
-    state_globals["external"]["surface_2_right_local_file_location"] = surface_2_left_path
+    state_globals["external"]["surface_2_right_local_file_location"] = surface_2_right_path
 
     # state_globals['external']['next_state'] = 'insert_probes_start'
     state_globals["external"]["transition_result"] = True
@@ -1533,7 +1533,7 @@ def photodoc_setup3_input(state_globals):
 
     # check for the image files...make sure they were taken succesfully
     left_image_result = os.path.isfile(surface_3_left_path)
-    right_image_result = os.path.isfile(surface_3_left_path)
+    right_image_result = os.path.isfile(surface_3_right_path)
 
     image_error_message = "Image Error:"
 
@@ -1558,7 +1558,7 @@ def photodoc_setup3_input(state_globals):
             message = 'You may need to click the blue button and blue triangle on Cam3d or restart it, Please also confirm there is only one camviewer gui open'
             npxc.alert_text(message, state_globals)
     state_globals["external"]["surface_3_left_local_file_location"] = surface_3_left_path
-    state_globals["external"]["surface_3_right_local_file_location"] = surface_3_left_path
+    state_globals["external"]["surface_3_right_local_file_location"] = surface_3_right_path
 
     # state_globals['external']['next_state'] = 'photodoc_confirm3'
     state_globals["external"]["transition_result"] = True
@@ -1878,7 +1878,7 @@ def photodoc_setup4_input(state_globals):
 
     # check for the image files...make sure they were taken succesfully
     left_image_result = os.path.isfile(surface_4_left_path)
-    right_image_result = os.path.isfile(surface_4_left_path)
+    right_image_result = os.path.isfile(surface_4_right_path)
 
     image_error_message = "Image Error:"
 
@@ -1904,7 +1904,7 @@ def photodoc_setup4_input(state_globals):
             message = 'You may need to click the blue button and blue triangle on Cam3d or restart it, Please also confirm there is only one camviewer gui open'
             npxc.alert_text(message, state_globals)
     state_globals["external"]["surface_4_left_local_file_location"] = surface_4_left_path
-    state_globals["external"]["surface_4_right_local_file_location"] = surface_4_left_path
+    state_globals["external"]["surface_4_right_local_file_location"] = surface_4_right_path
 
     # state_globals['external']['next_state'] = 'insertion_photodocumentation'
     state_globals["external"]["transition_result"] = True
@@ -2410,7 +2410,7 @@ def end_experiment_photodocumentation_input(state_globals):
 
     # check for the image files...make sure they were taken succesfully
     left_image_result = os.path.isfile(surface_5_left_path)
-    right_image_result = os.path.isfile(surface_5_left_path)
+    right_image_result = os.path.isfile(surface_5_right_path)
 
     image_error_message = "Image Error:"
 
@@ -2436,7 +2436,7 @@ def end_experiment_photodocumentation_input(state_globals):
             message = 'You may need to click the blue button and blue triangle on Cam3d or restart it, Please also confirm there is only one camviewer gui open'
             npxc.alert_text(message, state_globals)
     state_globals["external"]["surface_5_left_local_file_location"] = surface_5_left_path
-    state_globals["external"]["surface_5_right_local_file_location"] = surface_5_left_path
+    state_globals["external"]["surface_5_right_local_file_location"] = surface_5_right_path
 
     state_globals["external"]["transition_result"] = True
     state_globals["external"]["status_message"] = "success"
@@ -2555,7 +2555,7 @@ def post_removal_photodocumentation_input(state_globals):
             message = 'You may need to click the blue button and blue triangle on Cam3d or restart it, Please also confirm there is only one camviewer gui open'
             npxc.alert_text(message, state_globals)
     state_globals["external"]["surface_6_left_local_file_location"] = surface_6_left_path
-    state_globals["external"]["surface_6_right_local_file_location"] = surface_6_left_path
+    state_globals["external"]["surface_6_right_local_file_location"] = surface_6_right_path
     # state_globals['external']['next_state'] = 'post_removal_image'
     state_globals["external"]["transition_result"] = True
     state_globals["external"]["status_message"] = "success"

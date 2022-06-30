@@ -185,7 +185,7 @@ class EphysHTTP(Ephys):
 
     @staticmethod
     def clear_open_ephys_name():
-        return EphysHTTP.set_open_ephys_name(path="temp", prepend_text="", append_text="")
+        return EphysHTTP.set_open_ephys_name(path="temp", prepend_text="_", append_text="_")
 
     @staticmethod
     def request_open_ephys_status():
