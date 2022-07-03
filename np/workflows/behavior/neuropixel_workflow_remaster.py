@@ -170,6 +170,8 @@ def default_exit(state_globals, label):
 
 @state_transition
 def initialize_enter(state_globals):
+    state_globals["external"]["logo"] = os.getcwd().join(R"\np\images\logo_np_vis.png")
+    
     state_globals['external']['session_type'] = 'behavior_experiment'
     state_globals['external']['msg_text'] = 'No message defined.'
     Processing_Agents = npxc.get_processing_agents(state_globals)
@@ -197,7 +199,7 @@ def initialize_input(state_globals):
     Input test function for state initialize
     """
     npxc.initialize_input(state_globals)
-
+cd
     #! this is done in npxc too- delete
     # global mouse_director_proxy
     # md_host = npxc.config['components']['MouseDirector']['host']

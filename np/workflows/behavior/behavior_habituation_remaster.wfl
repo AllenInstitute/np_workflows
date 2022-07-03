@@ -10,6 +10,9 @@ states:
   initialize:
       description: initialize
       display:
+          - field: logo
+            type: image
+            desc: logo
           - field: user_id
             type: text_entry
             desc: Enter User ID please
