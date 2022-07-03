@@ -2784,10 +2784,10 @@ def get_mlog_location(state_globals):
     location = False
     try:
         host = r'\\' + config['MVR']['host']
-        location = os.path.join(host, config['newscale']['log_path'])
+        location = os.path.join(host, R'C\ProgramData\AIBS_MPE\wfltk\logs')
         location = glob.glob(location)[0]
     except Exception as E:
-        default = os.path.join(host, r'C\MPM_data\log.csv')
+        default = os.path.join(host, R'C\MPM_data\log.csv')
         if location:
             message = f'Failed to find mlog file at path from config: {location}\n\n Using default {default} instead'
             # alert_text(message, state_globals)

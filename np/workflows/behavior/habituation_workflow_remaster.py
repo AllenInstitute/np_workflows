@@ -140,6 +140,9 @@ def overrideable_error_state_exit(state_globals):
 
 @state_transition
 def initialize_enter(state_globals):
+    
+    state_globals["external"]["logo"] = os.getcwd().join(R"\np\images\logo_np_hab.png")
+
     state_globals['external']['session_type'] = 'behavior_habituation'
     npxc.initialize_enter(state_globals)
 
