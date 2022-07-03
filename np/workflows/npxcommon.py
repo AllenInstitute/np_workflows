@@ -2030,7 +2030,8 @@ def get_num_pkls(session_type):
         session_type_mapping = {
             'behavior_experiment_day1': 7,
             'behavior_experiment_day2': 7,
-            'behavior_habituation': 4
+            'behavior_habituation': 4,
+            'behavior_experiment': 5
         }
         try:
             num_files = session_type_mapping[session_type]
@@ -2139,15 +2140,18 @@ def copy_stim_pkls(state_globals, session_type):
                     full_path = os.path.join(stim_output_path, filename)
 
                     if not (file_created_after_experiment_start(state_globals, full_path)):
-                        Err_string2 = f'The canidate pkl file {file} was not created before the start of the experiment'
+                        Err_string2 = f'The canidate pkl file {file} was created before the start of the experiment'
                         logging.debug(Err_string2)
                     else:
                         source = full_path
                         destination = os.path.join(state_globals["external"]["mapped_lims_location"], filename)
-                        print(f'Asking camstim to copy {source} to {destination}')
-                        camstim_proxy.copy_arbitrary_file(source, destination)
-                        time.sleep(.5)
-
+                        try:
+                            print(f'Asking camstim to copy {source} to {destination}')
+                            camstim_proxy.copy_arbitrary_file(source, destination) #! is this working?
+                            time.sleep(.5)
+                        except:
+                            print(f'Try manual copy {source} to {destination}')
+                            shutil.copy2(source,destination)
 
 
                         for pkl_extension in pkl_list:
