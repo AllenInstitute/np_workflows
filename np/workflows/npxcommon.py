@@ -1980,7 +1980,7 @@ def get_new_files_list(path, num_files, extension='.pkl'):
     """
     returns a list of the number most recent files.  For use with WSE2.0
     """
-    search_path = f'{path}/*{extension}'
+    search_path = f'{path}\*{extension}'
     print(f' Searching {path} for {extension}')
     try:
         sorted_list = sorted(glob.iglob(search_path), key=os.path.getctime)
@@ -2119,7 +2119,8 @@ def copy_stim_pkls(state_globals, session_type):
     num_files = get_num_pkls(session_type)
 
     pkl_list = get_pkl_list(session_type)
-
+    #! TODO pkl_list is len(1) for behav exp
+    #! getn_new_files_list should not use pkl_List for ref, replace with 'renamer' method
     print(f'Pkls to copy: {" ,".join(pkl_list)}')
     try:
         camstim_proxy = state_globals["component_proxies"]["Stim"]
