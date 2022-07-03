@@ -1,18 +1,18 @@
 import json
 import logging
-
+import socket
 import sys
 import time
+from abc import ABC, abstractmethod
 from enum import Enum
 from typing import Optional
-from abc import ABC, abstractmethod
 
 import requests
 
 sys.path.append("..")
 try:
     # get protobufs module if available, for Router implementation
-    from . import ephys_edi_pb2 as ephys_messages
+    from np.services import ephys_edi_pb2 as ephys_messages
 except:
     ...
 
@@ -95,11 +95,25 @@ class EphysRouter(Ephys):
 
 class EphysHTTP(Ephys):
     """ Interface for HTTP server introduced in open ephys v0.6.0 (2022) """
+    #TODO wait on return msgs from requests between chaning modes etc
+    # we don't want to send multiple put requests so quickly that the server can't respond
+    
+    #? is it necessary to transition idle>acquire>record (and reverse)? is idle>record possible?
+    #? can we set rec dir name while in acquire mode?
+    
+    #TODO get broadcast message working to put plugin settings
     
     try:
         hostname = config["components"]["OpenEphys"]["host"]
-    except:
-        hostname = "localhost"
+    except (NameError,KeyError):
+        pc = socket.gethostname()
+        acq = {
+            "W10DTSM112719":"W10DT05515", # NP0
+            "W10DTSM18306":"W10DT05501", # NP1
+            "W10DTSM18307":"W10DT05517", # NP2
+            "W10DTMJ0AK6GM":"W10SV108131", #ben-desktop:btTest
+        }
+        hostname = acq.get(pc,"localhost")
     
     server = f"http://{hostname}:37497/api"
     status_endpoint = f"{server}/status"
@@ -171,7 +185,7 @@ class EphysHTTP(Ephys):
 
     @staticmethod
     def clear_open_ephys_name():
-        return EphysHTTP.set_open_ephys_name(path="", prepend_text="", append_text="")
+        return EphysHTTP.set_open_ephys_name(path="temp", prepend_text="_", append_text="_")
 
     @staticmethod
     def request_open_ephys_status():
@@ -179,16 +193,24 @@ class EphysHTTP(Ephys):
 
     @staticmethod
     def reset_open_ephys():
+        if EphysHTTP.request_open_ephys_status() == "RECORD":
+            EphysHTTP.stop_ecephys_recording()
+            time.sleep(.5)
+        if EphysHTTP.request_open_ephys_status() == "ACQUIRE":
+            EphysHTTP.stop_ecephys_acquisition()
+            time.sleep(.5)
         EphysHTTP.clear_open_ephys_name()
         time.sleep(.5)
         EphysHTTP.start_ecephys_acquisition()
-        time.sleep(1)
+        time.sleep(.5)
+        EphysHTTP.start_ecephys_recording()
+        time.sleep(3)
         EphysHTTP.stop_ecephys_recording()
         time.sleep(.5)
         EphysHTTP.stop_ecephys_acquisition()
         time.sleep(.5)
         
-    """"  
+    """  
     @staticmethod
     def set_ref(ext_tip="TIP"):
         # for port in [0, 1, 2]: 

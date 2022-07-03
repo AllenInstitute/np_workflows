@@ -1,10 +1,12 @@
 import csv
+import datetime
 import glob
 import inspect
 import itertools
 import json
 import logging
 import os
+import pathlib
 import pdb
 import shutil
 import subprocess
@@ -25,15 +27,16 @@ import psutil
 import requests
 import yaml
 import zmq
-from PIL import Image
-from ..models import model
-from wfltk import middleware_messages_pb2 as wfltk_msgs
-
+from np.models import model
 # sys.path.append("..")
-from .. import ephys_edi_pb2 as ephys_messages #! TODO remove this - communicate through API instead
-from .. import mvr
-from .mvr import MVRConnector
-from .ephys_api import EphysHTTP as Ephys
+from np.services import \
+    ephys_edi_pb2 as \
+    ephys_messages  # ! TODO remove this - communicate through API instead
+from np.services import mvr
+from np.services.ephys_api import EphysHTTP as Ephys
+from np.services.mvr import MVRConnector
+from PIL import Image
+from wfltk import middleware_messages_pb2 as wfltk_msgs
 
 messages = wfltk_msgs
 import mpetk
@@ -44,20 +47,38 @@ from mpetk.zro import Proxy
 # import mpeconfig
 
 # config = mpeconfig.source_configuration('neuropixels', version='1.4.0')
-
 config: dict
 config = mpeconfig.source_configuration('neuropixels', version='1.4.0') 
 #! #TODO line above is temporary, we want to consolidate config settings into one file 
 config.update(mpeconfig.source_configuration("dynamic_routing"))
 
-with open('dynamic_routing/config/neuropixels.yml') as f:
+with open('np/config/neuropixels.yml') as f:
     yconfig = yaml.safe_load(f)
 
 config.update(yconfig)
 
-mvr_writer = MVRConnector(args=config['MVR'])
+# pdb.set_trace()
+def jsonrep(o):
+    if isinstance(o, datetime.datetime):
+        return o.__repr__()
+    
+with open('np/config/dump.json','w') as f:
+    json.dump(config, f, default=jsonrep, indent = 4)
+    
+# mvr_writer = MVRConnector(args=config['MVR'])
 
-
+global mvr_writer
+try:
+    mvr_writer = MVRConnector(args=config['MVR'])
+    if not mvr._mvr_connected:
+        print("Failed to connect to MVR")
+        logging.info("Failed to connect to mvr")
+        # component_errors.append(f"Failed to connect to MVR on {config['MVR']}")
+except Exception:
+    print("Failed to connect to mvr")
+    logging.info("Failed to connect to mvr")
+    # component_errors.append(f"Failed to connect to MVR.")
+        
 global_processes = {}
 
 # ---------------- Network Service Objects ----------------
@@ -118,6 +139,49 @@ def make_keys_and_values_strings(dict_in):
         new_dict[str(key)] = str(value)
     return new_dict
 
+
+def mvr_capture(state_globals,photo_path="C:/ProgramData/AIBS_MPE/wfltk/temp/last_snapshot.jpg", timeout=30):
+    """standard mvr image snapshot func, returning error mesg or img  """
+    mvr_writer.take_snapshot()
+    
+    def wait_on_snapshot():
+        return_msg = "snapshot timed out"
+        t0 = time.time()
+        while time.time()-t0 < timeout:
+            try:
+                for message in mvr_writer.read():
+                    if message.get('mvr_broadcast', "") == "snapshot_taken":
+                        drive, filepath = os.path.splitdrive(message['snapshot_filepath'])
+                        source_photo_path = f"\\\\{config['MVR']['host']}\\{drive[0]}${filepath}"
+                        # MVR has responded too quickly.  It hasn't let go of the file so we must wait.
+                        time.sleep(1)
+                        pathlib.Path(photo_path).parent.mkdir(parents=True, exist_ok=True)
+                        dest_photo_path = shutil.copy(source_photo_path, photo_path)
+                        logging.info(f"Copied: {source_photo_path} -> {dest_photo_path}")
+                        return True, dest_photo_path
+                    elif message.get('mvr_broadcast', "") == "snapshot_failed":
+                        return False, message['error_message'] or "snapshot failed"
+            except Exception as e:
+                return_msg = e
+        return False, return_msg
+    
+    success, mesg_or_img = wait_on_snapshot()
+    if not success:
+        fail_state(f"Error taking snapshot: {mesg_or_img}", state_globals)
+    else:
+        return mesg_or_img  # return the captured image
+  
+    
+def save_state(state_globals):
+    print('>> save_state <<')
+
+    pass
+
+
+def load_previous_state(state_globals):
+    print('>> load_previous_state <<')
+    return state_globals
+      
 
 def initialize_input(state_globals):
     try:
@@ -330,6 +394,30 @@ def assess_previous_sessions(state_globals):
     save_platform_json(state_globals, manifest=False)
 
 
+def get_created_timestamp_from_file(file, date_format='%Y%m%d%H%M'):
+
+    t = os.path.getctime(str(file))
+    # t = os.path.getmtime(file)
+    t = time.localtime(t)
+    t = time.strftime(date_format, t)
+
+    return t
+
+
+def get_newest_mvr_img(host):
+    img_output_dir = pathlib.Path(f"//{host}/c/ProgramData/AIBS_MPE/mvr/data")
+    paths_all = pathlib.Path(img_output_dir).glob('*.jpg')
+    time_created = 0
+    for path in paths_all:
+        if time_created < int(get_created_timestamp_from_file(path)):
+            newest_file = path
+    return str(newest_file)
+        
+        
+        
+
+
+    
 def get_most_recent_session(session_dict, state_globals):
     exp_dates = {}
     last_date = 0
@@ -426,22 +514,14 @@ def set_open_ephys_name(state_globals):
         print('Attempting to set openephys session name to ' + str(state_globals["external"]["session_name"]))
         # send_ecephys_message(state_globals, 'set_data_file_path', path=state_globals["external"]["session_name"])
         
+        # TODO shift naming to workflow, and consider using path = session_name, instead of prepend_base_append to avoid adding '_' sep
         folder_str = state_globals["external"]["session_name"]
-        mouseID = state["external"]["mouse_id"]
-        sessionID = state["external"]["ecephys_session_id"] 
+        mouseID = state_globals["external"]["mouse_id"]
+        sessionID = state_globals["external"]["ecephys_session_id"] 
         date = state_globals["external"]["sessionNameTimestamp"]
      
-        #! TODO this is filename we want (or provide path with folder_str only, no prepend/append)
-        ephys_api.EphysHTTP.set_data_file_path(path=mouseID,
-                                               prepend_text=sessionID+"_",
-                                               append_text="_"+date)
-       
-        #! we can only append/prepend currently, cannot set path
-        # we'll send sessionID and date, and request user checks/enters mouseID in opephys for now 
-        Ephys.set_open_ephys_name(prepend_text=sessionID,
-                                               append_text=date)                                        
-                                               
-                                               
+        Ephys.set_open_ephys_name(path=mouseID,prepend_text=sessionID+"_", append_text="_"+date)
+
     except Exception as E:
         print(f'Failed to set open ephys name: {E}')
 
@@ -2046,7 +2126,8 @@ def copy_stim_pkls(state_globals, session_type):
 
         try:
             host = r'\\' + config['components']['Stim']['host']
-            stim_output_path = os.path.join(host, "output")  # TODO put in config
+            # stim_output_path = os.path.join(host, "output")  # TODO put in config
+            stim_output_path = str(pathlib.Path(camstim_proxy.session_output_path).parent)
             file_list = get_new_files_list(stim_output_path, num_files)
             print(f">>>> file_list:{file_list}")
             warnings = {}
@@ -2155,7 +2236,7 @@ def copy_stim_pkls(state_globals, session_type):
 def establish_proxies(state_globals):
     state_globals['component_proxies'] = {}
     for key, value in config['components'].items():
-        if 'port' in value:
+        if 'port' in value and 'Notes' not in key:
             print(
                 f'Creating Proxy for device:{key} at host:{value["host"]} port:{value["port"]} device name:{value["desc"]}')
             port = str(value["port"])
@@ -2175,7 +2256,7 @@ def check_components(state_globals):
     # pdb.set_trace()
     for key, value in config['components'].items():
 
-        if 'port' in value and 'Processing' not in key:
+        if 'port' in value and 'Processing' not in key and 'Notes' not in key:
             compStatusArray[key] = False
             # Ping the remote computers to make sure they are alive...in dummy mode, will just be ping localhost, but we want to have the functionality here
             ping_result = os.system('ping %s -n 1' % (value["host"],))
@@ -2214,17 +2295,20 @@ def check_components(state_globals):
         else:  # the open ephys interface goes through the workflow router program, so need to set this up differently
             if not ('hab' in state_globals['external']['session_type']):
                 compStatusArray[key] = False
-                state_globals['resources']['io'].add_message_bundle(ephys_messages)
-                state_globals['resources']['io'].register_for_message('system_info', handle_message)
-                state_globals['resources']['io'].register_for_message('system_status', handle_message)
-                state_globals['resources']['io'].register_for_message('set_data_file_path', handle_message)
-                state_globals['resources']['io'].register_for_message('acquisition', handle_message)
-                state_globals['resources']['io'].register_for_message('recording', handle_message)
+                # request_open_ephys_status() #state_globals['resources']['io'].add_message_bundle(ephys_messages)
+                # state_globals['resources']['io'].register_for_message('system_info', handle_message)
+                # state_globals['resources']['io'].register_for_message('system_status', handle_message)
+                # state_globals['resources']['io'].register_for_message('set_data_file_path', handle_message)
+                # state_globals['resources']['io'].register_for_message('acquisition', handle_message)
+                # state_globals['resources']['io'].register_for_message('recording', handle_message)
 
                 # and now request the system info
-                message = ephys_messages.request_system_info()
-                state_globals['resources']['io'].write(message)
-                compStatusArray[key] = True
+                try: 
+                    message = request_open_ephys_status(state_globals) # = ephys_messages.request_system_info()
+                    # state_globals['resources']['io'].write(message)
+                    compStatusArray[key] = True
+                except:
+                    message = 'Open Ephys Interface did not respond. Is it running?'
 
     state_globals["external"]["drive_memory_low"] = False
     if disk_usage(state_globals["external"]["local_lims_head"]).free < 80 * (10 ** 9):
@@ -2233,7 +2317,7 @@ def check_components(state_globals):
 
 
 def confirm_components(state_globals):
-    print('confirming complonents')
+    print('confirming components')
     check_components(state_globals)
     failed = []
     for name, status in state_globals['external']['component_status'].items():
@@ -2700,10 +2784,10 @@ def get_mlog_location(state_globals):
     location = False
     try:
         host = r'\\' + config['MVR']['host']
-        location = os.path.join(host, config['newscale']['log_path'])
+        location = os.path.join(host, R'C\ProgramData\AIBS_MPE\wfltk\logs')
         location = glob.glob(location)[0]
     except Exception as E:
-        default = os.path.join(host, r'C\MPM_data\log.csv')
+        default = os.path.join(host, R'C\MPM_data\log.csv')
         if location:
             message = f'Failed to find mlog file at path from config: {location}\n\n Using default {default} instead'
             # alert_text(message, state_globals)
@@ -2774,7 +2858,10 @@ def save_notes(state_globals):
     except Exception as e:
         print(f'Notes proxy failure:{e}!')
         state_globals['external']['status_message'] = f'Notes Proxy Failure:{e}'
-        state_globals['external']['component_status']["Notes"] = False
+        try:
+            state_globals['external']['component_status']["Notes"] = False
+        except:
+            pass
 
 
 def overrideable_error_state(state_globals, retry_state, override_state=None, message=None):
