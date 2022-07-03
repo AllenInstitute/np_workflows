@@ -1,5 +1,6 @@
 # -*- coding: latin-1 -*-
 
+from os import stat
 import pdb
 import sys
 
@@ -1315,8 +1316,8 @@ def insert_probes_start_enter(state_globals):
     Entry function for state insert_probes_start_enter
     """
     print("&& input probes start enter &&")
-    npxc.set_open_ephys_name(state_globals)
     # start the open ephys acquisitino
+    npxc.clear_open_ephys_name(state_globals)
     npxc.start_ecephys_acquisition(state_globals)
 
 
@@ -2109,7 +2110,6 @@ def probe_quiescence_input(state_globals):
 @state_transition
 def check_data_dirs_enter(state_globals):
     print(">> check_data_dirs_enter <<")
-    npxc.set_open_ephys_name(state_globals)
 
 
 @state_transition
@@ -2117,10 +2117,13 @@ def check_data_dirs_input(state_globals):
     #npxc.set_open_ephys_name(state_globals)
     # npxc.clear_open_ephys_name(state_globals)
     # time.sleep(1)
+    npxc.clear_open_ephys_name(state_globals)
+    time.sleep(1)
     npxc.start_ecephys_recording(state_globals)
     time.sleep(3)
     npxc.stop_ecephys_recording(state_globals)
     time.sleep(5)
+    npxc.set_open_ephys_name(state_globals)
     try:
         failed = npxc.check_data_drives(state_globals)
     except Exception:
