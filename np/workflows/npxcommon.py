@@ -833,7 +833,7 @@ def monitor_experiment(state_globals, wait_time=300):
                 failed['camstim_not running'] = 'Camstim appears to be finished'
                 print('camstim is finished')
                 break
-        check_wait_time = get_from_config(['session_monitoring_stream_check_wait_time'], default=80)
+        check_wait_time = get_from_config(['session_monitoring_stream_check_wait_time'], default=10)
         failed.update(check_data_stream_size(state_globals, wait_time=check_wait_time, reestablish_sizes=True,
                                              wait_in_between=10))
         if failed:
@@ -877,7 +877,7 @@ def establish_data_stream_size(state_globals):
     return failed
 
 
-def check_data_stream_size(state_globals, wait_time=120, reestablish_sizes=False, wait_in_between=3):
+def check_data_stream_size(state_globals, wait_time=10, reestablish_sizes=False, wait_in_between=3):
     time.sleep(1)
     failed = {}
     file_size_dict = {}
