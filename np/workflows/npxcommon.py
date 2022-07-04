@@ -833,7 +833,7 @@ def monitor_experiment(state_globals, wait_time=300):
                 failed['camstim_not running'] = 'Camstim appears to be finished'
                 print('camstim is finished')
                 break
-        check_wait_time = get_from_config(['session_monitoring_stream_check_wait_time'], default=80)
+        check_wait_time = get_from_config(['session_monitoring_stream_check_wait_time'], default=10)
         failed.update(check_data_stream_size(state_globals, wait_time=check_wait_time, reestablish_sizes=True,
                                              wait_in_between=10))
         if failed:
@@ -877,7 +877,7 @@ def establish_data_stream_size(state_globals):
     return failed
 
 
-def check_data_stream_size(state_globals, wait_time=120, reestablish_sizes=False, wait_in_between=3):
+def check_data_stream_size(state_globals, wait_time=10, reestablish_sizes=False, wait_in_between=3):
     time.sleep(1)
     failed = {}
     file_size_dict = {}
@@ -1980,7 +1980,7 @@ def get_new_files_list(path, num_files, extension='.pkl'):
     """
     returns a list of the number most recent files.  For use with WSE2.0
     """
-    search_path = f'{path}/*{extension}'
+    search_path = f'{path}\*{extension}'
     print(f' Searching {path} for {extension}')
     try:
         sorted_list = sorted(glob.iglob(search_path), key=os.path.getctime)
@@ -2030,7 +2030,8 @@ def get_num_pkls(session_type):
         session_type_mapping = {
             'behavior_experiment_day1': 7,
             'behavior_experiment_day2': 7,
-            'behavior_habituation': 4
+            'behavior_habituation': 4,
+            'behavior_experiment': 5
         }
         try:
             num_files = session_type_mapping[session_type]
@@ -2119,7 +2120,8 @@ def copy_stim_pkls(state_globals, session_type):
     num_files = get_num_pkls(session_type)
 
     pkl_list = get_pkl_list(session_type)
-
+    #! TODO pkl_list is len(1) for behav exp
+    #! getn_new_files_list should not use pkl_List for ref, replace with 'renamer' method
     print(f'Pkls to copy: {" ,".join(pkl_list)}')
     try:
         camstim_proxy = state_globals["component_proxies"]["Stim"]
@@ -2138,15 +2140,18 @@ def copy_stim_pkls(state_globals, session_type):
                     full_path = os.path.join(stim_output_path, filename)
 
                     if not (file_created_after_experiment_start(state_globals, full_path)):
-                        Err_string2 = f'The canidate pkl file {file} was not created before the start of the experiment'
+                        Err_string2 = f'The canidate pkl file {file} was created before the start of the experiment'
                         logging.debug(Err_string2)
                     else:
                         source = full_path
                         destination = os.path.join(state_globals["external"]["mapped_lims_location"], filename)
-                        print(f'Asking camstim to copy {source} to {destination}')
-                        camstim_proxy.copy_arbitrary_file(source, destination)
-                        time.sleep(.5)
-
+                        try:
+                            print(f'Asking camstim to copy {source} to {destination}')
+                            camstim_proxy.copy_arbitrary_file(source, destination) #! is this working?
+                            time.sleep(.5)
+                        except:
+                            print(f'Try manual copy {source} to {destination}')
+                            shutil.copy2(source,destination)
 
 
                         for pkl_extension in pkl_list:
