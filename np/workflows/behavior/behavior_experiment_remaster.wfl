@@ -421,10 +421,10 @@ states:
           - field: pretest_run
             desc: I want to run the pretest
             next: pretest
+            default: True
           - field: pretest_skip
             desc: Skip the pretest
             next: configure_hardware_videomon
-            default: True
     inputs:
       - desc: start_pretest
         state: start_pretest

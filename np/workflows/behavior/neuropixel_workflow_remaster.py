@@ -1,8 +1,8 @@
 # -*- coding: latin-1 -*-
 
-from os import stat
 import pdb
 import sys
+from os import stat
 
 # pdb.set_trace()
 # sys.path.append("...")
@@ -114,7 +114,7 @@ def skip_states(state_globals, states_skipped, fields_skipped=()):
 def state_transition(state_transition_function):
     def wrapper(state_globals, *args):
         try:
-            # reload(npxc)
+            #reload(npxc)
             transition_type = state_transition_function.__name__.split('_')[-1]
             if ((transition_type == 'input') or (transition_type == 'revert')) and ('msg_text' in state_globals["external"]):
                 state_globals["external"].pop("msg_text")
@@ -297,13 +297,14 @@ def check_data_drives_input(state_globals):
 def start_pretest_input(state_globals):
     state_globals['external']['session_name'] = dt.now().strftime("%Y%m%d%H%M%S") + '_pretest'
     state_globals["external"]["local_lims_location"] = os.path.join(state_globals["external"]["local_lims_head"],
-                                                                    state_globals['external']['session_name'])
+    state_globals['external']['session_name'])
     os.makedirs(state_globals["external"]["local_lims_location"], exist_ok=True)
     state_globals["external"]["mapped_lims_location"] = state_globals["external"]["local_lims_location"]
     state_globals["external"]["pretest_start_time"] = dt.now()
     npxc.set_open_ephys_name(state_globals)
     logging.info('starting monitoring with video prefix = pretest')
     npxc.start_common_experiment_monitoring(state_globals, video_prefix='pretest')
+
     npxc.start_pretest_stim(state_globals)
 
     foraging_id, stimulus_name, script_path = npxc.get_stim_status(camstim_proxy, state_globals)
