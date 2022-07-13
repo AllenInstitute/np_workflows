@@ -2345,6 +2345,9 @@ def run_pretest_script(state_globals, camstim, pretest_DOC_path):
 
 
 def run_pretest_override_params(state_globals, camstim, params_path):
+    #! TODO: this is a hack to get the pretest to work with camstim 2 override params
+    # ben and corbett july 2022
+    params_path = R"C:\Users\svc_neuropix\Documents\GitHub\NP_pipeline_validation\pretest_stim_params\dynamic_routing_pretest_stim_params.json"
     print(f'Attempting to run pretest stim with override params {params_path}')
     state_globals['external']['pretest_stimulus_name'] = ''
     override_params = False
@@ -2357,7 +2360,8 @@ def run_pretest_override_params(state_globals, camstim, params_path):
                                  message=message)
     if override_params:
         try:
-            mouse_id = state_globals["external"]["mouse_id"]
+            # mouse_id = state_globals["external"]["mouse_id"]
+            mouse_id = override_params["mouse_id"]
             user_id = state_globals["external"]["user_id"]
             print('Starting behavior session')
             camstim.start_session(mouse_id, user_id, override_params=override_params)
