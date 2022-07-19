@@ -1,7 +1,7 @@
 ---
 wfl_version: 1.0
 
-import: neuropixel.habituation_workflow
+import: np.workflows.passive.habituation_workflow_remaster
 entry_state: initialize
 
 

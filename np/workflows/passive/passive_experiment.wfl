@@ -1,7 +1,7 @@
 ---
 wfl_version: 1.0
 
-import: neuropixel.neuropixel_workflow
+import: np.workflows.passive.neuropixel_workflow_remaster
 entry_state: initialize
 
 #  Enter each phase of the workflow as a state
