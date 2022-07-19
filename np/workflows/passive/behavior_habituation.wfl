@@ -1,0 +1,1100 @@
+---
+wfl_version: 1.0
+
+import: neuropixel.habituation_workflow
+entry_state: initialize
+
+
+#  Enter each phase of the workflow as a state
+states:
+  initialize:
+      description: initialize
+      display:
+          - field: user_id
+            type: text_entry
+            desc: Enter User ID please
+      inputs:
+          - desc: scan_mouse_id
+            state: scan_mouse_id
+          - desc: components_error
+            state: components_error
+
+
+  overrideable_error_state:
+      description: overrideable_error_state
+      display:
+          - field: None
+            type: note
+            desc: There was an error. See details below
+          - field: None
+            type: note
+            desc: The retry state is <retry_state>
+          - field: None
+            type: note
+            desc: The override state is <override_state>
+          - field: retry_or_override
+            type: branch_radio_button
+            desc: Do you want to try again or override the error and proceed?
+            options:
+              - field: retry
+                desc: Retry
+                default: True
+              - field: override
+                desc: Override
+      inputs:
+          - desc: initialize
+            state: initialize
+
+
+  components_error:
+      description: components error
+      display:
+          - field: none
+            type: note
+            desc: One or more components are missing please check the components tab
+          - field: none
+            type: note
+            desc: If all the components look good then the Z drive is getting full
+          - field: components_choice
+            type: branch_radio_button
+            desc: One or more components are missing please check the components tab
+            options:
+                  - field: components_retry
+                    desc: Fixed components, retry initialize
+                    next: initialize
+                  - field: components_override
+                    desc: Override missing components and proceed
+                    next: prepare_for_pretest
+      inputs:
+          - desc: initialize
+            state: initialize
+          - desc: scan_mouse_id
+            state: scan_mouse_id
+
+  prepare_for_pretest:
+      description: prepare_for_pretest
+      display:
+          - field: user_id
+            type: sticky_value
+            desc: User ID
+          - field: none
+            type: check_box
+            desc: The pretest will start when you click to the next state
+      inputs:
+          - desc: pretest
+            state: pretest
+      revert:
+          options:
+            - desc: Revert to initialize
+              state: initialize
+
+  pretest:
+      description: pretest
+      display:
+          - field: none
+            type: note
+            desc: Pretest is running
+          - field: none
+            type: check_box
+            desc: Please spin the running wheel
+          - field: none
+            type: check_box
+            desc: Please tap the lickspout to ensure licks are registering
+          - field: none
+            type: check_box
+            desc: Confirm that the screen displays the stimulus
+          - field: none
+            type: check_box
+            desc: Feel the solenoid box to confirm it is opening and closing
+          - field: pretest_choice
+            type: branch_radio_button
+            desc: For wfl testing only, choice will ultimately be made by backend
+            options:
+                  - field: pretest_failed
+                    desc: Pretest failed
+                    next: pretest_error
+                  - field: prestest_passed
+                    desc: Pretest passed
+                    next: configure_hardware
+      inputs:
+          - desc: pretest_error
+            state: pretest_error
+          - desc: configure_hardware
+            state: configure_hardware
+      revert:
+          options:
+            - desc: Revert to prepare_for_pretest
+              state: prepare_for_pretest
+
+
+  pretest_error:
+      description: pretest_error
+      display:
+          - field: none
+            type: note
+            desc: One or more elements of the pretest failed
+          - field: none
+            type: note
+            desc: Please see the prompt to determine what needs to be addressed
+          - field: components_choice
+            type: branch_radio_button
+            desc: One or more elements of the pretest failed
+            options:
+                  - field: pretest_retry
+                    desc: Fixed pretest elements, retry pretest
+                    next: pretest
+                  - field: pretest_override
+                    desc: Override pretest and proceed
+                    next: configure_hardware
+      inputs:
+          - desc: pretest
+            state: pretest
+          - desc: configure_hardware
+            state: configure_hardware
+      revert:
+          options:
+            - desc: Revert to pretest
+              state: pretest
+
+  scan_mouse_id:
+      description: scan in the mouse id
+      display:
+          - field: none
+            type: note
+            desc: Scan in the Mouse ID to allow for data recovery from LIMS
+          - field: mouse_id
+            type: text_entry
+            desc: Enter Mouse ID
+          - field: none
+            type: note
+            desc: Do you need to override the autogenerated project code or date string?
+          - field: lims_options_skip
+            type: branch_radio_button
+            desc: Do you need to override the autogenerated project code or date string?
+            options:
+                  - field: use_auto
+                    desc: Use autogenerated project code and date string, skip to check_experiment_day
+                    next: check_experiment_day
+                    default: True
+                  - field: override_auto
+                    desc: Override autogenerated project code or date string
+                    next: LIMS_request
+      inputs:
+          - desc: LIMS_request
+            state: LIMS_request
+          - desc: check_experiment_day
+            state: check_experiment_day
+      revert:
+          options:
+            - desc: Revert to initialize
+              state: initialize
+
+  LIMS_request:
+      description: get data from LIMS
+      display:
+          - field: user_id
+            type: sticky_value
+            desc: User ID
+          - field: specimen.Name
+            type: sticky_value
+            desc: specimen.Name
+          - field: Project.Code
+            type: sticky_value
+            desc: Project.Code
+          - field: Project.Trigger_dir
+            type: sticky_value
+            desc: Project.Trigger_dir
+            sticky: False
+          - field: None
+            type: note
+            desc: The retrieved project code is -
+          - field: Project.Code2
+            type: note
+            desc: <Project.Code2>
+            sticky: False
+          - field: None
+            type: note
+            desc: Type here if you want to enter a new project code -
+          - field: Manual.Project.Code
+            type: text_entry
+            desc: Project.Code
+          - field: Project.Code.BRB
+            type: branch_radio_button
+            desc: Use LIMS Project Code, or enter new one
+            options:
+              - field: Project.Code.lims
+                next: pull_ISI_data
+                desc: Use the retrieved project code
+                default: True
+              - field: Project.Code.new
+                type: text_entry
+                desc: Use the new project code entered new project code above
+                next: pull_ISI_data
+      inputs:
+          - desc: date_string_check
+            state: date_string_check
+      revert:
+          options:
+            - desc: Revert to scan_mouse_id
+              state: scan_mouse_id
+
+  date_string_check:
+      description: Generated date string or enter a custom one
+      display:
+          - field: None
+            type: note
+            desc: The retrieved date string is -
+          - field: Auto.Date.String1
+            type: note
+            desc: <Auto.Date.String1>
+            sticky: False
+          - field: Manual.Date.String
+            type: text_entry
+            desc: Type here if you want to enter a new date string -
+          - field: date_string_selection
+            type: branch_radio_button
+            desc: Use auto date string, or manually entered?
+            options:
+              - field: auto_generated_date_string
+                next: check_experiment_day
+                desc: Use the retrieved date string
+                default: True
+              - field: manual_date_string
+                desc: Use the new date string entered above
+                next: check_stimulus
+      inputs:
+          - desc: check_experiment_day
+            state: check_experiment_day
+          - desc: lims_abort_confirm
+            state: lims_abort_confirm
+      revert:
+          options:
+            - desc: Revert to scan_mouse_id
+              state: scan_mouse_id
+
+  lims_abort_confirm:
+    description: ask to abort experiment after lims fail
+    display:
+        - field: abort_experiment
+          type: branch_radio_button
+          desc: Abort experiment or continue?
+          options:
+            - field: lims_abort_experiment
+              desc: Abort Experiment
+              next: wrapup
+            - field: lims_abort_cancel
+              desc: Continue Experiment
+              next: pull_ISI_data
+    inputs:
+        - desc: Abort Experiment
+          state: wrapup
+        - desc: Abort Cancel
+          state: pull_ISI_data
+    revert:
+        options:
+          - desc: Revert to scan_mouse_id
+            state: scan_mouse_id
+
+  pull_ISI_data:
+      description: pull ISI data from LIMS
+      display:
+          - field: isi_image_path
+            type: image
+            desc: ISI Image Display
+          - field: isi_experiment_selected
+            type: pulldown_menu
+            desc: Select ISI experiment
+            options_field: ISI_experiments
+      inputs:
+          - desc: ecephys ID check
+            state: ecephys_id_check
+      revert:
+          options:
+            - desc: Revert to scan_mouse_id
+              state: scan_mouse_id
+
+  ecephys_id_check:
+      description: Generated ecephys id or enter a custom one
+      display:
+          - field: session_name
+            type: branch_radio_button
+            desc: Use auto-generated ecephys session id, or enter custom session id
+            options:
+              - field: session_name
+                desc: session_name
+                next: configure_hardware_camstim
+              - field: session_name.custom
+                desc: Enter custom ecephys session id below
+                next: configure_hardware_camstim
+      inputs:
+          - desc: Configure check_experiment_day
+            state: check_experiment_day
+      revert:
+          options:
+            - desc: Revert to scan_mouse_id
+              state: scan_mouse_id
+
+
+  check_experiment_day:
+      description: check the stimulus for experiment
+      display:
+          - field: user_id
+            type: sticky_value
+            desc: User ID
+          - field: specimen.Name
+            type: sticky_value
+            desc: specimen.Name
+          - field: session_name
+            type: sticky_value
+            desc: session_name
+          - field: Project.Code
+            type: sticky_value
+            desc: Project.Code
+          - field: entered_experiment_day
+            type: text_entry
+            desc: Please type which habituation day it is. Options are <session_type_option_string>
+      inputs:
+          - desc: check_stimulus
+            state: check_stimulus
+      revert:
+          options:
+            - desc: Revert to scan_mouse_id
+              state: scan_mouse_id
+
+
+  check_stimulus:
+      description: check the stimulus for experiment
+      display:
+          - field: confirm_stim
+            type: note
+            desc: Confirm that the mouse is on the proper mtrain regimen -
+          - field: confirm_stim_description
+            type: check_box
+            desc: <mtrain_string>
+      inputs:
+          - desc: configure_hardware
+            state: configure_hardware
+      revert:
+          options:
+            - desc: Revert to check_experiment_day
+              state: check_experiment_day
+
+
+  configure_hardware:
+      description: configure hardware
+      display:
+          - field: none
+            type:  check_box
+            desc: Check yesterday's QC for your mouse
+          - field: none
+            type:  note
+            desc: <pre_exp_qc_string>
+          - field: None
+            type: note
+            desc: Make sure all the necessary hardware components are operational
+          - field: none
+            type:  check_box
+            desc : Check the monument
+          - field: none
+            type:  check_box
+            desc : Probes at highest z value in newscale (absolute Z at 0.0 um)
+          - field: none
+            type:  check_box
+            desc : Probe cartridge at maintenance height
+      inputs:
+          - desc: flush_lines
+            state: flush_lines
+      revert:
+          options:
+            - desc: Revert to check_stimulus
+              state: check_stimulus
+
+  flush_lines:
+      description: flush_lines
+      display:
+          - field: user_id
+            type: sticky_value
+            desc: User ID
+          - field: specimen.Name
+            type: sticky_value
+            desc: specimen.Name
+          - field: session_name
+            type: sticky_value
+            desc: session_name
+          - field: Project.Code
+            type: sticky_value
+            desc: Project.Code
+          - field: none
+            type: check_box
+            desc: Open the valve and place something to catch the water (kimwipe or weigh boat)
+          - field: none
+            type: check_box
+            desc: Confirm lickspout is retracted to safe position
+          - field: none
+            type: check_box
+            desc: Flush lines
+          - field: none
+            type: check_box
+            desc: Confirm water is flowing, check lines clear of all bubbles
+          - field: none
+            type: check_box
+            desc: Close lines
+      inputs:
+          - desc: load_mouse
+            state: load_mouse
+      revert:
+          options:
+            - desc: Revert to configure_hardware
+              state: configure_hardware
+
+  flush_lines2:
+      description: flush_lines
+      display:
+          - field: none
+            type: check_box
+            desc: Confirm lickspout is retracted to Safe position
+          - field: none
+            type: check_box
+            desc: Flush lines
+          - field: none
+            type: check_box
+            desc: Confirm water is flowing, check lines clear of all bubbles
+          - field: none
+            type: check_box
+            desc: Close lines
+      inputs:
+          - desc: load_mouse
+            state: load_mouse
+      revert:
+          options:
+            - desc: Revert to flush_lines
+              state: flush_lines
+
+  load_mouse:
+      description:  load mouse
+      display:
+          - field: None
+            type: note
+            desc: Make sure all steps for loading mouse are completed
+          - field: wheel_height
+            type: text_entry
+            desc: Adjust the wheel to the following height
+          - field: mouse_weight_pre
+            type: text_entry
+            desc: Weigh mouse. Enter its weight<colon>
+          - field: none
+            type: check_box
+            desc: Remove whatever was catching the water (kimwipe or weigh boat)
+          - field: None
+            type: check_box
+            desc:  Load mouse and clean coverslip with water?
+          - field: None
+            type: check_box
+            desc: Tail guard down?
+          - field: mouse_eye_dichroic
+            type: check_box
+            desc: <eye_dichroic_string>
+      inputs:
+          - desc: lower probe cartridge
+            state: lower_probe_cartridge
+      revert:
+          options:
+            - desc: Revert to flush_lines
+              state: flush_lines
+
+
+  lower_probe_cartridge:
+      description: lower probe cartridge
+      display:
+          - field: isi_image_path
+            type: image
+            desc: ISI Image Display
+          - field: probe_cartridge_lower
+            type: check_box
+            desc: Tick this box after initiating probe lowering (intermediate first, then engaged)
+          - field: none
+            type: check_box
+            desc: Fill reservoir syringe EXACTLY to the mark appropriate for today's drop size
+      inputs:
+          - desc: Brain Surface Focus
+            state: brain_surface_focus
+      revert:
+          options:
+            - desc: Revert to load_mouse
+              state: load_mouse
+
+  brain_surface_focus:
+      description: brain surface focus
+      display:
+          - field: isi_image_path
+            type: image
+            desc: ISI Image Display
+          - field: zoom_level_4
+            type: check_box
+            desc: Zoom level at <low_zoom_level>?
+          - field: none
+            type: check_box
+            desc: Microscope LED off?
+          - field: brain_surface_focus
+            type: check_box
+            desc: Is the brain surface in focus?
+      inputs:
+          - desc: photodoc_confirm
+            state: photodoc_confirm
+      revert:
+          options:
+            - desc: Revert to lower_probe_cartridge
+              state: lower_probe_cartridge
+
+  photodoc_confirm:
+      description: confirm photodoc
+      display:
+          - field: surface_1_file_location
+            type: image
+            desc: Image Display
+          - field: photodoc_image_accept
+            type: branch_radio_button
+            desc: Accept Image?
+            options:
+                  - field: retake_image
+                    desc: Retake Image
+                    next: brain_surface_focus
+                  - field: ready_probe_lower
+                    desc: Accept image
+                    next: confirm_ISI_match
+      inputs:
+          - desc: brain_surface_focus
+            state: brain_surface_focus
+          - desc: confirm_ISI_match
+            state: confirm_ISI_match
+
+  confirm_ISI_match:
+      description: confirm_ISI_match
+      display:
+          - field: isi_image_path
+            type: image
+            desc: ISI Image Display
+          - field: surface_1_file_location
+            type: image
+            desc: Image Display
+          - field: isi_image_match
+            type: check_box
+            desc: Does image match the ISI image?
+      inputs:
+          - desc: pre_stimulus_wait
+            state: pre_stimulus_wait
+      revert:
+          options:
+            - desc: Revert to photodoc_confirm
+              state: photodoc_confirm
+
+
+  pre_stimulus_wait:
+      description: check the stimulus for experiment
+      display:
+          - field: user_id
+            type: sticky_value
+            desc: User ID
+          - field: specimen.Name
+            type: sticky_value
+            desc: specimen.Name
+          - field: session_name
+            type: sticky_value
+            desc: session_name
+          - field: Project.Code
+            type: sticky_value
+            desc: Project.Code
+          - type: note
+            desc: The time remaining in the timer is-
+          - type: note
+            desc: <settle_time_remaining>
+            field: settle_time_remaining
+            sticky: False
+          - type: note
+            desc: Out of a total time of-
+          - type: note
+            desc: <final_depth_timer_seconds>
+            field: final_depth_timer_seconds
+            sticky: False
+          - type: branch_radio_button
+            desc: Override settle timer
+            options:
+              - field: override_settle_timer
+                desc: Override settle timer
+                next: prime_lickspout
+              - field: wait_settle_timer
+                desc: Wait for settle timer
+                next: pre_stimulus_wait
+                default: True
+      inputs:
+          - desc: prime_lickspout
+            state: prime_lickspout
+      revert:
+          options:
+            - desc: Revert to confirm_ISI_match
+              state: confirm_ISI_match
+
+  prime_lickspout:
+      description: prime lickspout
+      display:
+          - field: turn_off_light
+            type: check_box
+            desc: Photodoc light and external LED both off?
+          - field: none
+            type: check_box
+            desc: Quickly double click the flush lines button to prime the lickspout
+          - field: none
+            type: check_box
+            desc: Confirm that you saw water at the end of the spout (otherwise repeat above)
+      inputs:
+          - desc: move_lickspout_to_mouse_offset
+            state: move_lickspout_to_mouse_offset
+      revert:
+          options:
+            - desc: Revert to pre_stimulus_wait
+              state: pre_stimulus_wait
+
+  move_lickspout_to_mouse_offset:
+      description: Move Lickspout
+      display:
+        - type: check_box
+          desc: Confirm that the lickspout stage is in the mouse position. (Safe, then mouse offset)
+          field: lickspout_confirmed
+        - type: check_box
+          desc: Compare the lickspout position with images from the previous best session to ensure it looks appropriate, adjust if necessary.
+          field: lickspout_confirmed
+      inputs:
+          - desc: initiate_behavior_habituation
+            state: initiate_behavior_habituation
+      revert:
+          options:
+            - desc: Revert to prime_lickspout
+              state: prime_lickspout
+
+  initiate_behavior_habituation:
+      description: Inititiate Recording
+      display:
+          - field: mouse_monitor
+            type: check_box
+            desc: Close monitor?
+          - field: overhead_light
+            type: check_box
+            desc: Is the overhead light off?
+          - field: none
+            type: check_box
+            desc: Curtain down?
+          - field: None
+            type: note
+            desc:  Sync, Stim and Video recording will start when you click to the next state
+      inputs:
+          - desc: initiate_behavior_stimulus
+            state: initiate_behavior_stimulus
+      revert:
+          options:
+            - desc: Revert to move_lickspout_to_mouse_offset
+              state: move_lickspout_to_mouse_offset
+
+  initiate_behavior_stimulus:
+      description: initiate_behavior_stimulus
+      display:
+          - field: None
+            type: check_box
+            desc: The stimulus will start when you click to the next state
+      inputs:
+          - desc: experiment timer running
+            state: experiment_running_timer
+          - desc: camstim_ping_error
+            state: camstim_ping_error
+
+  camstim_ping_error:
+      description: camstim_ping_error
+      display:
+          - field: none
+            type: note
+            desc: Failed to retrieve foraging ID, Script name and stimulus_name from camstim-
+          - field: none
+            type: note
+            desc: If the behavior script was not already started, please start it and try again
+          - field: components_choice
+            type: branch_radio_button
+            desc: How would you like to proceed?
+            options:
+                  - field: camstim_ping_retry
+                    desc: Try to retrieve stats again
+                    next: initiate_behavior_stimulus
+                  - field: camstim_ping_override
+                    desc: Override errors and proceed
+                    next: experiment_running_timer
+      inputs:
+          - desc: initiate_behavior_stimulus
+            state: initiate_behavior_stimulus
+          - desc: experiment_running_timer
+            state: experiment_running_timer
+      revert:
+          options:
+            - desc: Revert to initiate_behavior_stimulus
+              state: initiate_behavior_stimulus
+
+  experiment_running_timer:
+      description: experiment timer
+      display:
+          - field: none
+            type: check_box
+            desc: Confirm that licks are being registered and water is being delivered?
+          - field: none
+            type: check_box
+            desc: Confirm that the mouse is displaying engaged behavior. <behavior_monitoring_string>
+          - field: wheel_height
+            type: text_entry
+            desc: If you adjusted the wheel hight, please enter the new height here
+      inputs:
+          - desc: monitor_experiment
+            state: monitor_experiment
+      revert:
+          options:
+            - desc: Revert to initiate_behavior_stimulus
+              state: initiate_behavior_stimulus
+
+
+  monitor_experiment:
+      description: monitor_experiment
+      display:
+          - field: None
+            type: check_box
+            desc: Confirm the lickspout retract between the active and passive portions of stimulus.
+          - field: none
+            type: note
+            desc: If not, retract it using MD and click 'ok' on the warning window on the stim computer so the stimulus continues
+          - field: None
+            type: note
+            desc: Please makea a note if the spout doesn't retract, with any possible explanations in the notes gui. Alert the team if this is unexpected.
+          - field: none
+            type: check_box
+            desc: Monitor and record other notes in notes GUI, people in room, etc?
+          - field: exp_monitor_time
+            type: text_entry
+            desc: For how long should the WSE monitor the experiment (in minutes)?
+          - field: retry_or_override
+            type: branch_radio_button
+            desc: This text doesn't show up in the gui right?
+            options:
+              - field: monitor_experiment
+                desc: Monitor experiment
+                default: True
+              - field: experiment_done
+                desc: Stimulus Finished
+      inputs:
+          - desc: end experiment
+            state: end_experiment
+      revert:
+          options:
+            - desc: Revert to experiment_running_timer
+              state: experiment_running_timer
+
+
+  end_experiment:
+      description: end experiment
+      display:
+          - field: end_experiment
+            type: check_box
+            desc: Ready to stop the recording streams?
+      inputs:
+          - desc: remove_mouse_and_move_files2
+            state: remove_mouse_and_move_files2
+      revert:
+          options:
+            - desc: Revert to monitor_experiment
+              state: monitor_experiment
+
+
+  remove_mouse_and_move_files2:
+      description: remove mouse and move remaining files to Z drive
+      display:
+          - field: None
+            type: check_box
+            desc: Initiate probe raising (up, maintenence)
+          - field: None
+            type: check_box
+            desc: Ready to remove mouse? (Probe cartridge fully raised)
+          - field: mouse_weight_post
+            type: text_entry
+            desc: Remove and weigh mouse. Enter its weight<colon>
+      inputs:
+          - desc: water_mouse
+            state: water_mouse
+
+
+  water_mouse:
+      description: water_mouse
+      display:
+          - field: None
+            type: note
+            desc: Please deliver <water_supplement> ml of supplemental water
+          - field: none
+            type: check_box
+            desc: Confirm that you have delivered the necessary amount of supplementary water
+          - field: none
+            type: note
+            desc: If you deviated from the indicated water supplement please note why on MD before advancing
+          - field: none
+            type: check_box
+            desc: Confirm that you have recorded the total water received on the cage card for today's date
+          - field: none
+            type: check_box
+            desc: Confirm that the mouse earned approximately <expected_earned> mls of water
+          - field: none
+            type: note
+            desc: This is based on the pre and post weight. If it is significantly wrong, the solenoid may need to be calibrated
+          - field: none
+            type: check_box
+            desc: Optional - use the 1ml syringe to add the volume the mouse earned back to the reservoir syringe, checking that the level returns exactly to the mark
+          - field: none
+            type: check_box
+            desc: Finish notes - This is your last chance to enter notes in the notes GUI
+          - field: none
+            type: note
+            desc: If you have reason to believe that the retrieved foraging ID <foraging_id> is wrong please overwrite it
+          - field: retry_or_override
+            type: branch_radio_button
+            desc: Do you want to try again or override the error and proceed?
+            options:
+              - field: no_overwrite_fid
+                desc: Accept foraging ID as is
+                default: True
+              - field: overwrite_fid
+                desc: Overwrite foraging ID
+      inputs:
+          - desc: check_files1
+            state: check_files1
+          - desc: foraging_ID_error
+            state: foraging_ID_error
+      revert:
+          options:
+            - desc: Revert to remove_mouse_and_move_files2
+              state: remove_mouse_and_move_files2
+
+
+  foraging_ID_error:
+        description: foraging_ID_error
+        display:
+            - field: None
+              type: note
+              desc: The foraging ID is empty or incorrect.
+            - field: foraging_id
+              type: text_entry
+              desc: Override the foraging ID if necessary-
+            - field: script_name
+              type: text_entry
+              desc: Override the script path if necessary-
+            - field: stimulus_name
+              type: text_entry
+              desc: Override the stimulus if necessary-
+        inputs:
+            - desc: check_files1
+              state: check_files1
+        revert:
+            options:
+              - desc: Revert to water_mouse
+                state: water_mouse
+  check_files1:
+      description: check files 1
+      display:
+          - field: None
+            type: check_box
+            desc: <cleanup_str>
+          - field: None
+            type: note
+            desc: The WSE will check if all files have been generated when you click to the next state
+      inputs:
+          - desc: create_manifest_and_platform_json_and_sync_report
+            state: create_manifest_and_platform_json_and_sync_report
+          - desc: files_error1
+            state: files_error1
+      revert:
+          options:
+            - desc: Revert to water_mouse
+              state: water_mouse
+
+  files_error1:
+      description: files error 1
+      display:
+          - field: none
+            type: note
+            desc: One or more files is missing please check the session directory and prompt
+          - field: components_choice
+            type: branch_radio_button
+            desc: One or more files is missing please check the session directory and prompt
+            options:
+                  - field: check_files_retry
+                    desc: Fixed files, retry check_files1
+                    next: check_files1
+                  - field: components_override
+                    desc: Override missing files and proceed
+                    next: create_manifest_and_platform_json_and_sync_report
+      inputs:
+          - desc: check_files1
+            state: check_files1
+          - desc: remove_mouse_and_move_files2
+            state: remove_mouse_and_move_files2
+          - desc: create_manifest_and_platform_json_and_sync_report
+            state: create_manifest_and_platform_json_and_sync_report
+
+
+
+  create_manifest_and_platform_json_and_sync_report:
+      description: create manifest, platform_json and sync_report
+      display:
+          - field: none
+            type: note
+            desc: Record final comments in Surgery Notes
+
+      inputs:
+          - desc: copy_files_to_network
+            state: copy_files_to_network
+      revert:
+          options:
+            - desc: Revert to check_files1
+              state: check_files1
+
+  check_files2:
+      description: check files 2
+      display:
+          - field: None
+            type: note
+            desc: The WSE will check the platform json when you click to the next state
+      inputs:
+          - desc: copy_files_to_network
+            state: copy_files_to_network
+          - desc: files_error2
+            state: files_error2
+      revert:
+          options:
+            - desc: Revert to create_manifest_and_platform_json_and_sync_report
+              state: create_manifest_and_platform_json_and_sync_report
+
+
+  files_error2:
+      description: files error 2
+      display:
+          - field: none
+            type: note
+            desc: One or more files is incorrect, or network backup is unavailable please check the session directory
+          - field: components_choice
+            type: branch_radio_button
+            desc: One or more files is incorrect, or network backup is unavailable please check the session directory
+            options:
+                  - field: check_files2_retry
+                    desc: Fixed files, retry check_files2
+                    next: check_files2
+                  - field: components_override
+                    desc: Override and copy only existing files
+                    next: initiate_data_processing
+      inputs:
+          - desc: check_files2
+            state: check_files2
+          - desc: create_manifest_and_platform_json_and_sync_report
+            state: create_manifest_and_platform_json_and_sync_report
+          - desc: copy_files_to_network
+            state: copy_files_to_network
+
+  copy_files_to_network:
+      description: copy files to network
+      display:
+          - field: None
+            type: note
+            desc: The WSE will backup files to <backup_location> when you click to the next state
+      inputs:
+          - desc: ready_to_check_network
+            state: ready_to_check_network
+      revert:
+          options:
+            - desc: Revert to check_files2
+              state: check_files2
+
+  ready_to_check_network:
+      description: check files network
+      display:
+          - field: None
+            type: check_box
+            desc: Return mouse to vivarium?
+          - field: None
+            type: note
+            desc: It takes a while to copy all the files. Make sure you wait a bit (e.g. actually take the mouse back) before proceeding
+          - field: None
+            type: note
+            desc: The WSE will confirm backup of files to <backup_location> and run post expeirment QC when you click to the next state
+      inputs:
+          - desc: network_backup_error
+            state: network_backup_error
+          - desc: workflow_complete
+            state: workflow_complete
+      revert:
+          options:
+            - desc: Revert to copy_files_to_network
+              state: copy_files_to_network
+
+  network_backup_error:
+      description: network backup error
+      display:
+          - field: None
+            type: note
+            desc: Unable to confirm network backup for some or all files
+          - field: components_choice
+            type: branch_radio_button
+            desc: One or more files is incorrect, or backup is unavailable please check the session directory
+            options:
+                  - field: data_retry
+                    desc: Fixed files, retry check files network
+                    next: ready_to_check_network
+                  - field: components_override
+                    desc: Override without confirming network backup
+                    next: workflow_complete
+      inputs:
+          - desc: copy_files_to_network
+            state: copy_files_to_network
+          - desc: ready_to_check_network
+            state: ready_to_check_network
+          - desc: workflow_complete
+            state: workflow_complete
+      revert:
+          options:
+            - desc: Revert to ready_to_check_network
+              state: ready_to_check_network
+
+  cleanup:
+      description:  Abort experiment cleanup
+      display:
+          - field: None
+            type: note
+            desc: Do you want to stop the recording streams? WARNING!! This action is not reversible
+          - field: components_choice
+            type: branch_radio_button
+            desc: Text doesn't show
+            options:
+                  - field: stop_streams
+                    desc: Stop streams
+                    next: workflow_complete
+                  - field: do_not_stop_streams
+                    desc: Do not stop streams
+                    next: workflow_complete
+                    default: True
+          - field: None
+            type: check_box
+            desc: Abort Experiment Cleanup done?
+      inputs:
+          - desc: workflow complete
+            state: workflow_complete
+
+  workflow_complete:
+      description: workflow complete
+      display:
+          - field: None
+            type: note
+            desc: Sucess, network backup confirmed
+      inputs:
+          None
+      revert:
+          options:
+            - desc: Revert to check_files2
+              state: check_files2
+...
