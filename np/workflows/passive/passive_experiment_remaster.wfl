@@ -1530,10 +1530,10 @@ states:
       - field: None
         type: note
         desc: The WSE gui will be blank while it verifies that the streams have started. If they have it will start the stim automatically
-          - field: passive_script
-            type: pulldown_menu
-            desc: Select Passive Experiment Script
-            options_field: passive_experiments
+      - field: passive_script
+        type: pulldown_menu
+        desc: Select Passive Experiment Script
+        options_field: passive_experiments
     inputs:
       - desc: initiate_behavior_stimulus
         state: initiate_behavior_stimulus
