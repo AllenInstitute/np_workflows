@@ -50,7 +50,7 @@ from mpetk.zro import Proxy
 config: dict
 config = mpeconfig.source_configuration('neuropixels', version='1.4.0') 
 #! #TODO line above is temporary, we want to consolidate config settings into one file 
-config.update(mpeconfig.source_configuration("dynamic_routing"))
+# config.update(mpeconfig.source_configuration("dynamic_routing"))
 
 with open('np/config/neuropixels.yml') as f:
     yconfig = yaml.safe_load(f)
@@ -2347,7 +2347,7 @@ def run_pretest_script(state_globals, camstim, pretest_DOC_path):
 def run_pretest_override_params(state_globals, camstim, params_path):
     #! TODO: this is a hack to get the pretest to work with camstim 2 override params
     # ben and corbett july 2022
-    params_path = R"C:\Users\svc_neuropix\Documents\GitHub\NP_pipeline_validation\pretest_stim_params\dynamic_routing_pretest_stim_params.json"
+    # params_path = R"C:\Users\svc_neuropix\Documents\GitHub\NP_pipeline_validation\pretest_stim_params\dynamic_routing_pretest_stim_params.json"
     print(f'Attempting to run pretest stim with override params {params_path}')
     state_globals['external']['pretest_stimulus_name'] = ''
     override_params = False
