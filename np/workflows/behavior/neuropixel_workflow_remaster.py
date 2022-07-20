@@ -17,10 +17,10 @@ try:
     import os
     import pathlib
     import socket
-    import sys
     import threading
     import time
     import traceback
+    from glob import glob
     import webbrowser
     from datetime import datetime as dt
     from importlib import reload
@@ -72,7 +72,8 @@ mouse_director_proxy: zro.Proxy = None
 mvr_writer: mvr.MVRConnector
 sync: zro.Proxy
 
-# ------------------- UTILITY FUNCTIONS --------Flims-----------
+
+# ------------------- UTILITY FUNCTIONS -------------------
 
 def fail_state(message: str, state: dict):
     """
@@ -949,8 +950,8 @@ def diI_photoDoc_setup_input(state):
                 state["external"]["status_message"] = f"Cam3d take photo failure:{e}"
                 state["external"]["component_status"]["Cam3d"] = False
         except Exception as e:
-            print(f"Cam3d proxy failure:{e}!")
-            state["external"]["status_message"] = f"Cam3d proxy failure:{e}"
+            print(f"Cam3d take photo failure:{e}!")
+            state["external"]["status_message"] = f"Cam3d take photo failure:{e}"
             state["external"]["component_status"]["Cam3d"] = False
 
         # check for the image files...make sure they were taken succesfully
