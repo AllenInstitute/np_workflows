@@ -1,5 +1,5 @@
-git checkout np
-git pull origin np
+git checkout np2
+git pull origin np2
 
 robocopy .\np\ c:\progra~1\AIBS_MPE\workflow_launcher\np\ /MIR /E
 
@@ -9,5 +9,5 @@ set destfolder=c:\ProgramData\AIBS_MPE\wfltk\workflows\
 del %destfolder%\*.wfl
 
 for /f %%d in ('dir %sourcefolder% /b /ad ') do (
-    robocopy %sourcefolder%\%%d %destfolder% *.wfl /s /xf dynamic_routing.wfl
+    robocopy %sourcefolder%\%%d %destfolder% *.wfl /s /xf dynamic_routing.wfl 
 )
