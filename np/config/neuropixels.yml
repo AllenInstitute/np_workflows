@@ -149,8 +149,7 @@ components:
 MVR:
   host: w10dtsm18280 # NP2
   port: 50000
-  version: 0.1.10  
-  
+  #version: 0.1.10  
 hardware:
   newscale_controller_serial_numbers:
     A: 45482
