@@ -1,5 +1,5 @@
 import os 
-import regex as re
+import re
 from enum import Enum
 import platform
 import requests 
