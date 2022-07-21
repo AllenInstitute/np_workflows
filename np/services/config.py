@@ -96,7 +96,7 @@ class Rig(Enum):
             # not in mpe-computers
             return ""
         
-        host = requests.get(f"http://mpe-computers/v2.0/aibs_comp_id/{self.value}").json()['hostname'].upper()                      
+        return requests.get(f"http://mpe-computers/v2.0/aibs_comp_id/{self.value}").json()['hostname'].upper()                      
 
 
     @property
