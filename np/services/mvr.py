@@ -60,6 +60,7 @@ class MVRConnector:
         self._host_to_camera_map = {}
         self._mvr_connected = False
         self.comp_ids = []  # temporary to allow for some debugging
+        self.output_dir = "c$/ProgramData/AIBS_MPE/MVR/data/"
         try:
             self.connect_to_mvr()
             logging.info("Connected to mvr")
