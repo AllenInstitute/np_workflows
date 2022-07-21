@@ -363,6 +363,7 @@ def pretest_input(state_globals):
 
 @state_transition
 def pretest_exit(state_globals):
+    npxc.stop_ecephys_recording(state_globals)
     pass
 
 

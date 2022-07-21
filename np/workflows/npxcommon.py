@@ -8,6 +8,7 @@ import logging
 import os
 import pathlib
 import pdb
+import re
 import shutil
 import subprocess
 import sys
@@ -32,9 +33,10 @@ from np.models import model
 from np.services import \
     ephys_edi_pb2 as \
     ephys_messages  # ! TODO remove this - communicate through API instead
+from np.services.config import Rig
 from np.services import mvr
-from np.services.ephys_api import EphysHTTP as Ephys
 from np.services.mvr import MVRConnector
+from np.services.ephys_api import EphysHTTP as Ephys
 from PIL import Image
 from wfltk import middleware_messages_pb2 as wfltk_msgs
 
@@ -69,11 +71,16 @@ with open('np/config/dump.json','w') as f:
 
 global mvr_writer
 try:
-    mvr_writer = MVRConnector(args=config['MVR'])
-    if not mvr._mvr_connected:
-        print("Failed to connect to MVR")
-        logging.info("Failed to connect to mvr")
-        # component_errors.append(f"Failed to connect to MVR on {config['MVR']}")
+
+    mvr_writer = MVRConnector(args={"host": Rig.Mon.host, "port": 50000})
+    
+    if not mvr_writer._mvr_connected:
+        raise ConnectionError
+        
+    # set MVR to record video from all cams except Aux (currently Eye, Face, Behavior)
+    cam_id_response = mvr_writer.request_camera_ids()
+    mvr_writer.define_hosts([x['id'] for x in cam_id_response[0]['value'] if re.search('aux', x['label'], re.IGNORECASE)])
+    
 except Exception:
     print("Failed to connect to mvr")
     logging.info("Failed to connect to mvr")
@@ -1599,7 +1606,8 @@ def start_videomon(state_globals, video_prefix=''):
             state_globals['external'][
                 'videomon_file_path'] = f'C:/ProgramData/AIBS_MPE/videomon/data/{state_globals["external"]["session_name"]}'  # TODO put in config
 
-            mvr_writer.define_hosts([cam['label'] for cam in config['cameras']])
+            # mvr_writer.define_hosts([cam['label'] for cam in config['cameras']])
+            #* define_hosts now set at start of exp
             MaxRecTime_min = 365 * 60
             log = f'MID, {state_globals["external"]["mouse_id"]}, BID, {os.getenv("aibs_comp_id")}, Action, Begin Recording, MaxRecTime_min, {MaxRecTime_min}'
             logging.info(log, extra={'weblog': True})

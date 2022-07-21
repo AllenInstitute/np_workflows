@@ -200,7 +200,8 @@ class MVRConnector:
 
     def request_camera_ids(self):
         self._send({"mvr_request": "get_camera_ids"})
-
+        return self.read()
+    
     def highlight_camera(self, device_name):
         print(self.device_index_map)
         index = self.device_index_map[device_name]

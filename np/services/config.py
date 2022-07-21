@@ -76,7 +76,7 @@ class Rig(Enum):
                 break
             
             RIG_ID = "none"
-        else:
+        if not RIG_ID:
             print("Not running from an NP rig: connections to services won't be made\nTry setting env var USE_TEST_RIG=1")
         cls.ID = RIG_ID
         obj = object.__new__(cls)
@@ -91,20 +91,28 @@ class Rig(Enum):
     # def ID():
     #     return 
     @property
-    def path(self):
-        if "BTVTest.1-Acq" in self.value: 
+    def host(self):
+        if "BTVTest.1-Acq" == self.value: 
             # not in mpe-computers
             return ""
         
-        hostname = requests.get(f"http://mpe-computers/v2.0/aibs_comp_id/{self.value}").json()['hostname'].upper()                      
-    
+        host = requests.get(f"http://mpe-computers/v2.0/aibs_comp_id/{self.value}").json()['hostname'].upper()                      
+
+
+    @property
+    def path(self):
+        if "BTVTest.1-Acq" == self.value: 
+            # not in mpe-computers
+            return ""
+
         if platform.system() == "Windows":
-            return RF'\\{hostname}'
+            return RF'\\{self.host}'
         else:
-            return RF'/{hostname}'
+            return RF'/{self.host}'
 
     def open(self):
         return os.startfile(self.path)
+    
     
 class ConfigHTTP:
     server = "http://mpe-computers/v2.0"
@@ -122,13 +130,13 @@ class ConfigHTTP:
     # def timeout(comp: Rig):
     #     10
       
-print(Rig.ID)
-print(Rig.SYNC.value)
-print(Rig.SYNC.path)
-print(Rig.ID)
-print(Rig.MON.value)
-print(Rig.MON.path)  
-# Rig.MON.open()
+# print(Rig.ID)
+# print(Rig.SYNC.value)
+# print(Rig.SYNC.path)
+# print(Rig.ID)
+# print(Rig.MON.value)
+# print(Rig.MON.path)  
+# # Rig.MON.open()
 
 def get_np_computers(self, rigs=None, comp=None):
     if rigs is None:
