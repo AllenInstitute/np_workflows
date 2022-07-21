@@ -20,3 +20,4 @@ PSTools
 wse.code-workspace
 install_excl_dyn_rout_wfl.bat
 .gitignore
+*.bak

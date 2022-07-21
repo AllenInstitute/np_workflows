@@ -16,6 +16,7 @@ set sourcefolder=.\np\workflows\
 set destfolder=c:\ProgramData\AIBS_MPE\wfltk\workflows\
 
 del %destfolder%\*.wfl
+IF %rig%==NP.1 SET AIBS_WSE_WFLS=c:\progra~1\AIBS_MPE\workflow_launcher\np\workflows\behavior\
 IF %rig%==NP.2 SET AIBS_WSE_WFLS=c:\progra~1\AIBS_MPE\workflow_launcher\np\workflows\passive\
 
 @REM for /f %%d in ('dir %sourcefolder% /b /ad ') do (
