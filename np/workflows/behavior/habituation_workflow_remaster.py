@@ -38,7 +38,6 @@ try:
     from mpetk.zro import Proxy
     from np.models.model import \
         DynamicRouting  # It can make sense to have a class to store experiment data.
-    from np.services import mvr
     from np.services.ephys_api import \
         EphysHTTP as Ephys  # TODO unused - can move from npxcommon to workflow
     from np.services.mvr import MVRConnector
@@ -48,7 +47,7 @@ try:
 
     messages = wfltk_msgs
 
-    from np.workflows import npxcommon as npxc
+    import np.workflows.npxcommon as npxc
 
 except Exception as e:
     # import errors aren't printed to console by default
