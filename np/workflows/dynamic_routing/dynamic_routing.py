@@ -20,7 +20,7 @@ try:
     import requests
     import yaml
     from mpetk import limstk, mpeconfig, zro
-    from np.models import model
+    # from np.models import model
     from np.models.model import \
         DynamicRouting  # It can make sense to have a class to store experiment data.
     from np.services.ephys_api import EphysHTTP as ephys
