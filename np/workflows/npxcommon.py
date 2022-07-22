@@ -78,8 +78,11 @@ try:
         raise ConnectionError
         
     # set MVR to record video from all cams except Aux (currently Eye, Face, Behavior)
-    cam_id_response = mvr_writer.request_camera_ids()
-    mvr_writer.define_hosts([x['id'] for x in cam_id_response[0]['value'] if re.search('aux', x['label'], re.IGNORECASE)])
+    mvr_response = mvr_writer.request_camera_ids()[0]
+    mvr_writer.exp_cam_ids = [x['id'] for x in mvr_response['value'] if not re.search('aux', x['label'], re.IGNORECASE)]
+    mvr_writer.exp_cam_labels = [x['label'] for x in mvr_response['value'] if not re.search('aux', x['label'], re.IGNORECASE)]
+    pdb.set_trace()
+    mvr_writer.define_hosts(mvr_writer.exp_cam_ids)
     
 except Exception:
     print("Failed to connect to mvr")
@@ -1633,7 +1636,7 @@ def start_videomon(state_globals, video_prefix=''):
 
 def get_video_locations(state_globals):
     paths = {}
-    for camera in config['cameras']:
+    for camera in mvr_writer.exp_cam_labels:
         label = camera["label"]
         source = get_video_location(state_globals, label)
         paths[label] = source
@@ -1641,7 +1644,7 @@ def get_video_locations(state_globals):
 
 
 def get_video_location(state_globals, label):
-    full_path = f"\\\\{config['MVR']['host']}\\c$/ProgramData/AIBS_MPE/MVR/data/{state_globals['external']['session_name']}/*{label}*.mp4"
+    full_path = os.join(Rig.Mon.path,mvr_writer.output_dir,f"{state_globals['external']['session_name']}/*{label}*.mp4")
     print(f'Globbing for video at {full_path}')
     try:
         source = glob.glob(full_path)[0]
