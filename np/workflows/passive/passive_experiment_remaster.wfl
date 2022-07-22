@@ -27,10 +27,33 @@ states:
       #           desc: Skip checking the components
       #           next: scan_mouse_id
     inputs:
-      - desc: scan_mouse_id
-        state: scan_mouse_id
+      # - desc: scan_mouse_id
+      #   state: scan_mouse_id
       # - desc: components_error
       #   state: components_error
+      - state: load_prior_state
+
+
+  load_prior_state:
+    description: Load Prior State
+    display:
+      - field: load_prior_state  # This is apparently unused
+        type: branch_radio_button
+        desc: Do you want to load a previously found state?
+        options:
+          - field: load_prior_state
+            desc: Yes, load the selected state.
+            # next: scan_mouse_id  # This is unused, but i guess useful for a note
+            default: True
+          - field: do_not_load_prior_state
+            desc: No, start a new experiment.
+            # next: scan_mouse_id   # This is unused, but i guess useful for a note
+      - field: prior_state_selected
+        type: pulldown_menu
+        desc: Select Previous State
+        options_field: prior_states # this needs a default, but the widget doesn't have one 
+    inputs: 
+      - state: scan_mouse_id
 
   components_error:
     description: components error
@@ -1591,7 +1614,7 @@ states:
             desc: Override
     inputs:
       - desc: initialize
-        state: iniitalize
+        state: initialize
 
   experiment_running_timer:
     description: experiment timer
