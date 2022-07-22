@@ -1136,7 +1136,7 @@ def create_file_extensions_dict():
         ".fiducial.png": extension_params(1, 'probeLocator', 999, 999, "fiducial_image", 'probeLocator'),
         ".insertionLocation.png": extension_params(1, 'probeLocator', 999, 999, "insertion_location_image",
                                                    'probeLocator'),
-        ".ISIregistration.npz": extension_params(1, 'probeLocator', 999, 999, "isi _registration_coordinates",
+        ".ISIregistration.npz": extension_params(1, 'probeLocator', 999, 999, "isi_registration_coordinates",
                                                  'probeLocator'),
         ".surgeryImage1.jpg": extension_params(1, 'surgery', 999, 999, "post_removal_surgery_image", 'Surgery Image'),
         ".surgeryImage2.jpg": extension_params(1, 'surgery', 999, 999, "final_surgery_image", 'Surgery Image')
@@ -1785,12 +1785,12 @@ def rename_video_files(state_globals):
 # recreate the proxy
 def start_stim(state_globals):
     try:
-        proxy = state_globals['component_proxies']['Stim']
+        camstim_proxy = state_globals['component_proxies']['Stim']
         try:
             status = retrieve_stim_status(camstim_proxy, state_globals)
             print(f'starting stim:{state_globals["external"]["stimulus_selected"]}')
             try:
-                proxy.start_script_from_path(state_globals["external"]["stimulus_selected"])
+                camstim_proxy.start_script_from_path(state_globals["external"]["stimulus_selected"])
             except Exception as E:
                 message = 'Unable to start the stimulus. Please start manually and override, or fix camstim and retry'
                 overrideable_error_state(state_globals, retry_state='initiate_stimulus',
@@ -2034,7 +2034,7 @@ def get_new_files_list(path, num_files, extension='.pkl'):
     """
     returns a list of the number most recent files.  For use with WSE2.0
     """
-    search_path = f'{path}\*{extension}'
+    search_path = f'{path}/*{extension}'
     print(f' Searching {path} for {extension}')
     try:
         sorted_list = sorted(glob.iglob(search_path), key=os.path.getctime)
