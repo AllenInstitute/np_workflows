@@ -5,7 +5,7 @@ SET rig=%AIBS_RIG_ID%
 SET branch=np
 
 IF %rig%==NP.2 SET branch=np2
-IF %rig%==NP.1 SET branch=np
+IF %rig%==NP.1 SET branch=np1
 
 git checkout %branch%
 git pull origin %branch%
