@@ -8,6 +8,7 @@ import logging
 import os
 import pathlib
 import pdb
+import pickle
 import re
 import shutil
 import subprocess
@@ -57,7 +58,8 @@ config = mpeconfig.source_configuration('neuropixels', version='1.4.0')
 with open('np/config/neuropixels.yml') as f:
     yconfig = yaml.safe_load(f)
 
-config.update(yconfig)
+config.update(yconfig)  
+config["serialized_states_folder"] = "C:/ProgramData/AIBS_MPE/wfltk/resume"
 
 # pdb.set_trace()
 def jsonrep(o):
@@ -81,7 +83,7 @@ try:
     mvr_response = mvr_writer.request_camera_ids()[0]
     mvr_writer.exp_cam_ids = [x['id'] for x in mvr_response['value'] if not re.search('aux', x['label'], re.IGNORECASE)]
     mvr_writer.exp_cam_labels = [x['label'] for x in mvr_response['value'] if not re.search('aux', x['label'], re.IGNORECASE)]
-    pdb.set_trace()
+    # pdb.set_trace()
     mvr_writer.define_hosts(mvr_writer.exp_cam_ids)
     
 except Exception:
@@ -182,15 +184,47 @@ def mvr_capture(state_globals,photo_path="C:/ProgramData/AIBS_MPE/wfltk/temp/las
         return mesg_or_img  # return the captured image
   
     
-def save_state(state_globals):
-    print('>> save_state <<')
+def save_state(state_globals,state_transition_function):
+    if state_globals['external']['next_state'] and not state_globals['external']['next_state'] == '':
+        print('>> save_state <<')
+        state_name = '_'.join(state_transition_function.__name__.split('_')[0:-1])
+        state_folder = config['serialized_states_folder']
+        os.makedirs(state_folder, exist_ok=True)
+        
+        with open(f'{state_folder}/{time.strftime("%H-%M-%S",time.localtime())}_{state_name}.pkl', 'wb') as f:
+            x = [{k:state_globals[k]} for k in state_globals.keys() if k not in ['resources','component_proxies']]        
+            pickle.dump(x, f)
 
-    pass
+def find_prior_states():
+    state_folder = config['serialized_states_folder']   
+    if os.path.exists(state_folder):
+        return glob.glob(f'{state_folder}/*.pkl')
+    else:
+        return None
 
+def load_prior_state_input(state):
+    print('>> load_prior_state_input <<')
+    next_state_default = state['external']['next_state']
+    print(f'next state on enter {next_state_default}')
+    if state['external'].get('load_prior_state', False):
+        next_state = state['external']['prior_state_selected']
+        with open(next_state, "rb") as f:
+            loaded_state = pickle.load(f)
+        # pdb.set_trace()
+        for s in loaded_state:
+            if s:
+                state.update(s)
+        print(f"next state on exit {state['external']['next_state']}")
+        
+                
+    else:
+        #  I think you may want to remove all the files here ...
+        for file in glob.glob(f'{config["serialized_states_folder"]}/*.pkl'):
+            os.unlink(file)
+        state['external']['next_state'] = next_state_default
+        print(next_state_default)   
+        state['external']['next_state'] = 'scan_mouse_id' #TODO update
 
-def load_previous_state(state_globals):
-    print('>> load_previous_state <<')
-    return state_globals
       
 
 def initialize_input(state_globals):
@@ -327,6 +361,14 @@ def initialize_enter(state_globals):
         state_globals["external"][key] = '6000'
         # TODO would be great if we had this read the file we are going to produce from the targeting to read in the maximums
         # might get confusing because those aren't hard limits if we hit the brain deeper
+    
+    previous_states = find_prior_states()
+    if previous_states:
+        state_globals['external']['prior_states'] = previous_states
+        # state['external']['next_state'] = "load_prior_state"
+    else: 
+        state_globals['external']['prior_states'] = None
+
 
     # initialize some choice fields
     # state_globals['external']['components_run'] = True
@@ -556,6 +598,7 @@ def request_open_ephys_status(state_globals):
 
 
 def send_ecephys_message(state_globals, message_type, **kwargs):
+    # c
     message = None
     try:
         try:

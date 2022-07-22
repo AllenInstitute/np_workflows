@@ -142,7 +142,7 @@ def state_transition(state_transition_function):
     def wrapper(state):
 
         transition_type = state_transition_function.__name__.split('_')[-1]
-        npxc.save_state(state)
+        c
         state_transition_function(state)
         return None
     return wrapper
