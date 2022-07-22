@@ -113,7 +113,7 @@ components:
     # version: 0.1.0
   OpenEphys:  # old: should be unused once all old worflow code is updated
     desc: OpenEphys
-    host: W10DT05517 
+    host: w10dt713844 
     version: 0.6.0
   Stim:  # old: should be unused once all old worflow code is updated
     desc: Stim # camstim 
@@ -214,17 +214,17 @@ hardware:
     rotation_x_deg: 0.0
     rotation_y_deg: 0.0
     rotation_z_deg: 0.0
-local_lims_head: \\W10DTSM18306\c$\ProgramData\AIBS_MPE\neuropixels_data
+local_lims_head: \\W10DTSM18307\c$\ProgramData\AIBS_MPE\neuropixels_data
 local_lims_location: ''
-local_trigger_dir: \\W10DTSM18306\c$\ProgramData\AIBS_MPE\neuropixels\lims_trigger
-mapped_lims_location: \\W10DTSM18306\c$\ProgramData\AIBS_MPE\neuropixels_data
+local_trigger_dir: \\W10DTSM18307\c$\ProgramData\AIBS_MPE\neuropixels\lims_trigger
+mapped_lims_location: \\W10DTSM18307\c$\ProgramData\AIBS_MPE\neuropixels_data
 openephys_drives:
-  A: //W10DT05517/A
-  B: //W10DT05517/A
-  C: //W10DT05517/A
-  D: //W10DT05517/B
-  E: //W10DT05517/B
-  F: //W10DT05517/B
+  A: //w10dt713844/A
+  B: //w10dt713844/A
+  C: //w10dt713844/A
+  D: //w10dt713844/B
+  E: //w10dt713844/B
+  F: //w10dt713844/B
 possible_data_drives:
 - A
 - B
