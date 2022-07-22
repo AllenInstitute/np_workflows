@@ -55,6 +55,8 @@ config = mpeconfig.source_configuration('neuropixels', version='1.4.0')
 #! #TODO line above is temporary, we want to consolidate config settings into one file 
 # config.update(mpeconfig.source_configuration("dynamic_routing"))
 
+config = mpeconfig.source_configuration('neuropixels_passive_experiment_workflow', version='1.4.0+g6c8db37.b73352')
+
 with open('np/config/neuropixels.yml') as f:
     yconfig = yaml.safe_load(f)
 
@@ -1136,7 +1138,7 @@ def create_file_extensions_dict():
         ".fiducial.png": extension_params(1, 'probeLocator', 999, 999, "fiducial_image", 'probeLocator'),
         ".insertionLocation.png": extension_params(1, 'probeLocator', 999, 999, "insertion_location_image",
                                                    'probeLocator'),
-        ".ISIregistration.npz": extension_params(1, 'probeLocator', 999, 999, "isi _registration_coordinates",
+        ".ISIregistration.npz": extension_params(1, 'probeLocator', 999, 999, "isi_registration_coordinates",
                                                  'probeLocator'),
         ".surgeryImage1.jpg": extension_params(1, 'surgery', 999, 999, "post_removal_surgery_image", 'Surgery Image'),
         ".surgeryImage2.jpg": extension_params(1, 'surgery', 999, 999, "final_surgery_image", 'Surgery Image')
@@ -1785,12 +1787,12 @@ def rename_video_files(state_globals):
 # recreate the proxy
 def start_stim(state_globals):
     try:
-        proxy = state_globals['component_proxies']['Stim']
+        camstim_proxy = state_globals['component_proxies']['Stim']
         try:
             status = retrieve_stim_status(camstim_proxy, state_globals)
             print(f'starting stim:{state_globals["external"]["stimulus_selected"]}')
             try:
-                proxy.start_script_from_path(state_globals["external"]["stimulus_selected"])
+                camstim_proxy.start_script_from_path(state_globals["external"]["stimulus_selected"])
             except Exception as E:
                 message = 'Unable to start the stimulus. Please start manually and override, or fix camstim and retry'
                 overrideable_error_state(state_globals, retry_state='initiate_stimulus',
@@ -1886,12 +1888,15 @@ def initiate_behavior_stimulus_input(state_globals):
 
 
 def initiate_behavior(state_globals):
+    script = f"{config['scripts_path']}/{state_globals['external']['passive_script']}.py"
+
+    
     mouse_id = state_globals["external"]["mouse_id"]
     user_id = state_globals["external"]["user_id"]
     camstim_proxy = state_globals['component_proxies']['Stim']
     print('Starting behavior session')
     try:
-        camstim_proxy.start_session(mouse_id, user_id)
+        camstim_proxy.start_script(script)
     except Exception as E:
         print('here2')
         message = 'Unable to start the stimulus. Please start manually and override, or fix camstim and retry'
@@ -2034,7 +2039,7 @@ def get_new_files_list(path, num_files, extension='.pkl'):
     """
     returns a list of the number most recent files.  For use with WSE2.0
     """
-    search_path = f'{path}\*{extension}'
+    search_path = f'{path}/*{extension}'
     print(f' Searching {path} for {extension}')
     try:
         sorted_list = sorted(glob.iglob(search_path), key=os.path.getctime)
