@@ -34,7 +34,7 @@ try:
     from mpetk.zro import Proxy
     from np.models.model import \
         DynamicRouting  # It can make sense to have a class to store experiment data.
-    import np.services.mvr
+    import np.services.mvr as mvr
     from np.services.ephys_api import \
         EphysHTTP as Ephys  # TODO unused - can move from npxcommon to workflow
     from np.services.mvr import MVRConnector
@@ -43,7 +43,7 @@ try:
     messages = wfltk_msgs
 
     import np.workflows.npxcommon as npxc
-    
+        
 except Exception as e:
     # import errors aren't printed to console by default
     print(e)
@@ -123,9 +123,11 @@ def state_transition(state_transition_function):
                 state_transition_function(state_globals, args)
             else:
                 state_transition_function(state_globals)
+            npxc.save_state(state_globals,state_transition_function)
             npxc.save_platform_json(state_globals, manifest=False)
         except Exception as e:
             npxc.print_error(state_globals, e)
+            # npxc.save_state(state_globals,state_transition_function) # don't save, we may have bad state vars that caused error
             message = f'An exception occurred in state transition {state_transition_function.__name__}'
             logging.debug(message)
             npxc.alert_text(message, state_globals)
@@ -252,10 +254,10 @@ def initialize_input(state_globals):
     state_globals["external"]["session_type_option_string"] = ', '.join(experiment_sessions)
     state_globals["external"]["session_types_options"] = experiment_sessions
 
-    state_globals["external"]["next_state"] = "scan_mouse_id"
+    state_globals["external"]["next_state"] = "load_prior_state"
     if failed:
         alert_string = f'The following proxies are not available: {", ".join(failed)}'
-        npxc.overrideable_error_state(state_globals, 'initialize', 'scan_mouse_id', message=alert_string)
+        npxc.overrideable_error_state(state_globals, 'initialize', 'load_prior_state', message=alert_string)
     try:
         if result != -1:
             state_globals["external"]["lims_user_id"] = result[0]["id"]
@@ -272,8 +274,12 @@ def initialize_input(state_globals):
     npxc.probes_need_cleaning(state_globals)
 
 @state_transition
+def load_prior_state_input(state_globals):
+    npxc.load_prior_state_input(state_globals)
+
+@state_transition
 def components_error_input(state_globals):
-    npxc.components_error_input(state_globals, 'scan_mouse_id')
+    npxc.components_error_input(state_globals, 'load_prior_state')
 
 
 @state_transition
@@ -363,6 +369,7 @@ def pretest_input(state_globals):
 
 @state_transition
 def pretest_exit(state_globals):
+    npxc.stop_ecephys_recording(state_globals)
     pass
 
 
