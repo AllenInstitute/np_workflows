@@ -53,7 +53,7 @@ global config
 
 config = mpeconfig.source_configuration('neuropixels', version='1.4.0')
 #! #TODO line above is temporary, we want to consolidate config settings into one file 
-config.update(mpeconfig.source_configuration("dynamic_routing"))
+config.update(mpeconfig.source_configuration('neuropixels_passive_experiment_workflow', version='1.4.0+g6c8db37.b73352'))
 
 
 with open('np/config/neuropixels.yml') as f:
