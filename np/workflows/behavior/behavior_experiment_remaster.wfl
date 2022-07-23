@@ -33,8 +33,6 @@ states:
       #   state: components_error
       - state: load_prior_state
 
-      - state: load_prior_state
-
   load_prior_state:
     description: Load Prior State
     display:
