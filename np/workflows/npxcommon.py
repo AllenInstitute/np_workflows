@@ -759,7 +759,7 @@ def get_settings_path(state_globals):
         settings_path = glob.glob(settings_path)[0]
     except Exception as E:
         dir_path = r"C:\Users\svc_neuropix\Documents\GitHub\NP_pipeline_validation\validation_params"
-        default = os.path.join(computer, r"C\Users\svc_neuropix\Desktop\open-ephys-neuropix", data_dirname + '*',
+        default = os.path.join(computer, r"C\progra~1\Open Ephys", data_dirname + '*',
                                  'settings.xml')
         if settings_path:
             message = f'Failed to find settings file at path from config: {settings_path}\n\n Using default {default} instead'
@@ -773,9 +773,10 @@ def get_probeDir(state_globals, slot, drive):
     a_probe = list(state_globals['external']['probe_list'].keys())[0]
     # slot = state_globals['external']['probe_list'][a_probe]
     # drive = state_globals['external']['PXI'][a_probe]
-    computer, x = os.path.split(state_globals["openephys_drives"][a_probe])
-    computer = r"\\" + computer.split(r'/')[2]
+    # computer, x = os.path.split(state_globals["openephys_drives"][a_probe])
+    # computer = r"\\" + computer.split(r'/')[2]
     # print('computer:' + computer + ', tail:' + x)
+    computer = Rig.ACQ.path
     try:
         probeDirs = glob.glob(os.path.join(computer, drive, state_globals["external"]["session_name"] + '*'))
         if len(probeDirs) > 1:

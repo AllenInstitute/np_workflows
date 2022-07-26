@@ -88,7 +88,7 @@ pretest:
 expected_water_mass: 0.03
 np_validation_python_path: C:/mcpython3/envs/np_pipeline_validation/python.exe
 open-ephys:
-  settings_dir: C:/Users/svc_neuropix/desktop/open-ephys-neuropix
+  settings_dir: C:/progra~1/Open Ephys/
 new scale:
   log_path: C:/MPM_data/log.csv
 max_experiment_duration_min: 180
