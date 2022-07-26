@@ -65,7 +65,7 @@ class MVRConnector:
             self.connect_to_mvr()
             logging.info("Connected to mvr")
         except Exception as err:
-            logging.error('failed to connect to mvr:', err)
+            logging.error(f'failed to connect to mvr:{err}')
             exit()
 
     def _recv(self):
