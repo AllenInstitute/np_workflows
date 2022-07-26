@@ -36,7 +36,7 @@ class ResponseBuffer:
 
                     messages.append(json.loads(''.join(self.read_buffer[i - count + 1: i + 1])))
                 except TypeError:
-                    logging.warning('Error parsing MVR message:', self.read_buffer)
+                    logging.warning(f'Error parsing MVR message:{self.read_buffer}')
                 count = 0
 
         # strip prior json messages off the buffer
