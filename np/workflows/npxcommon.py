@@ -1688,7 +1688,7 @@ def get_video_locations(state_globals):
 
 
 def get_video_location(state_globals, label):
-    full_path = os.join(Rig.Mon.path,mvr_writer.output_dir,f"{state_globals['external']['session_name']}/*{label}*.mp4")
+    full_path = os.path.join(Rig.Mon.path,mvr_writer.output_dir,f"{state_globals['external']['session_name']}/*{label}*.mp4")
     print(f'Globbing for video at {full_path}')
     try:
         source = glob.glob(full_path)[0]
@@ -1714,7 +1714,7 @@ def stop_videomon(state_globals):
     try:
         # proxy = state_globals['component_proxies']['VideoMon']
         try:
-            host = r'\\' + config['MVR']['host']
+            host = Rig.Mon.path
             src_file_prefix = f"{host}\\c$\\programdata\\aibs_mpe\\mvr\\data\\{state_globals['external']['session_name']}"
             # src_file_prefix = os.path.join(host, vid_out_dir, state_globals['external']['session_name'])
             dst_file_prefix = state_globals["external"]["mapped_lims_location"]
