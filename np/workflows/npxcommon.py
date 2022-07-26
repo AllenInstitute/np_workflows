@@ -1681,8 +1681,7 @@ def start_videomon(state_globals, video_prefix=''):
 
 def get_video_locations(state_globals):
     paths = {}
-    for camera in mvr_writer.exp_cam_labels:
-        label = camera["label"]
+    for label in mvr_writer.exp_cam_labels:
         source = get_video_location(state_globals, label)
         paths[label] = source
     return paths
