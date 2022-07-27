@@ -8,6 +8,7 @@ from enum import Enum
 from typing import Optional
 
 import requests
+from np.services import config
 
 sys.path.append("..")
 try:
@@ -104,13 +105,14 @@ class EphysHTTP(Ephys):
     #TODO get broadcast message working to put plugin settings
     
     try:
-        hostname = config["components"]["OpenEphys"]["host"]
+        hostname = config.Rig.Acq.host
+        print(f'auto-setting Acq computer: {hostname}')
     except (NameError,KeyError):
         pc = socket.gethostname()
         acq = {
             "W10DTSM112719":"W10DT05515", # NP0
             "W10DTSM18306":"W10DT05501", # NP1
-            "W10DTSM18307":"W10DT05517", # NP2
+            "W10DTSM18307":"W10DT713844", # NP2
             "W10DTMJ0AK6GM":"W10SV108131", #ben-desktop:btTest
         }
         hostname = acq.get(pc,"localhost")
