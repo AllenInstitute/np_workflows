@@ -83,7 +83,6 @@ try:
     mvr_response = mvr_writer.request_camera_ids()[0]
     mvr_writer.exp_cam_ids = [x['id'] for x in mvr_response['value'] if not re.search('aux', x['label'], re.IGNORECASE)]
     mvr_writer.exp_cam_labels = [x['label'] for x in mvr_response['value'] if not re.search('aux', x['label'], re.IGNORECASE)]
-    # pdb.set_trace()
     mvr_writer.define_hosts(mvr_writer.exp_cam_ids)
     
 except Exception:
@@ -162,9 +161,9 @@ def mvr_capture(state_globals,photo_path="C:/ProgramData/AIBS_MPE/wfltk/temp/las
         while time.time()-t0 < timeout:
             try:
                 for message in mvr_writer.read():
-                    if message.get('mvr_broadcast', "") == "snapshot_taken":
+                    if message.get('mvr_broadcast', "") == "snapshot_converted":
                         drive, filepath = os.path.splitdrive(message['snapshot_filepath'])
-                        source_photo_path = f"\\\\{config['MVR']['host']}\\{drive[0]}${filepath}"
+                        source_photo_path = os.path.join(Rig.Mon.path,f"{drive[0]}${filepath}")
                         # MVR has responded too quickly.  It hasn't let go of the file so we must wait.
                         time.sleep(1)
                         pathlib.Path(photo_path).parent.mkdir(parents=True, exist_ok=True)
@@ -179,7 +178,7 @@ def mvr_capture(state_globals,photo_path="C:/ProgramData/AIBS_MPE/wfltk/temp/las
     
     success, mesg_or_img = wait_on_snapshot()
     if not success:
-        fail_state(f"Error taking snapshot: {mesg_or_img}", state_globals)
+        print(f"Error taking snapshot: {mesg_or_img}")
     else:
         return mesg_or_img  # return the captured image
   
