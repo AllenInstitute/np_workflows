@@ -159,22 +159,22 @@ def handle_message(message_id, message, timestamp, io):
 
 
 # ------------------- State Transitions -------------------
-@state_transition
+# @state_transition
 def default_enter(state_globals, label):
     npxc.default_enter(state_globals, label)
 
 
-@state_transition
+# @state_transition
 def default_input(state_globals, label):
     npxc.default_input(state_globals, label)
 
 
-@state_transition
+# @state_transition
 def default_exit(state_globals, label):
     npxc.default_exit(state_globals, label)
 
 
-@state_transition
+# @state_transition
 def initialize_enter(state_globals):
     
     state_globals['external']['logo'] = R".\np\images\logo_np_vis.png" 
@@ -203,7 +203,7 @@ def initialize_enter(state_globals):
     npxc.initialize_enter(state_globals)
 
 
-@state_transition
+# @state_transition
 def initialize_input(state_globals):
     """
     Input test function for state initialize
