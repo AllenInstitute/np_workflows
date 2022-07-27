@@ -1893,7 +1893,7 @@ def initiate_behavior(state_globals):
     camstim_proxy = state_globals['component_proxies']['Stim']
     print('Starting behavior session')
     try:
-        camstim_proxy.start_script(script)
+        camstim_proxy.start_session(mouse_id, user_id)
     except Exception as E:
         print('here2')
         message = 'Unable to start the stimulus. Please start manually and override, or fix camstim and retry'
