@@ -757,7 +757,7 @@ def get_settings_path(state_globals):
         settings_path = glob.glob(settings_path)[0]
     except Exception as E:
         dir_path = r"C:\Users\svc_neuropix\Documents\GitHub\NP_pipeline_validation\validation_params"
-        default = os.path.join(computer, r"C\Users\svc_neuropix\Desktop\open-ephys-neuropix", data_dirname + '*',
+        default = os.path.join(computer, r"C\progra~1\Open Ephys", data_dirname + '*',
                                  'settings.xml')
         if settings_path:
             message = f'Failed to find settings file at path from config: {settings_path}\n\n Using default {default} instead'
@@ -771,9 +771,10 @@ def get_probeDir(state_globals, slot, drive):
     a_probe = list(state_globals['external']['probe_list'].keys())[0]
     # slot = state_globals['external']['probe_list'][a_probe]
     # drive = state_globals['external']['PXI'][a_probe]
-    computer, x = os.path.split(state_globals["openephys_drives"][a_probe])
-    computer = r"\\" + computer.split(r'/')[2]
+    # computer, x = os.path.split(state_globals["openephys_drives"][a_probe])
+    # computer = r"\\" + computer.split(r'/')[2]
     # print('computer:' + computer + ', tail:' + x)
+    computer = Rig.ACQ.path
     try:
         probeDirs = glob.glob(os.path.join(computer, drive, state_globals["external"]["session_name"] + '*'))
         if len(probeDirs) > 1:
@@ -1679,15 +1680,14 @@ def start_videomon(state_globals, video_prefix=''):
 
 def get_video_locations(state_globals):
     paths = {}
-    for camera in mvr_writer.exp_cam_labels:
-        label = camera["label"]
+    for label in mvr_writer.exp_cam_labels:
         source = get_video_location(state_globals, label)
         paths[label] = source
     return paths
 
 
 def get_video_location(state_globals, label):
-    full_path = os.join(Rig.Mon.path,mvr_writer.output_dir,f"{state_globals['external']['session_name']}/*{label}*.mp4")
+    full_path = os.path.join(Rig.Mon.path,mvr_writer.output_dir,f"{state_globals['external']['session_name']}/*{label}*.mp4")
     print(f'Globbing for video at {full_path}')
     try:
         source = glob.glob(full_path)[0]
@@ -1713,7 +1713,7 @@ def stop_videomon(state_globals):
     try:
         # proxy = state_globals['component_proxies']['VideoMon']
         try:
-            host = r'\\' + config['MVR']['host']
+            host = Rig.Mon.path
             src_file_prefix = f"{host}\\c$\\programdata\\aibs_mpe\\mvr\\data\\{state_globals['external']['session_name']}"
             # src_file_prefix = os.path.join(host, vid_out_dir, state_globals['external']['session_name'])
             dst_file_prefix = state_globals["external"]["mapped_lims_location"]
@@ -1886,12 +1886,15 @@ def initiate_behavior_stimulus_input(state_globals):
 
 
 def initiate_behavior(state_globals):
+    script = f"{config['scripts_path']}/{state_globals['external']['passive_script']}.py"
+
+    
     mouse_id = state_globals["external"]["mouse_id"]
     user_id = state_globals["external"]["user_id"]
     camstim_proxy = state_globals['component_proxies']['Stim']
     print('Starting behavior session')
     try:
-        camstim_proxy.start_session(mouse_id, user_id)
+        camstim_proxy.start_script(script)
     except Exception as E:
         print('here2')
         message = 'Unable to start the stimulus. Please start manually and override, or fix camstim and retry'
