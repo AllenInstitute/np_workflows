@@ -186,9 +186,13 @@ def mvr_capture(state_globals,photo_path="C:/ProgramData/AIBS_MPE/wfltk/temp/las
   
     
 def save_state(state_globals,state_transition_function):
-    if state_globals['external']['next_state'] and not state_globals['external']['next_state'] == '':
+    if state_globals['external']['next_state'] \
+        and not state_globals['external']['next_state'] == ''\
+        :
         print('>> save_state <<')
         state_name = '_'.join(state_transition_function.__name__.split('_')[0:-1])
+        if state_name == 'default':
+            return None        
         state_folder = config['serialized_states_folder']
         os.makedirs(state_folder, exist_ok=True)
         
