@@ -566,7 +566,7 @@ def stop_ecephys_acquisition(state_globals):
     Ephys.stop_ecephys_acquisition()
 
 
-def set_open_ephys_name(state_globals):
+def set_open_ephys_name(state_globals, add_prefix:str=''):
     try:
         print('Attempting to set openephys session name to ' + str(state_globals["external"]["session_name"]))
         # send_ecephys_message(state_globals, 'set_data_file_path', path=state_globals["external"]["session_name"])
@@ -577,7 +577,7 @@ def set_open_ephys_name(state_globals):
         sessionID = state_globals["external"]["ecephys_session_id"] 
         date = state_globals["external"]["sessionNameTimestamp"]
      
-        Ephys.set_open_ephys_name(path=mouseID,prepend_text=sessionID+"_", append_text="_"+date)
+        Ephys.set_open_ephys_name(path=mouseID,prepend_text=add_prefix+sessionID+"_", append_text="_"+date)
 
     except Exception as E:
         print(f'Failed to set open ephys name: {E}')
