@@ -1,15 +1,14 @@
-import os 
+import os
+import platform
 import re
 from enum import Enum
-import platform
-import requests 
+from typing import List, Literal, Union
 
-global COMP_ID, RIG_ID
+import requests
+
 # get AIBS IDs, if set
-COMP_ID = os.environ.get("AIBS_COMP_ID", os.environ["COMPUTERNAME"]).upper()
-RIG_ID: str = None
-RIG_ID = os.environ.get("AIBS_RIG_ID",None)
-
+COMP_ID: str = os.environ.get("AIBS_COMP_ID", os.environ["COMPUTERNAME"]).upper()
+RIG_ID: str = os.environ.get("AIBS_RIG_ID",None)
 
 while not RIG_ID:
     
@@ -28,7 +27,6 @@ while not RIG_ID:
         break
     
     RIG_ID = "none"
-else:
     print("Not running from an NP rig: connections to services won't be made\nTry setting env var USE_TEST_RIG=1")
 
 print(f"Running from {COMP_ID}, connected to {RIG_ID}")
@@ -86,10 +84,6 @@ class Rig(Enum):
         # cls(self.name).value = cls.ID + suffix
         
         
-    # @property
-    # @staticmethod
-    # def ID():
-    #     return 
     @property
     def host(self):
         if "BTVTest.1-Acq" == self.value: 
@@ -103,7 +97,7 @@ class Rig(Enum):
     def path(self):
         if "BTVTest.1-Acq" == self.value: 
             # not in mpe-computers
-            return ""
+            return None
 
         if platform.system() == "Windows":
             return RF'\\{self.host}'
@@ -114,50 +108,67 @@ class Rig(Enum):
         return os.startfile(self.path)
     
     
+    @staticmethod
+    def comp():
+        """The comp where python is running, regardless of whether on a rig"""
+        return COMP_ID
+    
+    
+    @staticmethod
+    def comps():
+        """All computers on the current rig (if python is running on a rig comp)"""
+        return {Rig(x).value: Rig(x).host for x in set(Rig.__members__.values())}
+    
+    
+    @staticmethod
+    def all_comps(rigs=[0,1,2]):
+        """All computers on all np rigs, or those specified"""
+        return ConfigHTTP.get_np_computers(rigs)
+    
+    
+    @staticmethod
+    def rig_from_path(path):
+        for idx, rig in enumerate(["NP.0", "NP.1", "NP.2"]):
+            for comp in Rig.all_comps(idx).values():
+                if comp in path:
+                    return rig
+        else:
+            return None
+    
+    
 class ConfigHTTP:
+    
     server = "http://mpe-computers/v2.0"
     # all_pc = requests.get("http://mpe-computers/v2.0").json()
 
     @staticmethod
-    def hostname(comp: str):
+    def hostname(comp: str=''):
         if "BTVTest.1-Acq" in comp: # not in mpe-computers
-            return ""
+            return None
         else:
-            return requests.get(f"http://mpe-computers/v2.0/aibs_comp_id/{comp}").json()['hostname'].upper()                      
+            return requests.get(f"{ConfigHTTP.server}/aibs_comp_id/{comp}").json()['hostname'].upper()                      
     
-    # def port(comp: Rig):
-    #     print(f"port: {comp.value}")
-    # def timeout(comp: Rig):
-    #     10
-      
-# print(Rig.ID)
-# print(Rig.SYNC.value)
-# print(Rig.SYNC.path)
-# print(Rig.ID)
-# print(Rig.MON.value)
-# print(Rig.MON.path)  
-# # Rig.MON.open()
+    @staticmethod
+    def get_np_computers(rigs: Union[List[int], int]=None, comp: Union[List[str], str]=None):
+        if rigs is None:
+            rigs = [0, 1, 2]
 
-def get_np_computers(self, rigs=None, comp=None):
-    if rigs is None:
-        rigs = [0, 1, 2]
+        if not isinstance(rigs, list):
+            rigs = [int(rigs)]
 
-    if not isinstance(rigs, list):
-        rigs = [int(rigs)]
+        if comp is None:
+            comp = ['sync', 'acq', 'mon', 'stim']
 
-    if comp is None:
-        comp = ['sync', 'acq', 'mon', 'stim']
+        if not isinstance(comp, list):
+            comp = [str(comp)]
 
-    if not isinstance(comp, list):
-        comp = [str(comp)]
+        comp = [c.lower() for c in comp]
 
-    comp = [c.lower() for c in comp]
+        np_idx = ["NP." + str(idx) for idx in rigs]
 
-    np_idx = ["NP." + str(idx) for idx in rigs]
-
-    all_pc = requests.get("http://mpe-computers/v2.0").json()
-    a = {}
-    for k, v in all_pc['comp_ids'].items():
-        if any([sub in k for sub in np_idx]) and any([s in k.lower() for s in comp]):
-            a[k] = v['hostname'].upper()
-    return a
+        all_pc = requests.get(ConfigHTTP.server).json()
+        a = {}
+        for k, v in all_pc['comp_ids'].items():
+            if any([sub in k for sub in np_idx]) and any([s in k.lower() for s in comp]):
+                a[k] = v['hostname'].upper()
+        return a

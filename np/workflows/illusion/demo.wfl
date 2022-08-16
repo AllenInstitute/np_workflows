@@ -1,0 +1,69 @@
+---
+wfl_version: 1.0
+
+import: np.workflows.illusion.demo
+entry_state: initialize
+
+states:
+  initialize:
+    description: initialize
+    display:
+      - field: logo
+        type: image
+        desc: logo
+      - field: user_id
+        type: text_entry
+        desc: Enter User ID
+      - field: mouse_id
+        type: text_entry
+        desc: Enter Mouse ID
+    inputs: 
+      - desc: mtrain
+        state: mtrain
+
+
+  mtrain:
+    description: confirm or set mtrain stage
+    display:
+      - field: current_regimen
+        type: note
+        desc: Current regimen is <current_regimen>
+      - field: current_stage
+        type: note
+        desc: Current stage is <current_stage>
+      - field: selected_stage_current_regimen
+        type: pulldown_menu
+        desc: To change, select a new stage from this regimen
+        options_field: available_stages # this needs a default, but the widget doesn't have one 
+      - field: selected_regimen
+        type: pulldown_menu
+        desc: or a new regimen
+        options_field: available_regimens # this needs a default, but the widget doesn't have one 
+    inputs:
+      - desc: run_stimulus
+        state: run_stimulus
+
+
+  run_stimulus:
+    description: run illusory contours stimulus
+    display:
+      - field: None
+        type: note
+        desc: Stimulus will run when you click the next arrow
+    inputs:
+      - desc: wrap_up
+        state: wrap_up
+  
+
+  wrap_up:
+    description: experiment wrap up
+    display:
+      - field: None
+        type: note
+        desc: Stimulus complete. Revert to run again
+    inputs: None
+    revert:
+      options:
+        - desc: run_stimulus
+          state: run_stimulus
+    

@@ -45,3 +45,8 @@ class DynamicRouting:
 
         with (Path(path)/filename).open('w') as platform_json:
             platform_json.write(json.dumps(platform_data))
+
+class Illusion(DynamicRouting):
+    
+    def __init__(self):
+        super().__init__()

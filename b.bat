@@ -8,7 +8,7 @@ del %destfolder%\*.wfl
 @REM for /f %%d in ('dir %sourcefolder% /b /ad ') do (
 @REM     robocopy %sourcefolder%\%%d %destfolder% *.wfl /s /xf dynamic_routing.wfl
 @REM )
-robocopy .\np\workflows\passive %destfolder% passive_experiment_remaster.wfl 
+robocopy .\np\workflows\illusion %destfolder% demo.wfl 
 CALL run_router.bat
 CALL run_workflow.bat
 
