@@ -1,6 +1,5 @@
 import json
 from typing import Union
-from warnings import WarningMessage
 import warnings
 import requests
 
@@ -8,9 +7,14 @@ class MTrain:
     
     server = "http://mtrain:5000"
     get_script_endpoint = f"{server}/get_script/"
-    handler = requests.get
-    session = requests.session
     
+    
+    @classmethod
+    def connected(cls):
+        response = requests.get(cls.server)
+        return True if response.status_code == 200 else False
+    
+            
     def __init__(self,mouse_id:Union[int,str]):
         self.mouse_id = str(mouse_id)
         
@@ -25,6 +29,8 @@ class MTrain:
         response = requests.get(self.get_script_endpoint, data=json.dumps({"LabTracks_ID": str(value)}))
         if response.status_code == 200:
             self._mouse_id = str(value)
+        else:
+            raise ValueError(f"Mouse ID {value} not found in MTrain")
             
             
     @property
@@ -32,10 +38,83 @@ class MTrain:
         """Returns dictionary containing 'id', 'name', 'stages', 'states'"""
         return requests.get(f"{self.server}/api/v1/regimens/{self.state['regimen_id']}").json()
     
+    
+    @regimen.setter
+    def regimen(self):
+        warnings.warn("Setting the regimen is disabled: use 'obj.set_regimen_and_stage()' to explicitly change both together")
+        
+    def set_regimen_and_stage(self, regimen:Union[dict,int,str]=None, stage:Union[dict,int,str]=None):
+        """Requires a regimen dict, id (str/int) or name (str), plus stage dict, id (str/int) or name (str)"""
+        
+        def warn_and_return():
+            warnings.warn("Regimen not changed: invalid input. Provide an identifier for both a regimen and a stage.")
+            return
+        
+        if not regimen and stage:
+            warn_and_return()
+        
+        # we're not setting the regimen directly - we just need some info to set a valid state
+        regimen_id:int = None
+        stage_id:int = None
+        
+        if isinstance(regimen, dict):
+            if regimen in self.get_all("regimens"):
+                # valid dict provided
+                regimen_id = regimen['id']
+            else: 
+                warn_and_return()
+                
+        elif str(regimen) in self.all_regimens().keys():
+            # valid id provided
+            regimen_id = int(regimen) 
+            
+        elif any(str(regimen)==s.lower() for s in self.all_regimens().values()):
+            # valid name provided
+            regimen_id = [s['id'] for s in self.get_all("regimens") if s['name'].lower()==str(regimen).lower()][0]
+        
+        else:
+            warn_and_return()
+        
+        # get the stages available in the new regimen, without setting anything yet
+        # new_regimen = self.get_all("regimens")['id'==regimen_id]
+        new_regimen = [s for s in self.get_all("regimens") if s['id']==regimen_id][0]
+        new_stages = new_regimen['stages']
+
+        if isinstance(stage, dict):
+            if stage in new_stages:
+                stage_id = stage['id'] # valid dict provided
+            else: 
+                warn_and_return()
+                
+        elif str(stage) in [str(s['id']) for s in new_stages]:
+            stage_id = int(stage) # valid id provided
+            
+        elif str(stage).lower() in [str(s['name']).lower() for s in new_stages]:
+            stage_id = [s['id'] for s in new_stages if s['name'] == stage][0] # valid name provided
+        
+        else:
+            warn_and_return()
+        
+        # look for corresponding state
+        state_match = [s for s in new_regimen["states"] if s['regimen_id']==regimen_id and s['stage_id']==stage_id]
+        if not state_match or len(state_match) != 1:
+            warn_and_return()
+        new_state = state_match[0]
+
+        # set directly instead of using state set method (which intentionally blocks setting a state dict with a new regimen)
+        with self.session() as s:
+            s.post(f"{self.server}/set_state/{self.mouse_id}",
+            data={
+                "state": json.dumps(new_state),
+            })
+        assert self.state == new_state, "set regimen and stage failed!"
+        
+        
     @property
     def script(self) -> dict:
         """Returns dict with strings for 'name' and 'stage', plus 'id' int"""
         return requests.get(f"{self.server}/get_script/", data=json.dumps({"LabTracks_ID": self.mouse_id})).json()["data"]
+        
         
     @property
     def stage(self):
@@ -43,35 +122,84 @@ class MTrain:
             if item['id'] == self.state['stage_id']:
                 return item
     
+    
+    @stage.setter
+    def stage(self, value:Union[str,int]):
+        """Accepts stage id (int/str) or name (str)"""
+        
+        state_match = None
+        
+        if isinstance(value,int) or value.isdigit():
+            value = int(value)
+            state_match = [s for s in self.states if s['stage_id'] == value]
+            
+        if isinstance(value,str):
+            stage_match = [s for s in self.stages if s['name'].lower() == value.lower()]
+            state_match = [s for s in self.states if s['stage_id'] == stage_match[0]['id']]
+        
+        if not state_match or len(state_match) != 1:
+            warnings.warn(f'No state with stage name or id {value} found in regimen {self.regimen["name"]}. Check obj.stages or obj.states')
+            return
+        
+        self.state = state_match[0]
+
+
     @property
     def state(self) -> dict:
         """Returns dict with values 'id', 'regimen_id', 'stage_id' - all ints"""
         return requests.get(f"{self.server}/api/v1/subjects/{self.mouse_id}").json()["state"]
-        
+    
     @state.setter
-    def state(self, value):
-        requests.put(
-            f"{self.server}/set_state/{self.mouse_id}",
+    def state(self, value:Union[dict,int,str]):
+        """Allows setting one of the states in the current regimen. 
+        
+        To change regimen, use regimen set method.
+        
+        Requires a state dict, state id (str/int) or stage name (str)
+        """
+        valid_dict = valid_id = None
+        
+        if isinstance(value,dict):
+            if value in self.states:
+                valid_dict = value
+            elif hasattr(value, 'regimen_id') and (str(value['regimen_id']) in self.all_regimens().keys())\
+                and not (value['regimen_id'] == self.regimen['id']):
+                warnings.warn("Trying to change regimen via set state method: use 'obj.regimen=...' instead")
+                return
+            
+        elif isinstance(value, int) or value.isdigit(): 
+            # check if input matches a state id
+            valid_id = int(value) if str(value) in [str(s['id']) for s in self.states] else None
+            
+        elif isinstance(value,str) and value.lower() in [str(s['name']).lower() for s in self.stages]:
+            # check if input matches a stage name
+            valid_id = [s['id'] for s in self.stages if s['name'] == value][0]
+            
+            
+        if not any([valid_dict, valid_id]):
+            warnings.warn(f"No matching state found in regimen {self.regimen['name']}. Check obj.states")
+            return
+        
+        if valid_id and not valid_dict:
+            value = [s for s in self.states if s['id'] == value][0]
+        
+        with self.session() as s:
+            s.post(f"{self.server}/set_state/{self.mouse_id}",
             data={
-                # "username": "",
-                # "password": "",
                 "state": json.dumps(value),
-            }
-            )
-        # with requests.session() as s:
-        #     s.post(self.server,
-        #         data={
-        #     "username": "ben.hardcastle",
-        #     "password": "",
-        #     })
-        #     s.post(f"{self.server}/set_state/{self.mouse_id}",
-        #     data={
-        #         "username": "",
-        #         "password": "",
-        #         "state": json.dumps(value),
-        #     }
-        #     )
-        assert self.state == value, "set state failed"
+            })
+        assert self.state == value, "set state failed!"
+    
+    
+    def session(self):
+        session = requests.session()
+        session.post(self.server, 
+            data={
+            "username": "chrism",
+            "password": "password",
+            })
+        return session
+    
 
 
     @property
@@ -82,11 +210,6 @@ class MTrain:
     @property
     def stages(self):
         return self.regimen['stages']
-
-        
-    # @user_id.setter
-    # def user_id(self,value):
-
 
 
 
@@ -104,42 +227,43 @@ class MTrain:
         
         return result["objects"], has_more, new_offset
 
+
     @classmethod
-    def get_all_regimens(cls):
+    def get_all(cls, endpoint: str):
         # page_size = 200 is over the actual page size limit for the api but we don't appear to know what that value is
         #? 'total_pages': 18 
-        all_regimens = []
+        if endpoint not in ['regimens', 'states', 'stages', 'subjects']:
+            raise ValueError(f"Endpoint {endpoint} not recognized")
+        all = []
         max_fetch=100
         page_size=200
         offset = 0
         for _ in range(max_fetch):
-            regimens, has_more, new_offset = cls.paginated_get(f"{cls.server}/api/v1/regimens", page_size, offset)
-            all_regimens.extend(regimens)
+            results, has_more, new_offset = cls.paginated_get(f"{cls.server}/api/v1/{endpoint}", page_size, offset)
+            all.extend(results)
             if not has_more:
                 break
             offset = new_offset
         else:
-            warnings.WarningMessage("Failed to get full regimen list.")
-        
-        return all_regimens
+            warnings.warn(f"Failed to get full list of {endpoint}.")
+        return all
 
 
     @classmethod
     def all_regimens(cls) -> dict:
+        """List of dicts {str(state['idx']):state['name']}"""
         d = {}
-        for val in cls.get_all_regimens():
+        for val in cls.get_all("regimens"):
             d.update({str(val['id']): val['name']})
         return d
     
     
-    @classmethod
-    def test(cls):
-        response = requests.get(cls.server)
-        return True if response.status_code == 200 else False
-            
-
-print(MTrain.test())
-x = MTrain("366122")
-x.state = x.regimen['states'][0]
-
-illusion_regimens = {key:val for key,val in MTrain.all_regimens().items() if 'Illusion' in val}
+if __name__ == "__main__":
+    # print(MTrain.connected())
+    x = MTrain("366122")
+    x.state = x.regimen['states'][0]
+    x.state = 1734
+    x.stage = 1751
+    illusion_regimens = [r for r in x.get_all("regimens") if 'Illusion' in r['name']]
+    # x.regimen = x.get_all("regimens")[4]
+    x.set_regimen_and_stage(illusion_regimens[4], illusion_regimens[4]['stages'][4])
