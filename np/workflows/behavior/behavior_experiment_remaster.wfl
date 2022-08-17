@@ -40,7 +40,7 @@ states:
       - field: load_prior_state  # This is apparently unused
         type: branch_radio_button
         desc: Do you want to load a previously found state?
-        options:
+        options:  
           - field: load_prior_state
             desc: Yes, load the selected state.
             # next: scan_mouse_id  # This is unused, but i guess useful for a note

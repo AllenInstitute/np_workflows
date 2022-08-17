@@ -46,26 +46,18 @@ def mtrain_stage_enter(state):
 
     state["external"]["current_regimen"] = npxc.mtrain.regimen['name']
     state["external"]["current_stage"] = npxc.mtrain.stage['name'].title()
-    state["external"]["new_stage"] = npxc.mtrain.stage['name'].title()
+    # state["external"]["new_stage"] = npxc.mtrain.stage['name'].title()
+    # TODO sort with current stage in first entry
     # npxc.io.write(npxc.messages.state_ready(message="ready"))
     # # pdb.set_trace()
-    global io
-    io.write(npxc.messages.state_ready(message="ready"))
-    # state['external']['retry_state'] = None
-    # state['external']['override_state'] = override_state
-    state['resources']['io'].write(npxc.messages.state_ready(message="ready"))
+    # global io
+    # io.write(npxc.messages.state_ready(message="ready"))
+    # # state['external']['retry_state'] = None
+    # # state['external']['override_state'] = override_state
+    # state['resources']['io'].write(npxc.messages.state_ready(message="ready"))
 
 
 def mtrain_stage_input(state):
-    # state['external']['transition_result'] = True
-
-    #* from here, try to enable next arrow:
-    npxc.Wfl.enable_advance_state()
-    state['external']['alert'] = True
-    state["external"]["transition_result"] = True
-    state["external"]["msg_text"] = "msg_text_input"
-    state['external']['status_message'] = 'status_message_input'
-    state['resources']['io'].write(npxc.messages.state_ready(message="ready"))
 
     print(state["external"]["next_state"])
     new_stage = state["external"]["new_stage"]
