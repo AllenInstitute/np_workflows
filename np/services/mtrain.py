@@ -31,7 +31,7 @@ class MTrain:
 
     @mouse_id.setter
     def mouse_id(self, value: Union[int, str]):
-        response = requests.get(f"{self.server}/get_script", data=json.dumps({"LabTracks_ID": str(value)}))
+        response = requests.get(f"{self.server}/get_script/", data=json.dumps({"LabTracks_ID": str(value)}))
         if response.status_code == 200:
             self._mouse_id = str(value)
         else:
@@ -246,9 +246,9 @@ class MTrain:
             d.update({str(val['id']): val['name']})
         return d
 
-    # the two methods below were added after the others above: 
+    # the two methods below were added after the others above:
     # other functions could be re-written to use them for cleaner code
-     
+
     @classmethod
     def all_states(cls) -> dict:
         """Dict containing {str(state['id']):{'id':int,'regimen_id':int,'stage_id':int}}"""
