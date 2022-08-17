@@ -18,11 +18,11 @@ states:
         type: text_entry
         desc: Enter Mouse ID
     inputs: 
-      - desc: mtrain
-        state: mtrain
+      - desc: mtrain_stage
+        state: mtrain_stage
 
 
-  mtrain:
+  mtrain_stage:
     description: confirm or set mtrain stage
     display:
       - field: current_regimen
@@ -31,18 +31,77 @@ states:
       - field: current_stage
         type: note
         desc: Current stage is <current_stage>
-      - field: selected_stage_current_regimen
+      - field: new_stage
         type: pulldown_menu
         desc: To change, select a new stage from this regimen
         options_field: available_stages # this needs a default, but the widget doesn't have one 
-      - field: selected_regimen
-        type: pulldown_menu
-        desc: or a new regimen
-        options_field: available_regimens # this needs a default, but the widget doesn't have one 
+      - field: confirm_stage_or_change_regimen
+        type: branch_radio_button
+        desc: Please confirm current or selected stage, or change regimen if necessary
+        options:
+          - field: confirm_stage
+            desc: Continue with current or selected stage
+            next: run_stimulus
+            default: True
+          - field: change_regimen
+            desc: Change regimen
+            next: mtrain_regimen_1
     inputs:
+      # will loop over if stage is changed
       - desc: run_stimulus
         state: run_stimulus
 
+  mtrain_regimen_1:
+    description: choose new mtrain regimen, or cancel
+    display:
+      - field: current_regimen
+        type: note
+        desc: Current regimen is <current_regimen>
+      - field: new_regimen
+        type: pulldown_menu
+        desc: Select a new regimen (nothing will be changed until the next screen)
+        options_field: available_regimens # this needs a default, but the widget doesn't have one 
+      - field: confirm_regimen_or_cancel
+        type: branch_radio_button
+        desc: Continue with selected regimen or cancel selection 
+        options:
+          - field: confirm_regimen
+            desc: Continue with selected regimen
+            next: mtrain_regimen_2
+            default: True
+          - field: cancel_regimen_select
+            desc: Cancel selection and go back
+            next: mtrain_stage
+    inputs:
+      - state: mtrain_regimen_2
+        
+  mtrain_regimen_2:
+    description: choose a stage for the new mtrain regimen, or cancel
+    display:
+      - field: new_regimen
+        type: note
+        desc: Regimen will be changed to <new_regimen>
+      - field: selected_stage_new_regimen
+        type: pulldown_menu
+        desc: Select a stage on the new regimen
+        options_field: available_stages_new_regimen # this needs a default, but the widget doesn't have one 
+      - field: None
+        type: note
+        desc: New regimen and stage will be set, but there will be opportunity to check and correct
+      - field: confirm_stage_or_cancel
+        type: branch_radio_button
+        desc: Continue with selected stage or cancel selection 
+        options:
+          - field: confirm_regimen_and_stage
+            desc: Continue to set new regimen and stage
+            next: mtrain_stage
+            default: True
+          - field: cancel_regimen_select
+            desc: Cancel selection and go back
+            next: mtrain_stage    
+    inputs:
+      - state: mtrain_stage
+          
 
   run_stimulus:
     description: run illusory contours stimulus
