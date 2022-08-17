@@ -1,5 +1,7 @@
 # pdb.set_trace()
 
+import io
+
 try:
     #
     # limstk functions are auto-generated so the ide might warn it can't see them.
@@ -15,6 +17,7 @@ except Exception as e:
     print(e)
 
 
+
 def initialize_enter(state):
     # pdb.set_trace()
     state['external']["logo"] = R"C:\progra~1\AIBS_MPE\workflow_launcher\np\images\logo_np_vis.png"
@@ -26,6 +29,7 @@ def initialize_enter(state):
 def initialize_input(state):
     npxc.set_user_id(state)
     npxc.set_mouse_id(state)
+    state["external"]["available_stages"] = sorted([stage['name'].title() for stage in npxc.mtrain.stages])
 
 
 def initialize_exit(state):
@@ -42,11 +46,13 @@ def mtrain_stage_enter(state):
 
     state["external"]["current_regimen"] = npxc.mtrain.regimen['name']
     state["external"]["current_stage"] = npxc.mtrain.stage['name'].title()
-    state["external"]["available_stages"] = sorted([stage['name'].title() for stage in npxc.mtrain.stages])
     state["external"]["new_stage"] = npxc.mtrain.stage['name'].title()
     # npxc.io.write(npxc.messages.state_ready(message="ready"))
     # # pdb.set_trace()
-
+    global io
+    io.write(npxc.messages.state_ready(message="ready"))
+    # state['external']['retry_state'] = None
+    # state['external']['override_state'] = override_state
     state['resources']['io'].write(npxc.messages.state_ready(message="ready"))
 
 
