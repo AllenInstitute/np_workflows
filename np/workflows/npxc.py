@@ -46,6 +46,16 @@ import mpetk
 from mpetk import limstk, mpeconfig, zro
 from mpetk.zro import Proxy
 
+class Wfl:
+    
+    # from wfltk import middleware_messages_pb2 as wfltk_msgs
+    messages = wfltk_msgs
+    
+    @classmethod
+    def enable_advance_state(cls):
+        msg = cls.messages.state_ready(message="Enable next arrow")
+        io.write(msg)    
+    
 
 config: dict
 config = mpeconfig.source_configuration('neuropixels', version='1.4.0') 
