@@ -27,13 +27,14 @@ try:
     from pprint import pformat
 
     import mpetk.aibsmw.routerio.router as router
+    import np.services.mvr as mvr
     import requests
     import yaml
     import zmq
     from mpetk import limstk, mpeconfig, zro
     from mpetk.zro import Proxy
     from np.models.model import \
-        DynamicRouting  # It can make sense to have a class to store experiment data.
+        Passive  # It can make sense to have a class to store experiment data.
     import np.services.mvr as mvr
     from np.services.ephys_api import \
         EphysHTTP as Ephys  # TODO unused - can move from npxcommon to workflow
@@ -61,9 +62,7 @@ with open('np/config/neuropixels.yml') as f:
 config.update(yconfig)
 # pdb.set_trace()
 
-
-experiment = DynamicRouting()
- 
+experiment = Passive() # unused
 # ---------------- Network Service Objects ----------------
 
 router: router.ZMQHandler
@@ -127,7 +126,6 @@ def state_transition(state_transition_function):
             npxc.save_platform_json(state_globals, manifest=False)
         except Exception as e:
             npxc.print_error(state_globals, e)
-            # npxc.save_state(state_globals,state_transition_function) # don't save, we may have bad state vars that caused error
             message = f'An exception occurred in state transition {state_transition_function.__name__}'
             logging.debug(message)
             npxc.alert_text(message, state_globals)
@@ -304,14 +302,13 @@ def check_data_drives_input(state_globals):
 def start_pretest_input(state_globals):
     state_globals['external']['session_name'] = dt.now().strftime("%Y%m%d%H%M%S") + '_pretest'
     state_globals["external"]["local_lims_location"] = os.path.join(state_globals["external"]["local_lims_head"],
-    state_globals['external']['session_name'])
+                                                                    state_globals['external']['session_name'])
     os.makedirs(state_globals["external"]["local_lims_location"], exist_ok=True)
     state_globals["external"]["mapped_lims_location"] = state_globals["external"]["local_lims_location"]
     state_globals["external"]["pretest_start_time"] = dt.now()
     npxc.set_open_ephys_name(state_globals)
     logging.info('starting monitoring with video prefix = pretest')
     npxc.start_common_experiment_monitoring(state_globals, video_prefix='pretest')
-
     npxc.start_pretest_stim(state_globals)
 
     foraging_id, stimulus_name, script_path = npxc.get_stim_status(camstim_proxy, state_globals)
@@ -629,7 +626,7 @@ def date_string_check_input(state):
     state["external"]["non_pretest_mapped_lims_location"] = state["external"]["local_lims_location"]
     state["external"]["transition_result"] = True
     state["external"]["status_message"] = "success"
-    
+
 
 @state_transition
 def date_string_check_revert(state_globals):
@@ -687,12 +684,12 @@ def ecephys_id_check_enter(state_globals):
     Input test function for state ecephys_id_check
     """
     state_globals['external']["oephys_dir"] = os.path.join(os.getcwd(), "np/images/oephys_dir.png")# R"C:\progra~1\AIBS_MPE\workflow_launcher\dynamic_routing\oephys_dir.png"
+    state_globals["external"]["transition_result"] = True
+    state_globals["external"]["status_message"] = "success"
 
 @state_transition
 def ecephys_id_check_input(state_globals):
     pass
-    # state_globals["external"]["transition_result"] = True
-    # state_globals["external"]["status_message"] = "success"
 
 
 @state_transition
@@ -2116,8 +2113,6 @@ def check_data_dirs_enter(state_globals):
 @state_transition
 def check_data_dirs_input(state_globals):
     #npxc.set_open_ephys_name(state_globals)
-    # npxc.clear_open_ephys_name(state_globals)
-    # time.sleep(1)
     npxc.clear_open_ephys_name(state_globals)
     time.sleep(1)
     npxc.start_ecephys_recording(state_globals)
