@@ -3,6 +3,10 @@ import time
 from pathlib import Path
 
 
+class Behavior:
+    pass
+class Passive:
+    pass
 class DynamicRouting:
     def __init__(self):
         """
