@@ -35,20 +35,23 @@ states:
         desc: Please confirm current or selected stage, or change regimen if necessary
         options:
           - field: confirm_stage
-            desc: Continue with current or selected stage
+            desc: Continue with current regimen and stage (or with the selection in the the dropdown list)
             next: run_stimulus
             default: True
           - field: change_regimen
-            desc: Change regimen
+            desc: Change regimen (selection in dropdown list will be ignored)
             next: mtrain_regimen_1
       - field: new_stage
         type: pulldown_menu
-        desc: To change, select a new stage from this regimen
+        desc: (optional) - select a new stage from the current regimen
         options_field: available_stages # this needs a default, but the widget doesn't have one
     inputs:
       # will loop over if stage is changed
       - desc: run_stimulus
         state: run_stimulus
+    revert:
+      options:
+        - state: initialize
 
   mtrain_regimen_1:
     description: choose new mtrain regimen, or cancel
@@ -80,10 +83,6 @@ states:
       - field: new_regimen
         type: note
         desc: Regimen will be changed to <new_regimen>
-      - field: selected_stage_new_regimen
-        type: pulldown_menu
-        desc: Select a stage on the new regimen
-        options_field: available_stages_new_regimen # this needs a default, but the widget doesn't have one
       - field: confirm_stage_or_cancel
         type: branch_radio_button
         desc: Continue with selected stage or cancel selection
@@ -95,6 +94,10 @@ states:
           - field: cancel_regimen_select
             desc: Cancel selection and go back
             next: mtrain_stage
+      - field: selected_stage_new_regimen
+        type: pulldown_menu
+        desc: Select a stage on the new regimen
+        options_field: available_stages_new_regimen # this needs a default, but the widget doesn't have one
       - field: None
         type: note
         desc: New regimen and stage will be set, but there will be opportunity to check and correct
@@ -110,6 +113,9 @@ states:
     inputs:
       - desc: wrap_up
         state: wrap_up
+    revert:
+      options:
+        - state: mtrain_stage
 
   wrap_up:
     description: experiment wrap up

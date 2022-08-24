@@ -1,50 +1,18 @@
-import csv
-import datetime
-import glob
 import inspect
-import itertools
-import json
 import logging
-import os
-import pathlib
-import pdb
-import pickle
-import re
-import shutil
-import subprocess
-import sys
-import time
-import traceback
-from collections import namedtuple
 from datetime import date as date
-from datetime import datetime as dt
 from datetime import timedelta as timedelta
-from functools import partial
-from math import floor
-from pprint import pprint
-from shutil import copyfile, disk_usage
 
-import numpy
-import psutil
-import requests
 import yaml
-import zmq
-from np.models import model
 # sys.path.append("..")
-from np.services import \
-    ephys_edi_pb2 as \
-    ephys_messages  # ! TODO remove this - communicate through API instead
 from np.services.config import Rig
-from np.services.mvr import MVRConnector
-from np.services.ephys_api import EphysHTTP as Ephys
 from np.services.mtrain import MTrain
-from PIL import Image
+from np.services.mvr import MVRConnector
 from wfltk import middleware_messages_pb2 as wfltk_msgs
 
 messages = wfltk_msgs
-import mpetk
 from mpetk import limstk, mpeconfig, zro
-from mpetk.zro import Proxy
+
 
 class Wfl:
     
@@ -146,6 +114,10 @@ def connect_to_services(state):
     if component_errors:
         fail_state('\n'.join(component_errors), state)
         
+def circshift_to_item(item_list, item):
+    """Shift list L so that the first entry matching target is at the front."""
+    idx = item_list.index(item)
+    return item_list[idx:] + item_list[:idx]
 
 def set_mouse_id(state):
     # add barcode scanner
