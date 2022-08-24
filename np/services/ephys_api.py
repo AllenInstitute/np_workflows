@@ -11,12 +11,19 @@ import requests
 from np.services import config
 
 sys.path.append("..")
+sys.path.append(".")
 try:
     # get protobufs module if available, for Router implementation
     from np.services import ephys_edi_pb2 as ephys_messages
 except:
-    ...
-
+    try:
+        from . import ephys_edi_pb2 as ephys_messages
+    except:
+        try:
+            import ephys_edi_pb2 as ephys_messages
+        except:
+            pass
+    
 class Ephys(ABC):
     """ Base class for communication with open ephys """
     
