@@ -1,0 +1,47 @@
+apis:
+  donor_info: http://lims2/donors/info/details.json?external_donor_name={}
+  experiment_id: http://lims2/specimens/info/details.%s?experiment_id={}
+  isi_experiment_prod: http://lims2/specimens/isi_experiment_details/{}.json
+  isi_experiment_test: http://testlimswebc7:4800/specimens/isi_experiment_details/{}.json
+  metadata: http://lims2/specimen_metadata.json?specimen_id={}
+  projects_validation: http://lims2/projects.json?code={}
+  save_visual_behavior_details: http://lims2/visual_behavior_details
+  specimen_id: http://lims2/specimens/info/details.json?id={}
+  specimen_name: http://lims2/specimens/info/details.json?specimen_name={}
+  user_details: http://lims2/users.json?login={}
+  visual_behavior_details: http://lims2/visual_behavior_details?donor_id={}
+  well_name: http://lims2/specimens/info/details.json?carousel_well_name={}
+configuration_file: //allen/aibs/mpe/configuration/lims_config.yml
+default_paths:
+  failed_trigger: //allen/programs/celltypes/production/incoming/mousecelltypes/failed_trigger
+  file_ext: ecp,
+  incoming: //allen/programs/braintv/production/incoming/neuralcoding
+  lims_url: http://lims2
+  root: //allen/programs/braintv/production
+  trigger: //allen/programs/braintv/production/incoming/neuralcoding/trigger
+linux_install_paths:
+  install: ~/.config/AIBS_MPE
+  local_config: config
+  local_log_config: logs
+  python: /opt/mcpython3
+  
+neuropixel:
+  file_ext: ecp
+  notify:
+  - davidre@alleninstitute.org
+  
+components:
+    mouse_director:
+        host: localhost
+        port: 9000
+        
+services:
+  log_server: 10.128.60.82:9000
+  python_index: http://aibspi:3141/aibs/dev
+  zookeeper: aibspi:2181
+  
+windows_install_paths:
+  install: /ProgramData/AIBS_MPE
+  local_config: config
+  local_log_config: logs
+  python: /mcpython3

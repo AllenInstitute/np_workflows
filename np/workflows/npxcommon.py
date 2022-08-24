@@ -38,6 +38,8 @@ from np.services.config import Rig
 from np.services import mvr
 from np.services.mvr import MVRConnector
 from np.services.ephys_api import EphysHTTP as Ephys
+from np.models.model import Model # this is the type for concrete experiment models below 
+from np.models.model import Passive, Behavior, DynamicRouting # these are the currently supported exps
 from PIL import Image
 from wfltk import middleware_messages_pb2 as wfltk_msgs
 
@@ -45,6 +47,8 @@ messages = wfltk_msgs
 import mpetk
 from mpetk import limstk, mpeconfig, zro
 from mpetk.zro import Proxy
+
+Experiment: Model = None
 
 # import limstk
 # import mpeconfig
@@ -1899,7 +1903,10 @@ def initiate_behavior(state_globals):
     camstim_proxy = state_globals['component_proxies']['Stim']
     print('Starting behavior session')
     try:
-        camstim_proxy.start_script(script)
+        if isinstance(Experiment, Passive):
+            camstim_proxy.start_script(script)
+        else: 
+            camstim_proxy.start_session(mouse_id, user_id)
     except Exception as E:
         print('here2')
         message = 'Unable to start the stimulus. Please start manually and override, or fix camstim and retry'
@@ -2407,9 +2414,11 @@ def run_pretest_script(state_globals, camstim, pretest_DOC_path):
 
 
 def run_pretest_override_params(state_globals, camstim, params_path):
-    #! TODO: this is a hack to get the pretest to work with camstim 2 override params
-    # ben and corbett july 2022
-    # params_path = R"C:\Users\svc_neuropix\Documents\GitHub\NP_pipeline_validation\pretest_stim_params\dynamic_routing_pretest_stim_params.json"
+    if isinstance(Experiment, DynamicRouting):
+        #! TODO: this is a hack to get the pretest to work with camstim 2 override params
+        # ben and corbett july 2022
+        params_path = R"C:\Users\svc_neuropix\Documents\GitHub\NP_pipeline_validation\pretest_stim_params\dynamic_routing_pretest_stim_params.json"
+    
     print(f'Attempting to run pretest stim with override params {params_path}')
     state_globals['external']['pretest_stimulus_name'] = ''
     override_params = False

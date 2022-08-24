@@ -1,13 +1,48 @@
+import abc
 import json
 import time
 from pathlib import Path
 
 
-class Behavior:
+class MPEConfig:
+    """Container for default parameters for mpeconfig/zookeeper.
+    
+    Fetching via mpeconfig package uses this function:
+    
+        def source_configuration(
+            project_name: str,
+            hosts: str = "aibspi.corp.alleninstitute.org:2181",
+            use_local_config: bool = False,
+            send_start_log: bool = True,
+            fetch_logging_config: bool = True,
+            fetch_project_config: bool = True,
+            version: str = None,
+            rig_id: str = None,
+            comp_id: str = None,
+            serialization: str = "yaml"
+        ): -> dict
+    
+    """
+    project_name = None
+    version = 'unknown'
+
+class Model(abc.ABC):
+    mpe_config = MPEConfig()
+    local_config = None
+    
+class Behavior(Model):
     pass
-class Passive:
-    pass
-class DynamicRouting:
+
+class Passive(Model):
+    mpe_config = MPEConfig()
+    mpe_config.project_name = 'neuropixels_passive_experiment_workflow'
+    mpe_config.version = '1.4.0+g6c8db37.b73352'
+    
+class DynamicRouting(Model):
+    mpe_config = MPEConfig()
+    mpe_config.project_name = 'dynamic_routing'
+    
+    
     def __init__(self):
         """
         It may make more sense to store information in a class model instead of the global state variable.
