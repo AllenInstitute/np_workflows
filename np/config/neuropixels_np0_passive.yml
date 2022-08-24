@@ -107,11 +107,6 @@ components:
     host: w10dtsm112722
     port: 11000
     version: 0.1.3.post0+g9879442.b87201
-  Notes:
-    desc: NotesApp
-    host: w10dtsm112722
-    port: 9999
-    version: 0.1.0
   OpenEphys:
     desc: OpenEphys
     host: w10dt05515
