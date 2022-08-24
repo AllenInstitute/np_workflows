@@ -94,7 +94,7 @@ def skip_states(state_globals, states_skipped, fields_skipped=()):
 def state_transition(state_transition_function):
     def wrapper(state_globals, *args):
         try:
-            #reload(npxc)
+            reload(npxc)
             transition_type = state_transition_function.__name__.split('_')[-1]
             if ((transition_type == 'input') or (transition_type == 'revert')) and ('msg_text' in state_globals["external"]):
                 state_globals["external"].pop("msg_text")

@@ -565,33 +565,41 @@ def pretest_input(state_globals):
 
 def start_ecephys_recording(state_globals):
     print('Attempting to start ecephys acquisiton')
-    # send_ecephys_message(state_globals, 'recording', command=1)
-    # time.sleep(15) - the process can take this long but its annoying to have the WSE wait...
-    ephys.start_ecephys_recording()
+    if isinstance(ephys, EphysHTTP):
+        ephys.start_ecephys_recording()
+    else:
+        send_ecephys_message(state_globals, 'recording', command=1)
+        # time.sleep(15) #- the process can take this long but its annoying to have the WSE wait...
 
 
 def stop_ecephys_recording(state_globals):
-    print('Attempting to stop ecephys acquisiton')
-    # send_ecephys_message(state_globals, 'recording', command=0)
-    ephys.stop_ecephys_recording()
+    if isinstance(ephys, EphysHTTP):
+        ephys.stop_ecephys_recording()
+    else:
+        send_ecephys_message(state_globals, 'recording', command=0)
+        # print('Attempting to stop ecephys acquisiton')
 
 def start_ecephys_acquisition(state_globals):
     print('Attempting to start ecephys acquisiton')
-    # message = send_ecephys_message(state_globals, 'acquisition', command=1)
-    # time.sleep(15) - the process can take this long but its annoying to have the WSE wait...
-    return ephys.start_ecephys_acquisition()
-
+    if isinstance(ephys, EphysHTTP):
+        return ephys.start_ecephys_acquisition()
+    else:
+        message = send_ecephys_message(state_globals, 'acquisition', command=1)
+        # time.sleep(15) # - the process can take this long but its annoying to have the WSE wait...
+        return message
 
 def stop_ecephys_acquisition(state_globals):
     print('Attempting to stop ecephys acquisiton')
-    # send_ecephys_message(state_globals, 'acquisition', command=0)
-    ephys.stop_ecephys_acquisition()
+    if isinstance(ephys, EphysHTTP):
+        ephys.stop_ecephys_acquisition()
+    else:
+        send_ecephys_message(state_globals, 'acquisition', command=0)
+        
 
 
 def set_open_ephys_name(state_globals, add_prefix:str=''):
     try:
         print('Attempting to set openephys session name to ' + str(state_globals["external"]["session_name"]))
-        # send_ecephys_message(state_globals, 'set_data_file_path', path=state_globals["external"]["session_name"])
         
         # TODO shift naming to workflow, and consider using path = session_name, instead of prepend_base_append to avoid adding '_' sep
         folder_str = state_globals["external"]["session_name"]
@@ -600,7 +608,11 @@ def set_open_ephys_name(state_globals, add_prefix:str=''):
         # date = state_globals["external"]["sessionNameTimestamp"]
         add_prefix = add_prefix + '_' if add_prefix else ''
         path = f"{add_prefix}{folder_str}"
-        ephys.set_open_ephys_name(path=path)
+        if isinstance(ephys, EphysHTTP):
+            ephys.set_open_ephys_name(path=path)
+        else:
+            send_ecephys_message(state_globals, 'set_data_file_path', path=state_globals["external"]["session_name"])
+            
 
     except Exception as E:
         print(f'Failed to set open ephys name: {E}')
@@ -609,8 +621,11 @@ def set_open_ephys_name(state_globals, add_prefix:str=''):
 def clear_open_ephys_name(state_globals):
     try:
         print('Attempting to clear openephys session name')
-        # send_ecephys_message(state_globals, 'set_data_file_path', path='')
-        ephys.clear_open_ephys_name()
+        if isinstance(ephys, EphysHTTP):
+            ephys.clear_open_ephys_name()
+        else:
+            send_ecephys_message(state_globals, 'set_data_file_path', path='')
+            
     except Exception as E:
         print(f'Failed to set open ephys name: {E}')
 
@@ -618,8 +633,10 @@ def clear_open_ephys_name(state_globals):
 def request_open_ephys_status(state_globals):
     try:
         print('checking open ephys status')
-        # message = send_ecephys_message(state_globals, 'REQUEST_SYSTEM_STATUS', path='')
-        message = ephys.request_open_ephys_status()
+        if isinstance(ephys, EphysHTTP):
+            message = ephys.request_open_ephys_status()
+        else:
+            message = send_ecephys_message(state_globals, 'REQUEST_SYSTEM_STATUS', path='')
     except Exception as E:
         print(f'Failed to set open ephys name: {E}')
     return message
@@ -2389,17 +2406,17 @@ def check_components(state_globals):
         else:  # the open ephys interface goes through the workflow router program, so need to set this up differently
             if not ('hab' in state_globals['external']['session_type']):
                 compStatusArray[key] = False
-                # request_open_ephys_status() #state_globals['resources']['io'].add_message_bundle(ephys_messages)
-                # state_globals['resources']['io'].register_for_message('system_info', handle_message)
-                # state_globals['resources']['io'].register_for_message('system_status', handle_message)
-                # state_globals['resources']['io'].register_for_message('set_data_file_path', handle_message)
-                # state_globals['resources']['io'].register_for_message('acquisition', handle_message)
-                # state_globals['resources']['io'].register_for_message('recording', handle_message)
+                request_open_ephys_status() #state_globals['resources']['io'].add_message_bundle(ephys_messages)
+                state_globals['resources']['io'].register_for_message('system_info', handle_message)
+                state_globals['resources']['io'].register_for_message('system_status', handle_message)
+                state_globals['resources']['io'].register_for_message('set_data_file_path', handle_message)
+                state_globals['resources']['io'].register_for_message('acquisition', handle_message)
+                state_globals['resources']['io'].register_for_message('recording', handle_message)
 
                 # and now request the system info
                 try: 
                     message = request_open_ephys_status(state_globals) # = ephys_messages.request_system_info()
-                    # state_globals['resources']['io'].write(message)
+                    state_globals['resources']['io'].write(message)
                     compStatusArray[key] = True
                 except:
                     message = 'Open Ephys Interface did not respond. Is it running?'

@@ -19,9 +19,9 @@ try:
     from datetime import datetime as dt
     from pprint import pformat
 
-    from mpetk.aibsmw.routerio.router import ZMQHandler
     import requests
-    from mpetk import limstk, zro
+    from mpetk import limstk
+    from mpetk.aibsmw.routerio.router import ZMQHandler
     from mpetk.zro import Proxy
     from np.models.model import (  # It can make sense to have a class to store experiment data.
         Behavior, DynamicRouting)
@@ -96,7 +96,7 @@ def skip_states(state_globals, states_skipped, fields_skipped=()):
 def state_transition(state_transition_function):
     def wrapper(state_globals, *args):
         try:
-            #reload(npxc)
+            reload(npxc)
             transition_type = state_transition_function.__name__.split('_')[-1]
             if ((transition_type == 'input') or (transition_type == 'revert')) and ('msg_text' in state_globals["external"]):
                 state_globals["external"].pop("msg_text")
