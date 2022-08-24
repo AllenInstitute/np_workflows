@@ -16,7 +16,7 @@ robocopy .\np\ c:\progra~1\AIBS_MPE\workflow_launcher\np\ /MIR /E
 
 @REM install wfl files to default location 
 set sourcefolder=.\np\workflows\
-set destfolder=c:\ProgramData\AIBS_MPE\wfltk\workflows\
+set destfolder=c:\ProgramData\AIBS_MPE\wfltk\workflows
 
 del %destfolder%\*.wfl
 @REM include *remaster.wfl, exclude dynamic_routing.wfl:
@@ -24,8 +24,8 @@ for /f %%d in ('dir %sourcefolder% /b /ad ') do (
     robocopy %sourcefolder%\%%d %destfolder% *remaster.wfl /s /xf dynamic_routing.wfl 
 )
 
-@REM alternatively we can point to specific project folders in program files (doesn't work on NP.1..)
-IF %rig%==NP.0 SET AIBS_WSE_WFLS=%destfolder% 
-IF %rig%==NP.1 SET AIBS_WSE_WFLS=c:\progra~1\AIBS_MPE\workflow_launcher\np\workflows\behavior\
+@REM alternatively we can point to specific project folders in program files (doesn't work on NP.0 or 1..)
+@REM IF %rig%==NP.0 SET AIBS_WSE_WFLS=c:\progra~1\AIBS_MPE\workflow_launcher\np\workflows\passive\
+@REM IF %rig%==NP.1 SET AIBS_WSE_WFLS=c:\progra~1\AIBS_MPE\workflow_launcher\np\workflows\behavior\
 IF %rig%==NP.2 SET AIBS_WSE_WFLS=c:\progra~1\AIBS_MPE\workflow_launcher\np\workflows\passive\
 
