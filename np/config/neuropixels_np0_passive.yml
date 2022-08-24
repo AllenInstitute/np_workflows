@@ -85,6 +85,7 @@ validation:
 pretest:
   mode: override_params
   path: C:/users/svc_neuropix/Documents/GitHub/NP_pipeline_validation/pretest_stim_params
+serialized_states_folder: C:/ProgramData/AIBS_MPE/wfltk/resume
 expected_water_mass: 0.03
 np_validation_python_path: C:/mcpython3/envs/np_pipeline_validation/python.exe
 open-ephys:
@@ -125,6 +126,11 @@ components:
     host: w10dtsm112719
     port: 5000
     version: 1.3.1
+  MouseDirector:
+    desc: MouseDirector
+    host: w10dtsm112722
+    port: 9000
+    version: 0.8.0
 MVR:
   host: w10dtsm112722
   port: 50000
@@ -192,7 +198,7 @@ hardware:
     rotation_x_deg: 0.0
     rotation_y_deg: 0.0
     rotation_z_deg: 0.0
-local_lims_head: \\w10dtsm112719\c$\ProgramData\AIBS_MPE\camstim\data
+local_lims_head: \\w10dtsm112719\c$\ProgramData\AIBS_MPE\neuropixels_data
 local_lims_location: ''
 local_trigger_dir: \\w10dtsm112719\c$\ProgramData\AIBS_MPE\neuropixels\lims_trigger
 mapped_lims_location: \\w10dtsm112719\c$\ProgramData\AIBS_MPE\neuropixels_data

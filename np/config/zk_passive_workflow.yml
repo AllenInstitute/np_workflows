@@ -1,0 +1,100 @@
+apis:
+  donor_info: http://lims2/donors/info/details.json?external_donor_name={}
+  experiment_id: http://lims2/specimens/info/details.%s?experiment_id={}
+  isi_experiment_prod: http://lims2/specimens/isi_experiment_details/{}.json
+  isi_experiment_test: http://testlimswebc7:4800/specimens/isi_experiment_details/{}.json
+  metadata: http://lims2/specimen_metadata.json?specimen_id={}
+  projects_validation: http://lims2/projects.json?code={}
+  save_visual_behavior_details: http://lims2/visual_behavior_details
+  specimen_id: http://lims2/specimens/info/details.json?id={}
+  specimen_name: http://lims2/specimens/info/details.json?specimen_name={}
+  user_details: http://lims2/users.json?login={}
+  visual_behavior_details: http://lims2/visual_behavior_details?donor_id={}
+  well_name: http://lims2/specimens/info/details.json?carousel_well_name={}
+configuration_file: //allen/aibs/mpe/configuration/lims_config.yml
+default_paths:
+  failed_trigger: //allen/programs/celltypes/production/incoming/mousecelltypes/failed_trigger
+  file_ext: ecp,
+  incoming: //allen/programs/braintv/production/incoming/neuralcoding
+  lims_url: http://lims2
+  root: //allen/programs/braintv/production
+  trigger: //allen/programs/braintv/production/incoming/neuralcoding/trigger
+linux_install_paths:
+  install: ~/.config/AIBS_MPE
+  local_config: config
+  local_log_config: logs
+  python: /opt/mcpython3
+neuropixel:
+  file_ext: ecp
+  notify:
+    - davidre@alleninstitute.org
+services:
+  log_server: 10.128.60.82:9000
+  python_index: http://aibspi:3141/aibs/dev
+  zookeeper: aibspi:2181
+windows_install_paths:
+  install: /ProgramData/AIBS_MPE
+  local_config: config
+  local_log_config: logs
+  python: /mcpython3
+
+behavior_monitoring_string_exp: "Check the pupil size? Screen brightness ok?"
+behavior_monitoring_string_hab: "Check the pupil size? Screen brightness ok?"
+eye_dichroic_string: "Eyetracking mirror in place, eye centered and face/body lighting appropriate?"
+
+MTrainData:
+  Regimen: VisualBehaviorEPHYS_Task1G
+  Regimen_Version: 0.1.1
+  Stage_Keywords: [ ]
+  Experiment_Keywords:
+    - EPHYS_1
+  Experiment_Sessions:
+    Day1:
+      Keywords:
+        - images_G
+        - 3uL_reward
+      Full_String: VisualBehaviorEPHYS_Task1G_v0.1.1/EPHYS_1_images_G_3uL_reward
+    Day2:
+      Keywords:
+        - images_H
+        - 3uL_reward
+      Full_String: VisualBehaviorEPHYS_Task1G_v0.1.1/EPHYS_1_images_H_3uL_reward
+  Habituation_Keywords:
+    - HABITUATION_5, handoff_ready
+  Habituation_Sessions:
+    Habituation:
+      Keywords:
+        - images_G
+        - 3uL_reward
+      Full_String: VisualBehaviorEPHYS_Task1G_v0.1.1/HABITUATION_5_images_G_handoff_ready_3uL_reward
+    1:
+      Keywords:
+        - images_G
+        - 3uL_reward
+      Full_String: VisualBehaviorEPHYS_Task1G_v0.1.1/HABITUATION_5_images_G_handoff_ready_5uL_reward
+    2:
+      Keywords:
+        - images_G
+        - 3uL_reward
+      Full_String: VisualBehaviorEPHYS_Task1G_v0.1.1/HABITUATION_5_images_G_handoff_ready_5uL_reward
+
+
+backup_location: 'allen\programs\mindscope\workgroups\np-exp' #old-2-14-2022 '10.128.54.19/sd9' # '10.128.54.20\sd8.3'
+validation:
+  environment: np_pipeline_validation
+  params_directory: C:/users/svc_neuropix/Documents/GitHub/NP_pipeline_validation/rvalidation_params
+  script: C:/users/svc_neuropix/Documents/GitHub/NP_pipeline_validation/run_validation_functions.py
+
+pretest:
+  mode: override_params
+  path: C:/users/svc_neuropix/Documents/GitHub/NP_pipeline_validation/pretest_stim_params
+expected_water_mass: .03
+np_validation_python_path: C:/mcpython3/envs/np_pipeline_validation/python.exe
+
+open-ephys:
+  settings_dir: C:/Users/svc_neuropix/desktop/open-ephys-neuropix
+new scale:
+  log_path: C:/MPM_data/log.csv
+max_experiment_duration_min: 180   
+
+scripts_path: //allen/aibs/mpe/Software/np_passive_scripts

@@ -1,0 +1,90 @@
+linux_install_paths:
+  install: ~/.config/AIBS_MPE
+  local_config: config
+  local_log_config: logs
+  python: /opt/mcpython3
+services:
+  log_server: aibspi.corp.alleninstitute.org:9000
+  python_index: http://aibspi:3141/aibs/dev
+  zookeeper: aibspi:2181
+  issue_url: http://mpe-redirects/MPETracking
+windows_install_paths:
+  install: C:/ProgramData/AIBS_MPE/wfltk
+  local_config: config
+  local_log_config: logs
+  python: C:/mcpython3
+color_config:
+  exitbuttonoff:
+    stylesheet: background-color:rgb(66, 66, 66);border:1px solid rgb(66, 66, 66);border-radius:40px
+  exitbuttonon:
+    stylesheet: background-color:rgb(124, 179, 66);border:1px solid rgb(27, 94, 32);border-radius:40px
+  exitcancelbutton:
+    stylesheet: background-color:rgb(124, 179, 66);color:rgb(33,33,33);border:2px
+      solid rgb(27, 94, 32);border-radius:10px
+  exitconfirmbutton:
+    stylesheet: background-color:rgb(124, 179, 66);color:rgb(33,33,33);border:2px
+      solid rgb(27, 94, 32);border-radius:10px
+  logcancelbutton:
+    stylesheet: background-color:rgb(124, 179, 66);color:rgb(33,33,33);border:2px
+      solid rgb(27, 94, 32);border-radius:10px
+  logentrybutton:
+    stylesheet: background-color:rgb(124, 179, 66);color:rgb(33,33,33);border:2px
+      solid rgb(27, 94, 32);border-radius:10px
+  nextbuttonoff:
+    stylesheet: background-color:rgb(66, 66, 66);border:1px solid rgb(66, 66, 66);border-radius:40px
+  nextbuttonon:
+    stylesheet: background-color:rgb(124, 179, 66);border:1px solid rgb(27, 94, 32);border-radius:40px
+  openlogbutton:
+    stylesheet: background-color:rgb(124, 179, 66);border:2px solid rgb(27, 94, 32);border-radius:30px
+  revertbuttonoff:
+    stylesheet: background-color:rgb(66, 66, 66);border:1px solid rgb(66, 66, 66);border-radius:40px
+  revertbuttonon:
+    stylesheet: background-color:rgb(124, 179, 66);border:1px solid rgb(27, 94, 32);border-radius:40px
+  revertcancelbutton:
+    stylesheet: background-color:rgb(124, 179, 66);color:rgb(33,33,33);border:2px
+      solid rgb(27, 94, 32);border-radius:10px
+  revertconfirmbutton:
+    stylesheet: background-color:rgb(124, 179, 66);color:rgb(33,33,33);border:2px
+      solid rgb(27, 94, 32);border-radius:10px
+  revertlabeltext:
+    stylesheet: 'color:rgb(239,108,0);font: 14pt Helvetica MS'
+  statecolors:
+    completed:
+      bgcolor: honeydew3
+      color: honeydew3
+      fontcolor: black
+      fontname: sans
+      fontsize: '14'
+    entered:
+      bgcolor: darkgreen
+      color: darkgreen
+      fontcolor: white
+      fontname: sans
+      fontsize: '14'
+    none:
+      bgcolor: transparent
+      color: white
+      fontcolor: white
+      fontname: sans
+      fontsize: '14'
+version: 1
+gv_filepath: C:/ProgramData/AIBS_MPE/wfltk/graphviz
+neuropixel: http://mpe-redirects/MPETracking/Filter=NP&ItemID=new
+mesoscope: http://mpe-computers/
+deepscope: http://mpe-computers/
+waterlog: http://mpe-redirects/MPETracking/Filter=BEH&ItemID=new
+behavior: http://mpe-redirects/MPETracking/Filter=BEH&ItemID=new
+ticket_url: http://mpe-redirects/MPETracking/
+shared:
+  water_calibration:
+    NP.0-Stim:
+      datetime: 31/07/2020 14:28:53
+      intercept: 0.0167
+      slope: 9.0659
+    W10DTSM112721:
+      datetime: 31/07/2020 14:28:53
+      intercept: 0.0167
+      slope: 9.0659
+    datetime: 12/07/2020 15:40:03
+    intercept: 0.0157
+    slope: 10.0103

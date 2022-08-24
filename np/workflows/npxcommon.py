@@ -1,82 +1,84 @@
-import csv
 import datetime
 import glob
-import inspect
-import itertools
 import json
 import logging
 import os
 import pathlib
-import pdb
 import pickle
 import re
 import shutil
 import subprocess
-import sys
 import time
 import traceback
 from collections import namedtuple
 from datetime import date as date
 from datetime import datetime as dt
 from datetime import timedelta as timedelta
-from functools import partial
 from math import floor
-from pprint import pprint
 from shutil import copyfile, disk_usage
 
 import numpy
 import psutil
-import requests
 import yaml
 import zmq
-from np.models import model
+from np.models.model import \
+    Model  # this is the type for concrete experiment models below
+from np.models.model import (  # these are the currently supported exps
+    DynamicRouting, Passive, Behavior)
 # sys.path.append("..")
 from np.services import \
     ephys_edi_pb2 as \
     ephys_messages  # ! TODO remove this - communicate through API instead
 from np.services.config import Rig
-from np.services import mvr
-from np.services.mvr import MVRConnector
 from np.services.ephys_api import EphysHTTP as Ephys
-from np.models.model import Model # this is the type for concrete experiment models below 
-from np.models.model import Passive, Behavior, DynamicRouting # these are the currently supported exps
+from np.services.mvr import MVRConnector
 from PIL import Image
 from wfltk import middleware_messages_pb2 as wfltk_msgs
 
 messages = wfltk_msgs
-import mpetk
 from mpetk import limstk, mpeconfig, zro
 from mpetk.zro import Proxy
 
-Experiment: Model = None
+# The first thing that should be done in the .py file is to set the experiment variable to an instance of the model classes
+global experiment
+experiment: Model = None
 
-# import limstk
-# import mpeconfig
+global config
+config: dict = None
 
-# config = mpeconfig.source_configuration('neuropixels', version='1.4.0')
-config: dict
-config = mpeconfig.source_configuration('neuropixels', version='1.4.0') 
-#! #TODO line above is temporary, we want to consolidate config settings into one file 
-# config.update(mpeconfig.source_configuration("dynamic_routing"))
+def get_config() -> dict:
+    if not experiment:
+        raise ValueError("Experiment model is not set")    
 
-config = mpeconfig.source_configuration('neuropixels_passive_experiment_workflow', version='1.4.0+g6c8db37.b73352')
+    global config
+    config = mpeconfig.source_configuration(
+        project_name=experiment.mpe_config.project_name,
+        version=experiment.mpe_config.version)
 
-with open('np/config/neuropixels.yml') as f:
-    yconfig = yaml.safe_load(f)
-
-config.update(yconfig)  
-config["serialized_states_folder"] = "C:/ProgramData/AIBS_MPE/wfltk/resume"
-
-# pdb.set_trace()
-def jsonrep(o):
-    if isinstance(o, datetime.datetime):
-        return o.__repr__()
+    if Rig.ID == 'NP.0' and isinstance(experiment, Passive):
+        local_config = "neuropixels_np0_passive"
+    elif Rig.ID == 'NP.0' and isinstance(experiment, Behavior):
+        local_config = "neuropixels_np0_behavior"
+    elif Rig.ID == 'NP.1':
+        local_config = "neuropixels_np0_passive"
+    elif Rig.ID == 'NP.2' and isinstance(experiment, Passive):
+        local_config = "neuropixels_np2_passive"
+        
+    with open(f"np/config/{local_config}.yml") as f:   
+        yaml_config = yaml.safe_load(f)
+    config.update(yaml_config)  
+    config["serialized_states_folder"] = ""
     
-with open('np/config/dump.json','w') as f:
-    json.dump(config, f, default=jsonrep, indent = 4)
+    return config
+        # # pdb.set_trace()
+        # def jsonrep(o):
+        #     if isinstance(o, datetime.datetime):
+        #         return o.__repr__()
+            
+        # with open('np/config/dump.json','w') as f:
+        #     json.dump(config, f, default=jsonrep, indent = 4)
+            
     
-# mvr_writer = MVRConnector(args=config['MVR'])
-
 global mvr_writer
 try:
 
@@ -236,15 +238,6 @@ def load_prior_state_input(state):
 
       
 
-def initialize_input(state_globals):
-    try:
-        mouse_director_proxy.set_user_id(state_globals["external"]["user_id"])
-    except Exception:
-        alert_string = f'Failed to communicate with MouseDirector'
-        alert_text(alert_string, state_globals)  # Todo put this back
-        print('########################################################')
-        logging.debug(alert_string, exc_info=True)
-
 
 def initialize_enter(state_globals):
     """
@@ -382,6 +375,15 @@ def initialize_enter(state_globals):
     # initialize some choice fields
     # state_globals['external']['components_run'] = True
     print('Done with initialize_enter')
+
+def initialize_input(state_globals):
+    try:
+        mouse_director_proxy.set_user_id(state_globals["external"]["user_id"])
+    except Exception:
+        alert_string = f'Failed to communicate with MouseDirector'
+        alert_text(alert_string, state_globals)  # Todo put this back
+        print('########################################################')
+        logging.debug(alert_string, exc_info=True)
 
 
 def assess_previous_sessions(state_globals):
@@ -1903,7 +1905,7 @@ def initiate_behavior(state_globals):
     camstim_proxy = state_globals['component_proxies']['Stim']
     print('Starting behavior session')
     try:
-        if isinstance(Experiment, Passive):
+        if isinstance(experiment, Passive):
             camstim_proxy.start_script(script)
         else: 
             camstim_proxy.start_session(mouse_id, user_id)
@@ -2414,7 +2416,7 @@ def run_pretest_script(state_globals, camstim, pretest_DOC_path):
 
 
 def run_pretest_override_params(state_globals, camstim, params_path):
-    if isinstance(Experiment, DynamicRouting):
+    if isinstance(experiment, DynamicRouting):
         #! TODO: this is a hack to get the pretest to work with camstim 2 override params
         # ben and corbett july 2022
         params_path = R"C:\Users\svc_neuropix\Documents\GitHub\NP_pipeline_validation\pretest_stim_params\dynamic_routing_pretest_stim_params.json"
