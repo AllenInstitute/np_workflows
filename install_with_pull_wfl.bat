@@ -4,7 +4,7 @@
 SET rig=%AIBS_RIG_ID%
 SET branch=np
 
-IF %rig%==NP.2 SET branch=dev
+IF %rig%==NP.2 SET branch=main
 IF %rig%==NP.1 SET branch=main
 IF %rig%==NP.0 SET branch=main
 
