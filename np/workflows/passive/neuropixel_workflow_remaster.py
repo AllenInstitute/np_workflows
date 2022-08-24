@@ -300,7 +300,7 @@ def start_pretest_input(state_globals):
     os.makedirs(state_globals["external"]["local_lims_location"], exist_ok=True)
     state_globals["external"]["mapped_lims_location"] = state_globals["external"]["local_lims_location"]
     state_globals["external"]["pretest_start_time"] = dt.now()
-    npxc.set_open_ephys_name(state_globals)
+    npxc.set_open_ephys_name(state_globals, add_prefix='pretest_')
     logging.info('starting monitoring with video prefix = pretest')
     npxc.start_common_experiment_monitoring(state_globals, video_prefix='pretest')
     npxc.start_pretest_stim(state_globals)
@@ -1319,8 +1319,8 @@ def insert_probes_start_enter(state_globals):
     Entry function for state insert_probes_start_enter
     """
     print("&& input probes start enter &&")
+    npxc.set_open_ephys_name(state_globals)
     # start the open ephys acquisitino
-    npxc.clear_open_ephys_name(state_globals)
     npxc.start_ecephys_acquisition(state_globals)
 
 
@@ -2102,13 +2102,12 @@ def probe_quiescence_input(state_globals):
 @state_transition
 def check_data_dirs_enter(state_globals):
     print(">> check_data_dirs_enter <<")
+    npxc.set_open_ephys_name(state_globals)
 
 
 @state_transition
 def check_data_dirs_input(state_globals):
     #npxc.set_open_ephys_name(state_globals)
-    npxc.clear_open_ephys_name(state_globals)
-    time.sleep(1)
     npxc.start_ecephys_recording(state_globals)
     time.sleep(3)
     npxc.stop_ecephys_recording(state_globals)
