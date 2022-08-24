@@ -29,7 +29,7 @@ from np.services import \
     ephys_edi_pb2 as \
     ephys_messages  # ! TODO remove this - communicate through API instead
 from np.services.config import Rig
-from np.services.ephys_api import EphysHTTP as Ephys
+from np.services.ephys_api import EphysHTTP, EphysRouter
 from np.services.mvr import MVRConnector
 from PIL import Image
 from wfltk import middleware_messages_pb2 as wfltk_msgs
@@ -99,6 +99,12 @@ except Exception:
         
 global_processes = {}
 
+global Ephys 
+if Rig.ID == "NP.0":
+    ephys = EphysRouter
+else:
+    ephys = EphysHTTP
+    
 # ---------------- Network Service Objects ----------------
 
 mouse_director_proxy = None
@@ -561,25 +567,25 @@ def start_ecephys_recording(state_globals):
     print('Attempting to start ecephys acquisiton')
     # send_ecephys_message(state_globals, 'recording', command=1)
     # time.sleep(15) - the process can take this long but its annoying to have the WSE wait...
-    Ephys.start_ecephys_recording()
+    ephys.start_ecephys_recording()
 
 
 def stop_ecephys_recording(state_globals):
     print('Attempting to stop ecephys acquisiton')
     # send_ecephys_message(state_globals, 'recording', command=0)
-    Ephys.stop_ecephys_recording()
+    ephys.stop_ecephys_recording()
 
 def start_ecephys_acquisition(state_globals):
     print('Attempting to start ecephys acquisiton')
     # message = send_ecephys_message(state_globals, 'acquisition', command=1)
     # time.sleep(15) - the process can take this long but its annoying to have the WSE wait...
-    return Ephys.start_ecephys_acquisition()
+    return ephys.start_ecephys_acquisition()
 
 
 def stop_ecephys_acquisition(state_globals):
     print('Attempting to stop ecephys acquisiton')
     # send_ecephys_message(state_globals, 'acquisition', command=0)
-    Ephys.stop_ecephys_acquisition()
+    ephys.stop_ecephys_acquisition()
 
 
 def set_open_ephys_name(state_globals, add_prefix:str=''):
@@ -594,7 +600,7 @@ def set_open_ephys_name(state_globals, add_prefix:str=''):
         # date = state_globals["external"]["sessionNameTimestamp"]
         add_prefix = add_prefix + '_' if add_prefix else ''
         path = f"{add_prefix}{folder_str}"
-        Ephys.set_open_ephys_name(path=path)
+        ephys.set_open_ephys_name(path=path)
 
     except Exception as E:
         print(f'Failed to set open ephys name: {E}')
@@ -604,7 +610,7 @@ def clear_open_ephys_name(state_globals):
     try:
         print('Attempting to clear openephys session name')
         # send_ecephys_message(state_globals, 'set_data_file_path', path='')
-        Ephys.clear_open_ephys_name()
+        ephys.clear_open_ephys_name()
     except Exception as E:
         print(f'Failed to set open ephys name: {E}')
 
@@ -613,7 +619,7 @@ def request_open_ephys_status(state_globals):
     try:
         print('checking open ephys status')
         # message = send_ecephys_message(state_globals, 'REQUEST_SYSTEM_STATUS', path='')
-        message = Ephys.request_open_ephys_status()
+        message = ephys.request_open_ephys_status()
     except Exception as E:
         print(f'Failed to set open ephys name: {E}')
     return message
