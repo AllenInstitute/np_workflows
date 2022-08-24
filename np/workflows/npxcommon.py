@@ -31,6 +31,7 @@ from np.services import \
 from np.services.config import Rig
 from np.services.ephys_api import EphysHTTP, EphysRouter
 from np.services.mvr import MVRConnector
+from np.services.mtrain import MTrain
 from PIL import Image
 from wfltk import middleware_messages_pb2 as wfltk_msgs
 
@@ -108,7 +109,7 @@ if Rig.ID == "NP.0":
     ephys = EphysRouter
 else:
     ephys = EphysHTTP
-    
+
 # ---------------- Network Service Objects ----------------
 
 mouse_director_proxy = None
@@ -391,7 +392,14 @@ def initialize_enter(state_globals):
     else: 
         state_globals['external']['prior_states'] = None
 
-
+    global mtrain
+    mtrain = MTrain()
+    # set the mouse ID from the workflow py
+    if not mtrain.connected():
+        print("Failed to connect to MTrain")
+    else:
+        print("MTrain connected")
+    
     # initialize some choice fields
     # state_globals['external']['components_run'] = True
     print('Done with initialize_enter')

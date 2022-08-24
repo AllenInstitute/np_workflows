@@ -470,7 +470,10 @@ def scan_mouse_id_input(state_globals):
     comp_id = os.environ.get('aibs_comp_id', socket.gethostname())
     mouse_id = state_globals["external"]["mouse_id"]
     user_id = state_globals["external"]["user_id"]
-
+    
+    # now we can set the mouseID in mtrain 
+    npxc.mtrain.mouse_id = mouse_id
+    
     logging.info(f'MID, {mouse_id}, UID, {user_id}, BID, {comp_id}, Received', extra={'weblog':True})
 
     state_globals["external"]["local_log"] = f'Mouse ID :{mouse_id}'

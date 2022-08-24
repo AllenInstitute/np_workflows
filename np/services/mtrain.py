@@ -14,8 +14,11 @@ class MTrain:
         response = requests.get(cls.server)
         return True if response.status_code == 200 else False
 
-    def __init__(self, mouse_id: Union[int, str]):
-        self.mouse_id = str(mouse_id)
+    def __init__(self, mouse_id: Union[int, str] = None):
+        # we'll only allow mouse_id to be set once per instance
+        # but it doesn't necessarily have to be set on init
+        if mouse_id:
+            self.mouse_id = str(mouse_id)
 
     def session(self):
         session = requests.session()
@@ -33,6 +36,8 @@ class MTrain:
     def mouse_id(self, value: Union[int, str]):
         response = requests.get(f"{self.server}/get_script/", data=json.dumps({"LabTracks_ID": str(value)}))
         if response.status_code == 200:
+            if hasattr(self, '_mouse_id') and self._mouse_id is not None:
+                raise ValueError("Mouse ID can only be set once per instance.")
             self._mouse_id = str(value)
         else:
             raise ValueError(f"Mouse ID {value} not found in MTrain")
