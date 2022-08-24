@@ -292,8 +292,8 @@ states:
         type: text_entry
         desc: Please type which experiment day it is. Options are<colon> <session_type_option_string>
     inputs:
-      - desc: change_mtrain_stage
-        state: change_mtrain_stage
+      - desc: mtrain_change_stage
+        state: mtrain_change_stage
     revert:
       options:
         - desc: Revert to date_string_check
@@ -331,7 +331,7 @@ states:
         - desc: Revert to check_experiment_day
           state: check_experiment_day
 
-  change_mtrain_stage:
+  mtrain_change_stage:
     description: confirm or set mtrain stage
     display:
       - field: specimen.Name
@@ -353,7 +353,7 @@ states:
             default: True
           - field: change_regimen
             desc: Change regimen (selection in dropdown list will be ignored)
-            next: change_mtrain_regimen_1
+            next: mtrain_change_regimen_1
       - field: new_stage
         type: pulldown_menu
         desc: (optional) - select a new stage from the current regimen
@@ -367,7 +367,7 @@ states:
         - desc: Revert to check_experiment_day
           state: check_experiment_day
 
-  change_mtrain_regimen_1:
+  mtrain_change_regimen_1:
     description: choose new mtrain regimen, or cancel
     display:
       - field: current_regimen
@@ -379,19 +379,19 @@ states:
         options:
           - field: confirm_regimen
             desc: Continue with selected regimen
-            next: change_mtrain_regimen_2
+            next: mtrain_change_regimen_2
             default: True
           - field: cancel_regimen_select
             desc: Cancel selection and go back
-            next: change_mtrain_stage
+            next: mtrain_change_stage
       - field: new_regimen
         type: pulldown_menu
         desc: Select a new regimen (nothing will be changed until the next screen)
         options_field: available_regimens # this needs a default, but the widget doesn't have one
     inputs:
-      - state: change_mtrain_regimen_2
+      - state: mtrain_change_regimen_2
 
-  change_mtrain_regimen_2:
+  mtrain_change_regimen_2:
     description: choose a stage for the new mtrain regimen, or cancel
     display:
       - field: new_regimen
@@ -403,11 +403,11 @@ states:
         options:
           - field: confirm_regimen_and_stage
             desc: Continue to set new regimen and stage
-            next: change_mtrain_stage
+            next: mtrain_change_stage
             default: True
           - field: cancel_regimen_select
             desc: Cancel selection and go back
-            next: change_mtrain_stage
+            next: mtrain_change_stage
       - field: selected_stage_new_regimen
         type: pulldown_menu
         desc: Select a stage on the new regimen
@@ -416,7 +416,7 @@ states:
         type: note
         desc: New regimen and stage will be set, but there will be opportunity to check and correct
     inputs:
-      - state: change_mtrain_stage
+      - state: mtrain_change_stage
 
   prepare_for_pretest:
     description: prepare_for_pretest

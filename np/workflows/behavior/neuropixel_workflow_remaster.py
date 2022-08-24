@@ -300,10 +300,10 @@ def mtrain_change_stage_input(state):
 
     if confirm_stage and new_stage.lower() != npxc.mtrain.stage['name'].lower():
         npxc.mtrain.stage = new_stage
-        state["external"]["next_state"] = 'mtrain_stage'
+        state["external"]["next_state"] = 'mtrain_change_stage'
 
     elif change_regimen:
-        state["external"]["next_state"] = 'mtrain_regimen_1'
+        state["external"]["next_state"] = 'mtrain_change_regimen_1'
 
 
 def mtrain_change_regimen_1_enter(state):
@@ -322,13 +322,13 @@ def mtrain_change_regimen_1_input(state):
 
     if cancel_regimen_select:
         # cancel
-        state["external"]["next_state"] = 'mtrain_stage'
+        state["external"]["next_state"] = 'mtrain_change_stage'
     elif confirm_regimen and new_regimen:
         # don't set anything yet - we need a corresponding stage for the new regimen
-        state["external"]["next_state"] = 'mtrain_regimen_2'
+        state["external"]["next_state"] = 'mtrain_change_regimen_2'
     elif confirm_regimen and not new_regimen:
         # apparently no change is requested - go back to the stage selection
-        state["external"]["next_state"] = 'mtrain_stage'
+        state["external"]["next_state"] = 'mtrain_change_stage'
 
 
 def mtrain_change_regimen_2_enter(state):
@@ -344,7 +344,7 @@ def mtrain_change_regimen_2_enter(state):
 
 
 def mtrain_change_regimen_2_input(state):
-    # copy verbatim this line from mtrain_regimen_2_enter
+    # copy verbatim this line from mtrain_change_regimen_2_enter
     new_regimen_dict = [
         regimen for regimen in npxc.mtrain.get_all("regimens")
         if regimen['name'].lower() == state["external"]["new_regimen"].lower()
@@ -359,7 +359,7 @@ def mtrain_change_regimen_2_input(state):
     #TODO get the next state(s) from brb in wfl/state if possible
 
     if cancel_regimen_select:
-        state["external"]["next_state"] = 'mtrain_stage'
+        state["external"]["next_state"] = 'mtrain_change_stage'
 
     elif confirm_regimen_and_stage and selected_stage_new_regimen:
 
@@ -368,12 +368,12 @@ def mtrain_change_regimen_2_input(state):
             if stage['name'].lower() == selected_stage_new_regimen.lower()
         ][0]
         npxc.mtrain.set_regimen_and_stage(new_regimen_dict, new_stage_dict)
-        state["external"]["next_state"] = 'mtrain_stage'
+        state["external"]["next_state"] = 'mtrain_change_stage'
 
     elif confirm_regimen_and_stage and not selected_stage_new_regimen:
         # state["external"]["next_state"] = 'run_stimulus'
         # not sure if it's even possible to continue (green arrow) without selecting a stage
-        state["external"]["next_state"] = 'mtrain_stage'
+        state["external"]["next_state"] = 'mtrain_change_stage'
 
 
 
