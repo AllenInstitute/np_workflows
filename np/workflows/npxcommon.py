@@ -1,4 +1,3 @@
-import datetime
 import glob
 import json
 import logging
@@ -24,7 +23,7 @@ import zmq
 from np.models.model import \
     Model  # this is the type for concrete experiment models below
 from np.models.model import (  # these are the currently supported exps
-    DynamicRouting, Passive, Behavior)
+    Behavior, DynamicRouting, Passive)
 # sys.path.append("..")
 from np.services import \
     ephys_edi_pb2 as \
@@ -158,8 +157,19 @@ def make_keys_and_values_strings(dict_in):
         new_dict[str(key)] = str(value)
     return new_dict
 
+def take_left_snapshot(state_globals, photo_path="C:/ProgramData/AIBS_MPE/wfltk/temp/left_snapshot.jpg"):
+    if Rig.ID == "NP.0":
+        state_globals["component_proxies"]["Cam3d"].save_left_image(photo_path)
+    else: 
+        mvr_capture(photo_path) # this returns error msgs, but cam3d proxy doesn't 
+        
+def take_right_snapshot(state_globals, photo_path="C:/ProgramData/AIBS_MPE/wfltk/temp/right_snapshot.jpg"):
+    if Rig.ID == "NP.0":
+        state_globals["component_proxies"]["Cam3d"].save_right_image(photo_path)
+    else: 
+        mvr_capture(photo_path) #  this returns error msgs, but cam3d proxy doesn't 
 
-def mvr_capture(state_globals,photo_path="C:/ProgramData/AIBS_MPE/wfltk/temp/last_snapshot.jpg", timeout=30):
+def mvr_capture(photo_path="C:/ProgramData/AIBS_MPE/wfltk/temp/last_snapshot.jpg", timeout=30):
     """standard mvr image snapshot func, returning error mesg or img  """
     mvr_writer.take_snapshot()
     
@@ -2324,6 +2334,7 @@ def establish_proxies(state_globals):
 
             # save the proxies for use later
             state_globals['component_proxies'][key] = proxy
+
 
 
 def check_components(state_globals):
