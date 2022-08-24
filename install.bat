@@ -1,21 +1,27 @@
-:: we're using slightly different workflow code depending on which rig we're on
-:: code for each rig is on a branch in a github repo
+:: we might want to use a different branch (for testing features etc) depending on which rig
+:: we're on. if 'update.bat' is called before this script then we'll be on up-to-date master branch, and this
+:: script will install the branch the branch set below.
 
 SET rig=%AIBS_RIG_ID%
 
-IF %rig%==NP.0 SET branch=dev
+IF %rig%==NP.0 SET branch=main
 IF %rig%==NP.1 SET branch=main
 IF %rig%==NP.2 SET branch=main
 
 CALL git stash
 CALL git checkout %branch%
+CALL git pull %branch%
+
+
+@REM install python code: services, config, workflow py and wfl files ---------------------
 
 @REM install workflow code to program files: completely replaces existing directory structure
 robocopy .\np\ c:\progra~1\AIBS_MPE\workflow_launcher\np\ /MIR /E
 
-@REM install wfls -------------------------------------------------------------------------
-@REM we can point the WSE to workflows for specific project folders only:
 
+@REM install wfl files alone in case we can't direct the WSE to program files -------------
+
+@REM we can point the WSE to workflows for specific project folders only:
 set sourcefolder=.\np\workflows
 
 @REM np0 ----------------------------------------------------------------------------------
