@@ -36,6 +36,7 @@ from wfltk import middleware_messages_pb2 as wfltk_msgs
 
 messages = wfltk_msgs
 from mpetk import limstk, mpeconfig, zro
+from mpetk.aibsmw.routerio.router import ZMQHandler
 from mpetk.zro import Proxy
 
 # The first thing that should be done in the .py file is to set the experiment variable to an instance of the model classes
@@ -44,6 +45,9 @@ experiment: Model = None
 
 global config
 config: dict = None
+
+global io
+io: ZMQHandler = None
 
 def get_config() -> dict:
     if not experiment:
@@ -637,13 +641,12 @@ def request_open_ephys_status(state_globals):
             message = ephys.request_open_ephys_status()
         else:
             message = send_ecephys_message(state_globals, 'REQUEST_SYSTEM_STATUS', path='')
+        return message
     except Exception as E:
-        print(f'Failed to set open ephys name: {E}')
-    return message
+        print(f'Failed to get open ephys status')
 
 
 def send_ecephys_message(state_globals, message_type, **kwargs):
-    # c
     message = None
     try:
         try:
