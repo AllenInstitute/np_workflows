@@ -9,19 +9,19 @@ try:
 
     # from physync.report import NeuropixelsReport
         # -*- coding: latin-1 -*-
+    import pdb
+    pdb.set_trace()
     from datetime import date as date
     from datetime import datetime as dt
     from datetime import timedelta as timedelta
     from pprint import pformat
 
-    # pdb.set_trace()
-    from mpetk.aibsmw.routerio.router import ZMQHandler
     import np.workflows.npxcommon as npxc
-    from np.services.config import Rig
-    from np.models.model import Passive
     import requests
     from mpetk import limstk
+    from mpetk.aibsmw.routerio.router import ZMQHandler
     from mpetk.zro import Proxy
+    from np.models.model import Passive
 
 except Exception as e:
     # import errors aren't printed to console by default

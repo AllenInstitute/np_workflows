@@ -130,6 +130,7 @@ components:
     host: w10dtsm112722
     port: 9000
     version: 0.8.0
+    timeout: 1.0
 MVR:
   host: w10dtsm112722
   port: 50000
