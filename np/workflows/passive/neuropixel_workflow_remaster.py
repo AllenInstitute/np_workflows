@@ -50,17 +50,11 @@ except Exception as e:
     print(e)
     
 # -------------- experiment-specific objects --------------
+global experiment
+experiment = npxc.experiment = Passive() # this should be the first line of code executed
+
 global config
-
-config = mpeconfig.source_configuration('neuropixels', version='1.4.0')
-#! #TODO line above is temporary, we want to consolidate config settings into one file 
-config.update(mpeconfig.source_configuration('neuropixels_passive_experiment_workflow', version='1.4.0+g6c8db37.b73352'))
-
-
-with open('np/config/neuropixels.yml') as f:
-    yconfig = yaml.safe_load(f)
-config.update(yconfig)
-# pdb.set_trace()
+config = npxc.config = npxc.get_config()
 
 experiment = Passive() # unused
 # ---------------- Network Service Objects ----------------
@@ -157,22 +151,22 @@ def handle_message(message_id, message, timestamp, io):
 
 
 # ------------------- State Transitions -------------------
-@state_transition
+# @state_transition
 def default_enter(state_globals, label):
     npxc.default_enter(state_globals, label)
 
 
-@state_transition
+# @state_transition
 def default_input(state_globals, label):
     npxc.default_input(state_globals, label)
 
 
-@state_transition
+# @state_transition
 def default_exit(state_globals, label):
     npxc.default_exit(state_globals, label)
 
 
-@state_transition
+# @state_transition
 def initialize_enter(state_globals):
     
     state_globals['external']['logo'] = R".\np\images\logo_np_vis.png" 
@@ -201,7 +195,7 @@ def initialize_enter(state_globals):
     npxc.initialize_enter(state_globals)
 
 
-@state_transition
+# @state_transition
 def initialize_input(state_globals):
     """
     Input test function for state initialize
