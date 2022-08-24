@@ -166,23 +166,17 @@ class EphysHTTP(Ephys):
         return EphysHTTP.set_mode(EphysHTTP.EphysModes.idle)
 
     @staticmethod
-    def set_open_ephys_name(path: Optional[str] = None,  prepend_text: Optional[str] = None, append_text: Optional[str] = None):
+    def set_open_ephys_name(path: Optional[str] = "_",  prepend_text: Optional[str] = "", append_text: Optional[str] = ""):
         
         recording = requests.get(EphysHTTP.recording_endpoint).json()
         
-        if path:
-            if path == "":
-                path = "_" # filename cannot be zero length
-            if "." in path:
-                m = f"setting open ephys directory name - cannot contain periods: {path}"                
-                print(m)
-                raise ValueError(m)
-            recording['base_text'] = path
-            
-        if prepend_text:
-            recording['prepend_text'] = prepend_text
-        if append_text:
-            recording['append_text'] = append_text
+        if path == "":
+            path = "_" # filename cannot be zero length
+        path.replace(".","_")
+        print(f"setting open ephys directory name - cannot contain periods -> replaced with underscores: {path}")
+        recording['base_text'] = path
+        recording['prepend_text'] = prepend_text
+        recording['append_text'] = append_text
         return requests.put(EphysHTTP.recording_endpoint, json.dumps(recording))
 
     @staticmethod

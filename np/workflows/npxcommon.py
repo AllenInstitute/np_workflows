@@ -589,11 +589,12 @@ def set_open_ephys_name(state_globals, add_prefix:str=''):
         
         # TODO shift naming to workflow, and consider using path = session_name, instead of prepend_base_append to avoid adding '_' sep
         folder_str = state_globals["external"]["session_name"]
-        mouseID = state_globals["external"]["mouse_id"]
-        sessionID = state_globals["external"]["ecephys_session_id"] 
-        date = state_globals["external"]["sessionNameTimestamp"]
-     
-        Ephys.set_open_ephys_name(path=mouseID,prepend_text=add_prefix+sessionID+"_", append_text="_"+date)
+        # mouseID = state_globals["external"]["mouse_id"]
+        # sessionID = state_globals["external"]["ecephys_session_id"] 
+        # date = state_globals["external"]["sessionNameTimestamp"]
+        add_prefix = add_prefix + '_' if add_prefix else ''
+        path = f"{add_prefix}{folder_str}"
+        Ephys.set_open_ephys_name(path=path)
 
     except Exception as E:
         print(f'Failed to set open ephys name: {E}')
