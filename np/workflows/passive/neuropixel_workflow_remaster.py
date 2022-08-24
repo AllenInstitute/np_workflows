@@ -1,8 +1,5 @@
 # -*- coding: latin-1 -*-
 
-import pdb
-import sys
-from os import stat
 
 # pdb.set_trace()
 # sys.path.append("...")
@@ -15,32 +12,21 @@ try:
     import json
     import logging
     import os
-    import pathlib
     import socket
-    import threading
     import time
     import traceback
-    from glob import glob
     import webbrowser
     from datetime import datetime as dt
-    from importlib import reload
+    from glob import glob
     from pprint import pformat
 
-    import mpetk.aibsmw.routerio.router as router
     import np.services.mvr as mvr
-    from np.services.config import Rig
     import requests
-    import yaml
-    import zmq
-    from mpetk import limstk, mpeconfig, zro
+    from mpetk import limstk
+    from mpetk.aibsmw.routerio.router import ZMQHandler
     from mpetk.zro import Proxy
     from np.models.model import \
         Passive  # It can make sense to have a class to store experiment data.
-    import np.services.mvr as mvr
-    from np.services.ephys_api import \
-        EphysHTTP as Ephys  # TODO unused - can move from npxcommon to workflow
-    from np.services.mvr import MVRConnector
-    from wfltk import middleware_messages_pb2 as messages   # name in new ver
     from wfltk import middleware_messages_pb2 as wfltk_msgs
     messages = wfltk_msgs
 
@@ -57,14 +43,13 @@ experiment = npxc.experiment = Passive() # this should be the first line of code
 global config
 config = npxc.config = npxc.get_config()
 
-experiment = Passive() # unused
 # ---------------- Network Service Objects ----------------
 
-router: router.ZMQHandler
-camstim_proxy: zro.Proxy = None
-mouse_director_proxy: zro.Proxy = None
+router: ZMQHandler = None
+camstim: Proxy = None
+mouse_director: Proxy = None
 mvr_writer: mvr.MVRConnector
-sync: zro.Proxy
+sync: Proxy
 
 
 # ------------------- UTILITY FUNCTIONS -------------------
@@ -204,17 +189,17 @@ def initialize_input(state_globals):
     npxc.initialize_input(state_globals)
 
     #! this is done in npxc too- delete
-    global mouse_director_proxy
+    global mouse_director
     md_host = npxc.config['components']['MouseDirector']['host']
     md_port = npxc.config['components']['MouseDirector']['port']
     #! should md_host be localhost, not vidmon?
-    mouse_director_proxy = Proxy(f'{md_host}:{md_port}')
+    mouse_director = Proxy(f'{md_host}:{md_port}')
 
-    global camstim_proxy
+    global camstim
     host = npxc.config["components"]["Stim"]["host"]
     port = npxc.config["components"]["Stim"]["port"]
     state_globals['mtrain_text'] = pformat(npxc.config['MTrainData'])
-    camstim_proxy = Proxy(f"{host}:{port}", serialization="json")
+    camstim = Proxy(f"{host}:{port}", serialization="json")
 
     global router
     router = state_globals["resources"]["io"]
@@ -307,7 +292,7 @@ def start_pretest_input(state_globals):
 
     npxc.start_pretest_stim(state_globals)
 
-    foraging_id, stimulus_name, script_path = npxc.get_stim_status(camstim_proxy, state_globals)
+    foraging_id, stimulus_name, script_path = npxc.get_stim_status(camstim, state_globals)
     npxc.verify_script_name(state_globals, stimulus_name)
 
     failed = npxc.establish_data_stream_size(state_globals)
