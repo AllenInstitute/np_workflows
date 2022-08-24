@@ -2409,13 +2409,13 @@ def check_components(state_globals):
         else:  # the open ephys interface goes through the workflow router program, so need to set this up differently
             if not ('hab' in state_globals['external']['session_type']):
                 compStatusArray[key] = False
+                state_globals['resources']['io'].add_message_bundle(ephys_messages)
                 state_globals['resources']['io'].register_for_message('system_info', handle_message)
                 state_globals['resources']['io'].register_for_message('system_status', handle_message)
                 state_globals['resources']['io'].register_for_message('set_data_file_path', handle_message)
                 state_globals['resources']['io'].register_for_message('acquisition', handle_message)
                 state_globals['resources']['io'].register_for_message('recording', handle_message)
-                # request_open_ephys_status(state_globals) #state_globals['resources']['io'].add_message_bundle(ephys_messages)
-
+                
                 # and now request the system info
                 try: 
                     message = request_open_ephys_status(state_globals) # = ephys_messages.request_system_info()
