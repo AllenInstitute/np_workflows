@@ -2302,7 +2302,7 @@ def copy_stim_pkls(state_globals, session_type):
                             message = f'It looks like the {copy_file_as} pkl has already been copied\nIf this is the first time you tried to copy pkls, there must be two possibilities.\n You will have to make sure the correct one is renamed'
                             warnings[key] = message
                         else:
-                            if not (state_globals["external"]["mouse_id"] in file):
+                            if session_type != 'pretest' and not (state_globals["external"]["mouse_id"] in file):
                                 alert_text(
                                     f'The mouse ID was not found in the pkl {copy_file_as} filename. It was renamed to go to lims anyway.',
                                     state_globals)
