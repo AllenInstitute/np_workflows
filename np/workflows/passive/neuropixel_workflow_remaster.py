@@ -28,6 +28,7 @@ try:
 
     import mpetk.aibsmw.routerio.router as router
     import np.services.mvr as mvr
+    from np.services.config import Rig
     import requests
     import yaml
     import zmq
@@ -39,7 +40,7 @@ try:
     from np.services.ephys_api import \
         EphysHTTP as Ephys  # TODO unused - can move from npxcommon to workflow
     from np.services.mvr import MVRConnector
-    from wfltk import middleware_messages_pb2 as messages  # name in new ver
+    from wfltk import middleware_messages_pb2 as messages   # name in new ver
     from wfltk import middleware_messages_pb2 as wfltk_msgs
     messages = wfltk_msgs
 
@@ -296,13 +297,14 @@ def check_data_drives_input(state_globals):
 def start_pretest_input(state_globals):
     state_globals['external']['session_name'] = dt.now().strftime("%Y%m%d%H%M%S") + '_pretest'
     state_globals["external"]["local_lims_location"] = os.path.join(state_globals["external"]["local_lims_head"],
-                                                                    state_globals['external']['session_name'])
+        state_globals['external']['session_name'])
     os.makedirs(state_globals["external"]["local_lims_location"], exist_ok=True)
     state_globals["external"]["mapped_lims_location"] = state_globals["external"]["local_lims_location"]
     state_globals["external"]["pretest_start_time"] = dt.now()
-    npxc.set_open_ephys_name(state_globals, add_prefix='pretest_')
+    npxc.set_open_ephys_name(state_globals, add_prefix='pretest')
     logging.info('starting monitoring with video prefix = pretest')
     npxc.start_common_experiment_monitoring(state_globals, video_prefix='pretest')
+
     npxc.start_pretest_stim(state_globals)
 
     foraging_id, stimulus_name, script_path = npxc.get_stim_status(camstim_proxy, state_globals)
@@ -620,7 +622,7 @@ def date_string_check_input(state):
     state["external"]["non_pretest_mapped_lims_location"] = state["external"]["local_lims_location"]
     state["external"]["transition_result"] = True
     state["external"]["status_message"] = "success"
-
+    
 
 @state_transition
 def date_string_check_revert(state_globals):
@@ -2112,6 +2114,7 @@ def check_data_dirs_input(state_globals):
     time.sleep(3)
     npxc.stop_ecephys_recording(state_globals)
     time.sleep(5)
+    npxc.set_open_ephys_name(state_globals)
     try:
         failed = npxc.check_data_drives(state_globals)
     except Exception:

@@ -300,7 +300,7 @@ def check_data_drives_input(state_globals):
 def start_pretest_input(state_globals):
     state_globals['external']['session_name'] = dt.now().strftime("%Y%m%d%H%M%S") + '_pretest'
     state_globals["external"]["local_lims_location"] = os.path.join(state_globals["external"]["local_lims_head"],
-    state_globals['external']['session_name'])
+        state_globals['external']['session_name'])
     os.makedirs(state_globals["external"]["local_lims_location"], exist_ok=True)
     state_globals["external"]["mapped_lims_location"] = state_globals["external"]["local_lims_location"]
     state_globals["external"]["pretest_start_time"] = dt.now()
