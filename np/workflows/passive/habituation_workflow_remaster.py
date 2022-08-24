@@ -107,15 +107,15 @@ def interlace(left, right, stereo):
 def handle_message(message_id, message, timestamp, io):
     npxc.handle_message(message_id, message, timestamp, io)
 
-@state_transition
+# @state_transition
 def default_exit(state_globals,label):
     npxc.default_exit(state_globals,label)
 
-@state_transition
+# @state_transition
 def default_enter(state_globals,label):
     npxc.default_enter(state_globals,label)
 
-@state_transition
+# @state_transition
 def default_input(state_globals, label):
     npxc.default_input(state_globals, label)
 
@@ -128,7 +128,7 @@ def overrideable_error_state_input(state_globals):
 def overrideable_error_state_exit(state_globals):
     npxc.overrideable_error_state_exit(state_globals)
 
-@state_transition
+# @state_transition
 def initialize_enter(state_globals):
     
     state_globals["external"]["logo"] = R".\np\images\logo_np_hab.png"
