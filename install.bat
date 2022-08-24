@@ -25,7 +25,7 @@ robocopy .\np\ c:\progra~1\AIBS_MPE\workflow_launcher\np\ /MIR /E
 set sourcefolder=.\np\workflows
 
 @REM np0 ----------------------------------------------------------------------------------
-@REM on NP.1 we want both passive and vis behav workflows
+@REM on NP.0 we want both passive and vis behav workflows
 IF %rig%==NP.0 (
     @REM install wfl files to non-default location, to leave current WSE operable for now
     set destfolder=c:\ProgramData\AIBS_MPE\wfltk\new_workflows
@@ -42,21 +42,21 @@ IF %rig%==NP.0 (
 @REM IF %rig%==NP.1 SET AIBS_WSE_WFLS=c:\progra~1\AIBS_MPE\workflow_launcher\np\workflows\behavior\
 
 IF %rig%==NP.1 (
-    @REM install wfl files to default location, to leave current WSE operable for now
+    @REM install wfl files to default location
     set destfolder=c:\ProgramData\AIBS_MPE\wfltk\workflows
     del %destfolder%\*.wfl
     @REM include *remaster.wfl, exclude dynamic_routing.wfl:
     for /f %%d in ('dir %sourcefolder% /b /ad ') do (
         robocopy %sourcefolder%\%%d %destfolder% *remaster.wfl /s /xf dynamic_routing.wfl 
     )
-    @REM setting env var doesn't work on 1 - likely permissions need changing
-    SET AIBS_WSE_WFLS=%destfolder%
+    @REM setting env var doesn't work on np1 - likely permissions need changing
+    @REM SET AIBS_WSE_WFLS=%destfolder%
 )
 
 @REM np2 ----------------------------------------------------------------------------------
 IF %rig%==NP.2 (
     @REM no need to copy wfls to programdata, since we already copied them to programfiles
     @REM and we only need passive workflows at the moment
-    %destfolder%=c:\progra~1\AIBS_MPE\workflow_launcher\np\workflows\passive\
+    SET destfolder=c:\progra~1\AIBS_MPE\workflow_launcher\np\workflows\passive
     SET AIBS_WSE_WFLS=%destfolder%
 )
