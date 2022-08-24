@@ -9,8 +9,6 @@ try:
 
     # from physync.report import NeuropixelsReport
         # -*- coding: latin-1 -*-
-    import pdb
-    pdb.set_trace()
     from datetime import date as date
     from datetime import datetime as dt
     from datetime import timedelta as timedelta
