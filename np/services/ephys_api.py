@@ -63,6 +63,8 @@ class Ephys(ABC):
 class EphysRouter(Ephys):
     """ Original ZMQ protobuf implementation - requires ephys_edi_pb2.py output from ephys_edi.proto """ 
     
+    proxy = None
+    
     @staticmethod
     def start_ecephys_recording():
         return ephys_messages.recording(command=1)
