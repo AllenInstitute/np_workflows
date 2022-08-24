@@ -57,5 +57,6 @@ IF %rig%==NP.1 (
 IF %rig%==NP.2 (
     @REM no need to copy wfls to programdata, since we already copied them to programfiles
     @REM and we only need passive workflows at the moment
-    AIBS_WSE_WFLS=c:\progra~1\AIBS_MPE\workflow_launcher\np\workflows\passive\
+    %destfolder%=c:\progra~1\AIBS_MPE\workflow_launcher\np\workflows\passive\
+    SET AIBS_WSE_WFLS=%destfolder%
 )
