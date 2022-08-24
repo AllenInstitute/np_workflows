@@ -27,8 +27,6 @@ states:
       #           desc: Skip checking the components
       #           next: scan_mouse_id
     inputs:
-      # - desc: scan_mouse_id
-      #   state: scan_mouse_id
       # - desc: components_error
       #   state: components_error
       - state: load_prior_state
