@@ -352,8 +352,8 @@ states:
         type: text_entry
         desc: Please type which habituation day it is. Options are <session_type_option_string>
     inputs:
-      - desc: check_stimulus
-        state: check_stimulus
+      - desc: change_mtrain_stage
+        state: change_mtrain_stage
     revert:
       options:
         - desc: Revert to scan_mouse_id
@@ -375,6 +375,93 @@ states:
       options:
         - desc: Revert to check_experiment_day
           state: check_experiment_day
+
+  change_mtrain_stage:
+    description: confirm or set mtrain stage
+    display:
+      - field: specimen.Name
+        type: sticky_value
+        desc: specimen.Name
+      - field: current_regimen
+        type: note
+        desc: Current regimen is <current_regimen>
+      - field: current_stage
+        type: note
+        desc: Current stage is <current_stage>
+      - field: confirm_stage_or_change_regimen
+        type: branch_radio_button
+        desc: Please confirm current or selected stage, or change regimen if necessary
+        options:
+          - field: confirm_stage
+            desc: Continue with current regimen and stage (or with the selection in the the dropdown list)
+            next: flush_lines
+            default: True
+          - field: change_regimen
+            desc: Change regimen (selection in dropdown list will be ignored)
+            next: change_mtrain_regimen_1
+      - field: new_stage
+        type: pulldown_menu
+        desc: (optional) - select a new stage from the current regimen
+        options_field: available_stages # this needs a default, but the widget doesn't have one
+    inputs:
+      # will loop over if stage is changed
+      - desc: configure_hardware
+        state: configure_hardware
+    revert:
+      options:
+        - desc: Revert to check_experiment_day
+          state: check_experiment_day
+
+  change_mtrain_regimen_1:
+    description: choose new mtrain regimen, or cancel
+    display:
+      - field: current_regimen
+        type: note
+        desc: Current regimen is <current_regimen>
+      - field: confirm_regimen_or_cancel
+        type: branch_radio_button
+        desc: Continue with selected regimen or cancel selection
+        options:
+          - field: confirm_regimen
+            desc: Continue with selected regimen
+            next: change_mtrain_regimen_2
+            default: True
+          - field: cancel_regimen_select
+            desc: Cancel selection and go back
+            next: change_mtrain_stage
+      - field: new_regimen
+        type: pulldown_menu
+        desc: Select a new regimen (nothing will be changed until the next screen)
+        options_field: available_regimens # this needs a default, but the widget doesn't have one
+    inputs:
+      - state: change_mtrain_regimen_2
+
+  change_mtrain_regimen_2:
+    description: choose a stage for the new mtrain regimen, or cancel
+    display:
+      - field: new_regimen
+        type: note
+        desc: Regimen will be changed to <new_regimen>
+      - field: confirm_stage_or_cancel
+        type: branch_radio_button
+        desc: Continue with selected stage or cancel selection
+        options:
+          - field: confirm_regimen_and_stage
+            desc: Continue to set new regimen and stage
+            next: change_mtrain_stage
+            default: True
+          - field: cancel_regimen_select
+            desc: Cancel selection and go back
+            next: change_mtrain_stage
+      - field: selected_stage_new_regimen
+        type: pulldown_menu
+        desc: Select a stage on the new regimen
+        options_field: available_stages_new_regimen # this needs a default, but the widget doesn't have one
+      - field: None
+        type: note
+        desc: New regimen and stage will be set, but there will be opportunity to check and correct
+    inputs:
+      - state: change_mtrain_stage
 
   configure_hardware:
     description: configure hardware
