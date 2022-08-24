@@ -278,6 +278,104 @@ def check_data_drives_input(state_globals):
         state_globals["external"]["PXI"][slot] = state_globals["external"][f"slot_{slot}_drive"]
 
 
+def mtrain_change_stage_enter(state):
+
+    state["external"]["current_regimen"] = npxc.mtrain.regimen['name']
+    state["external"]["current_stage"] = npxc.mtrain.stage['name'].title()
+    state["external"]["new_stage"] = npxc.mtrain.stage['name'].title()
+
+    available_stages = sorted([stage['name'].title() for stage in npxc.mtrain.stages])
+
+    state["external"]["available_stages"] = npxc.circshift_to_item(available_stages, state['external']['current_stage'])
+
+    # state['resources']['io'].write(npxc.messages.state_ready(message="ready"))
+
+
+def mtrain_change_stage_input(state):
+
+    print(state["external"]["next_state"])
+    new_stage = state["external"]["new_stage"]
+    confirm_stage = state['external']['confirm_stage']
+    change_regimen = state['external']['change_regimen']
+
+    if confirm_stage and new_stage.lower() != npxc.mtrain.stage['name'].lower():
+        npxc.mtrain.stage = new_stage
+        state["external"]["next_state"] = 'mtrain_stage'
+
+    elif change_regimen:
+        state["external"]["next_state"] = 'mtrain_regimen_1'
+
+
+def mtrain_change_regimen_1_enter(state):
+    # current regimen is already set in prev screen, but we set it again here anyway
+    state["external"]["current_regimen"] = npxc.mtrain.regimen['name']
+
+    available_regimens = sorted([regimen for regimen in npxc.mtrain.all_regimens().values()])
+    state["external"]["available_regimens"] = npxc.circshift_to_item(available_regimens,
+                                                                     state['external']['current_regimen'])
+
+
+def mtrain_change_regimen_1_input(state):
+    new_regimen = state["external"].get("new_regimen", None)
+    confirm_regimen = state['external']['confirm_regimen']
+    cancel_regimen_select = state['external']['cancel_regimen_select']
+
+    if cancel_regimen_select:
+        # cancel
+        state["external"]["next_state"] = 'mtrain_stage'
+    elif confirm_regimen and new_regimen:
+        # don't set anything yet - we need a corresponding stage for the new regimen
+        state["external"]["next_state"] = 'mtrain_regimen_2'
+    elif confirm_regimen and not new_regimen:
+        # apparently no change is requested - go back to the stage selection
+        state["external"]["next_state"] = 'mtrain_stage'
+
+
+def mtrain_change_regimen_2_enter(state):
+    # get the stages available for the new regimen:
+    new_regimen_dict = [
+        regimen for regimen in npxc.mtrain.get_all("regimens")
+        if regimen['name'].lower() == state["external"]["new_regimen"].lower()
+    ][0]
+    new_stages = new_regimen_dict['stages']
+    # no need to circshift the list below, since there's no concept of "current stage" on a newly selected regimen
+    state['external']['available_stages_new_regimen'] = sorted([stage['name'].title() for stage in new_stages])
+    state["external"]["new_regimen"] = new_regimen_dict['name']
+
+
+def mtrain_change_regimen_2_input(state):
+    # copy verbatim this line from mtrain_regimen_2_enter
+    new_regimen_dict = [
+        regimen for regimen in npxc.mtrain.get_all("regimens")
+        if regimen['name'].lower() == state["external"]["new_regimen"].lower()
+    ][0]
+
+    selected_stage_new_regimen = state["external"].get("selected_stage_new_regimen", None)
+    confirm_regimen_and_stage = state['external']['confirm_regimen_and_stage']
+    cancel_regimen_select = state['external']['cancel_regimen_select']
+
+    # pdb.set_trace()
+    # state['external']['confirm_stage_or_change_regimen']
+    #TODO get the next state(s) from brb in wfl/state if possible
+
+    if cancel_regimen_select:
+        state["external"]["next_state"] = 'mtrain_stage'
+
+    elif confirm_regimen_and_stage and selected_stage_new_regimen:
+
+        new_stage_dict = [
+            stage for stage in new_regimen_dict['stages']
+            if stage['name'].lower() == selected_stage_new_regimen.lower()
+        ][0]
+        npxc.mtrain.set_regimen_and_stage(new_regimen_dict, new_stage_dict)
+        state["external"]["next_state"] = 'mtrain_stage'
+
+    elif confirm_regimen_and_stage and not selected_stage_new_regimen:
+        # state["external"]["next_state"] = 'run_stimulus'
+        # not sure if it's even possible to continue (green arrow) without selecting a stage
+        state["external"]["next_state"] = 'mtrain_stage'
+
+
 
 
 @state_transition
