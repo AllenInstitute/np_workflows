@@ -27,18 +27,20 @@ try:
     from pprint import pformat
 
     import mpetk.aibsmw.routerio.router as router
+    import np.services.mvr as mvr
+    from np.services.config import Rig
     import requests
     import yaml
     import zmq
     from mpetk import limstk, mpeconfig, zro
     from mpetk.zro import Proxy
-    from np.models.model import \
-        DynamicRouting  # It can make sense to have a class to store experiment data.
+    from np.models.model import (  # It can make sense to have a class to store experiment data.
+        Behavior, DynamicRouting)
     import np.services.mvr as mvr
     from np.services.ephys_api import \
         EphysHTTP as Ephys  # TODO unused - can move from npxcommon to workflow
     from np.services.mvr import MVRConnector
-    from wfltk import middleware_messages_pb2 as messages  # name in new ver
+    from wfltk import middleware_messages_pb2 as messages   # name in new ver
     from wfltk import middleware_messages_pb2 as wfltk_msgs
     messages = wfltk_msgs
 
@@ -122,7 +124,6 @@ def state_transition(state_transition_function):
             npxc.save_platform_json(state_globals, manifest=False)
         except Exception as e:
             npxc.print_error(state_globals, e)
-            # npxc.save_state(state_globals,state_transition_function) # don't save, we may have bad state vars that caused error
             message = f'An exception occurred in state transition {state_transition_function.__name__}'
             logging.debug(message)
             npxc.alert_text(message, state_globals)
