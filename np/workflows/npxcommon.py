@@ -15,6 +15,7 @@ from datetime import datetime as dt
 from datetime import timedelta as timedelta
 from math import floor
 from shutil import copyfile, disk_usage
+from typing import List, Union
 
 import numpy
 import psutil
@@ -220,8 +221,8 @@ def save_state(state_globals,state_transition_function):
         state_name = '_'.join(state_transition_function.__name__.split('_')[0:-1])
         if state_name == 'default':
             return None        
-        state_folder = config['serialized_states_folder']
-        os.makedirs(state_folder, exist_ok=True)
+        state_folder = config.get('serialized_states_folder',"C:/ProgramData/AIBS_MPE/wfltk/resume")
+        os.makedirs(state_folder, exist_ok=True, parents=True)
         
         with open(f'{state_folder}/{time.strftime("%H-%M-%S",time.localtime())}_{state_name}.pkl', 'wb') as f:
             x = [{k:state_globals[k]} for k in state_globals.keys() if k not in ['resources','component_proxies']]        
@@ -683,6 +684,13 @@ def send_ecephys_message(state_globals, message_type, **kwargs):
 def pretest_error_input(state_globals):
     print('>> pretest_error_input <<')
     handle_2_choice_button('pretest_override', 'configure_hardware_videomon', 'start_pretest', state_globals)
+
+def circshift_to_item(items: List, item: Union[str, int]):
+    """Circshift items to put specified item at index 0.
+    If item isn't found, return items unchanged."""
+    if item in items:
+        return items[items.index(item):] + items[:items.index(item)]
+    return items
 
 
 def dir_failed_message(probeDir):
