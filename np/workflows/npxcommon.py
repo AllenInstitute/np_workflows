@@ -31,8 +31,8 @@ from np.services import \
     ephys_messages  # ! TODO remove this - communicate through API instead
 from np.services.config import Rig
 from np.services.ephys_api import EphysHTTP, EphysRouter
-from np.services.mvr import MVRConnector
 from np.services.mtrain import MTrain
+from np.services.mvr import MVRConnector
 from PIL import Image
 from wfltk import middleware_messages_pb2 as wfltk_msgs
 
@@ -2423,6 +2423,7 @@ def check_components(state_globals):
         elif 'Processing' in key:
             print(f'skipping connection to {key}')
         else:  # the open ephys interface goes through the workflow router program, so need to set this up differently
+            import pdb; pdb.set_trace()
             if not ('hab' in state_globals['external']['session_type']):
                 compStatusArray[key] = False
                 state_globals['resources']['io'].add_message_bundle(ephys_messages)
