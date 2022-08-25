@@ -494,8 +494,8 @@ states:
         state: configure_hardware_openephys
     revert:
       options:
-        - desc: Revert to check_stimulus
-          state: check_stimulus
+        - desc: Revert to mtrain_change_stage
+          state: mtrain_change_stage
 
   configure_hardware_openephys:
     description: configure open ephys

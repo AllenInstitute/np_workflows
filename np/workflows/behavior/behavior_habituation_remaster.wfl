@@ -489,8 +489,8 @@ states:
         state: flush_lines
     revert:
       options:
-        - desc: Revert to check_stimulus
-          state: check_stimulus
+        - desc: Revert to mtrain_change_stage
+          state: mtrain_change_stage
 
   flush_lines:
     description: flush_lines
