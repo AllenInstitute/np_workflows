@@ -31,8 +31,8 @@ from np.services import \
     ephys_messages  # ! TODO remove this - communicate through API instead
 from np.services.config import Rig
 from np.services.ephys_api import EphysHTTP, EphysRouter
-from np.services.mvr import MVRConnector
 from np.services.mtrain import MTrain
+from np.services.mvr import MVRConnector
 from PIL import Image
 from wfltk import middleware_messages_pb2 as wfltk_msgs
 
@@ -65,7 +65,7 @@ def get_config() -> dict:
     elif Rig.ID == 'NP.0' and isinstance(experiment, Behavior):
         local_config = "neuropixels_np0_behavior"
     elif Rig.ID == 'NP.1':
-        local_config = "neuropixels_np0_passive"
+        local_config = "neuropixels_np1"
     elif Rig.ID == 'NP.2' and isinstance(experiment, Passive):
         local_config = "neuropixels_np2_passive"
         
