@@ -465,8 +465,8 @@ def check_stimulus_enter(state_globals):
     if (str(dt.today().weekday()+1) in days_to_open_mtrain) or ('first' in state_globals['external']['full_session_type']):
         message = "It looks like today is a day that requires an mtrain stage change. You should be extra careful to check the mtrain stage."
         npxc.alert_text(message, state_globals)
-        url = f'http://mtrain:5000/set_state/{state_globals["external"]["mouse_id"]}'
-        webbrowser.open(url)
+        # url = f'http://mtrain:5000/set_state/{state_globals["external"]["mouse_id"]}'
+        # webbrowser.open(url)
     session_day = state_globals['external']['entered_experiment_day']
     mtrain_string = None
     try:

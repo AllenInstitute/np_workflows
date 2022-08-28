@@ -755,8 +755,8 @@ def ecephys_id_check_input(state_globals):
 
 @state_transition
 def check_experiment_day_enter(state_globals):
-    url = f'http://mtrain:5000'
-    webbrowser.open(url)
+    # url = f'http://mtrain:5000'
+    # webbrowser.open(url)
     state_globals["external"]["clear_sticky"] = True
     npxc.start_ecephys_acquisition(state_globals)
 
@@ -915,8 +915,8 @@ def probes_not_aligned_input(state_globals):
 
 @state_transition
 def check_stimulus_enter(state_globals):
-    url = f'http://mtrain:5000/set_state/{state_globals["external"]["mouse_id"]}'
-    webbrowser.open(url)
+    # url = f'http://mtrain:5000/set_state/{state_globals["external"]["mouse_id"]}'
+    # webbrowser.open(url)
     session_day = state_globals['external']['entered_experiment_day']
     key_list = ['MTrainData', 'Experiment_Sessions', session_day, 'Full_String']
     state_globals['external']['mtrain_string'] = npxc.get_from_config(key_list, default='')
