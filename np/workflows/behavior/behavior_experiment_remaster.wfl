@@ -16,20 +16,7 @@ states:
         type: pulldown_menu
         desc: Select User
         options_field: users 
-      # - field: components_skip_choice
-      #   type: branch_radio_button
-      #   desc: Would you like to check the components?
-      #   options:
-      #         - field: components_run
-      #           desc: Check the components
-      #           next: pretest
-      #           default: True
-      #         - field: components_skip
-      #           desc: Skip checking the components
-      #           next: scan_mouse_id
     inputs:
-      # - desc: components_error
-      #   state: components_error
       - state: load_prior_state
 
 
@@ -38,14 +25,14 @@ states:
     display:
       - field: load_prior_state  # This is apparently unused
         type: branch_radio_button
-        desc: Do you want to load a previously found state?
+        desc: Do you want to load a previously found state
         options:
           - field: do_not_load_prior_state
-            desc: No, start a new experiment.
+            desc: Start a new experiment
             # next: scan_mouse_id  # This is unused, but i guess useful for a note
             default: True
           - field: load_prior_state
-            desc: Yes, load the selected state.
+            desc: Load previous state
             # next: scan_mouse_id   # This is unused, but i guess useful for a note
       - field: prior_state_selected
         type: pulldown_menu
