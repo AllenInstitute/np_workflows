@@ -35,6 +35,7 @@ IF %rig%==NP.0 (
         START /B /WAIT robocopy %sourcefolder%\%%d %destfolder% *remaster.wfl /s /xf dynamic_routing.wfl 
     )
     SET AIBS_WSE_WFLS=%destfolder%
+    ECHO Setting WSE .wfl target directory: %AIBS_WSE_WFLS%
 )
 
 @REM np1 ----------------------------------------------------------------------------------
