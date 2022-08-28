@@ -40,6 +40,10 @@ states:
         options_field: prior_states # this needs a default, but the widget doesn't have one 
     inputs: 
       - state: scan_mouse_id
+    revert:
+      options:
+        - desc: Revert to initialize
+          state: initialize
 
   components_error:
     description: components error
@@ -95,10 +99,6 @@ states:
         state: LIMS_request
       - desc: check_experiment_day
         state: check_experiment_day
-    revert:
-      options:
-        - desc: Revert to initialize
-          state: initialize
 
   LIMS_request:
     description: get data from LIMS
