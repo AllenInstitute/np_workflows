@@ -268,8 +268,12 @@ def initialize_enter(state_globals):
     state_globals["external"]["workflow_start_time"] = dt.now().strftime('%Y%m%d%H%M%S')
 
     state_globals["external"]["users"] = [
+        "hannah.belski",
+        "hannah.cabasco",
+        "ryan.gillis",
+        "henry.loeffler",
+        "corbettb",
         "ben.hardcastle",
-        "test.user",
     ]
 
     compStatusArray = {}
