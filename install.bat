@@ -70,3 +70,4 @@ IF %rig%==NP.2 (
     )
     SET AIBS_WSE_WFLS=%destfolder%
 )
+/k
