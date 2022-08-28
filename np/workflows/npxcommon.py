@@ -218,7 +218,7 @@ def save_state(state_globals,state_transition_function):
         if state_name == 'default':
             return None        
         state_folder = config.get('serialized_states_folder',"C:/ProgramData/AIBS_MPE/wfltk/resume")
-        os.makedirs(state_folder, exist_ok=True, parents=True)
+        pathlib.Path(state_folder).mkdir(exist_ok=True, parents=True)
         
         with open(f'{state_folder}/{time.strftime("%H-%M-%S",time.localtime())}_{state_name}.pkl', 'wb') as f:
             x = [{k:state_globals[k]} for k in state_globals.keys() if k not in ['resources','component_proxies']]        
