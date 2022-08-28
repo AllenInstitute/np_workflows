@@ -49,10 +49,10 @@ IF %rig%==NP.1 (
     del %destfolder%\*.wfl
     @REM include *remaster.wfl, exclude dynamic_routing.wfl:
     for /f %%d in ('dir %sourcefolder% /b /ad ') do (
-        robocopy %sourcefolder%\%%d %destfolder% *remaster.wfl /s /xf dynamic_routing.wfl 
+        robocopy %sourcefolder%\%%d c:\ProgramData\AIBS_MPE\wfltk\workflows *remaster.wfl /s /xf dynamic_routing.wfl *passive*
     )
     @REM setting env var doesn't work on np1 - likely permissions need changing
-    @REM SET AIBS_WSE_WFLS=%destfolder%
+    SET AIBS_WSE_WFLSc:\ProgramData\AIBS_MPE\wfltk\workflows
 )
 
 @REM np2 ----------------------------------------------------------------------------------
@@ -67,7 +67,7 @@ IF %rig%==NP.2 (
     del %destfolder%\*.wfl
     @REM include *remaster.wfl, exclude dynamic_routing.wfl:
     for /f %%d in ('dir %sourcefolder% /b /ad ') do (
-        robocopy %sourcefolder%\%%d %destfolder% *remaster.wfl /s /xf dynamic_routing.wfl 
+        robocopy %sourcefolder%\%%d c:\ProgramData\AIBS_MPE\wfltk\workflows *remaster.wfl /s /xf dynamic_routing.wfl 
     )
-    SET AIBS_WSE_WFLS=%destfolder%
+    SET AIBS_WSE_WFLS=c:\ProgramData\AIBS_MPE\wfltk\workflows
 )
