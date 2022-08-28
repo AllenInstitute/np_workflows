@@ -88,9 +88,6 @@ states:
     description: scan in the mouse id
     display:
       - field: none
-        type: check_box
-        desc: Check that Open Ephys primary record thread is DISABLED - (R) button
-      - field: none
         type: note
         desc: Scan in the Mouse ID to allow for data recovery from LIMS
       - field: mouse_id
