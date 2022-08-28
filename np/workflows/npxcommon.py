@@ -395,7 +395,7 @@ def initialize_enter(state_globals):
         state_globals['external']['prior_states'] = previous_states
         # state['external']['next_state'] = "load_prior_state"
     else: 
-        state_globals['external']['prior_states'] = None
+        state_globals['external']['prior_states'] = ['-- none available --']
 
     global mtrain
     mtrain = MTrain()
