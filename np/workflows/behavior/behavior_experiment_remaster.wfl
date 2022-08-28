@@ -39,16 +39,16 @@ states:
         type: branch_radio_button
         desc: Do you want to load a previously found state?
         options:
-          - field: load_prior_state
-            desc: Yes, load the selected state.
-            # next: scan_mouse_id  # This is unused, but i guess useful for a note
-            default: True
           - field: do_not_load_prior_state
             desc: No, start a new experiment.
+            # next: scan_mouse_id  # This is unused, but i guess useful for a note
+            default: True
+          - field: load_prior_state
+            desc: Yes, load the selected state.
             # next: scan_mouse_id   # This is unused, but i guess useful for a note
       - field: prior_state_selected
         type: pulldown_menu
-        desc: Select Previous State
+        desc: Select previous state
         options_field: prior_states # this needs a default, but the widget doesn't have one 
     inputs: 
       - state: scan_mouse_id
