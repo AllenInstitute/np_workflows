@@ -1,7 +1,8 @@
+cd /d "%~dp0"
+
 :: we might want to use a different branch (for testing features etc) depending on which rig
 :: we're on. if 'update.bat' is called before this script then we'll be on up-to-date master branch, and this
 :: script will install the branch the branch set below.
-
 SET rig=%AIBS_RIG_ID%
 
 IF %rig%==NP.0 SET branch=main
