@@ -227,7 +227,7 @@ def save_state(state_globals,state_transition_function):
 def find_prior_states():
     state_folder = config['serialized_states_folder']   
     if os.path.exists(state_folder):
-        return glob.glob(f'{state_folder}/*.pkl')
+        return [state for state in glob.glob(f'{state_folder}/*.pkl')]
     else:
         return ['-- none available --']
     
@@ -235,6 +235,7 @@ def load_prior_state_enter(state):
     print('>> load_prior_state_enter <<')
     next_state_default = state['external']['next_state']
     print(f'next state on enter {next_state_default}')
+    import pdb; pdb.set_trace()
     state['external']['prior_states'] = find_prior_states()
     
 def load_prior_state_input(state):
