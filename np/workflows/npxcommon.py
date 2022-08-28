@@ -224,9 +224,9 @@ def save_state(state_globals,state_transition_function):
             pickle.dump(x, f)
 
 def find_prior_states():
-    state_folder = config['serialized_states_folder']   
-    if os.path.exists(state_folder):
-        return [state for state in glob.glob(f'{state_folder}/*.pkl')]
+    state_folder = pathlib.Path(config['serialized_states_folder'])
+    if state_folder.exists():
+        return [state.name.replace('.pkl','') for state in state_folder.glob('*.pkl')]
     else:
         return ['-- none available --']
     
