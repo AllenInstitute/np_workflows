@@ -235,6 +235,11 @@ def load_prior_state_input(state):
     print('>> load_prior_state_input <<')
     next_state_default = state['external']['next_state']
     print(f'next state on enter {next_state_default}')
+    previous_states = find_prior_states()
+    if previous_states:
+        state['external']['prior_states'] = previous_states
+    else: 
+        state['external']['prior_states'] = ['-- none available --']
     if state['external'].get('load_prior_state', False):
         next_state = state['external']['prior_state_selected']
         with open(next_state, "rb") as f:
@@ -390,12 +395,7 @@ def initialize_enter(state_globals):
         # TODO would be great if we had this read the file we are going to produce from the targeting to read in the maximums
         # might get confusing because those aren't hard limits if we hit the brain deeper
     
-    previous_states = find_prior_states()
-    if previous_states:
-        state_globals['external']['prior_states'] = previous_states
-        # state['external']['next_state'] = "load_prior_state"
-    else: 
-        state_globals['external']['prior_states'] = ['-- none available --']
+
 
     global mtrain
     mtrain = MTrain()
