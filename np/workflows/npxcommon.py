@@ -651,6 +651,7 @@ def request_open_ephys_status(state_globals):
     try:
         print('checking open ephys status')
         # if isinstance(ephys, EphysHTTP):
+        import pdb; pdb.set_trace()
         message = ephys.request_open_ephys_status()
         # else:
             # message = send_ecephys_message(state_globals, 'REQUEST_SYSTEM_STATUS', path='')
