@@ -230,9 +230,9 @@ def find_prior_states():
         return glob.glob(f'{state_folder}/*.pkl')
     else:
         return None
-
-def load_prior_state_input(state):
-    print('>> load_prior_state_input <<')
+    
+def load_prior_state_enter(state):
+    print('>> load_prior_state_enter <<')
     next_state_default = state['external']['next_state']
     print(f'next state on enter {next_state_default}')
     previous_states = find_prior_states()
@@ -240,6 +240,11 @@ def load_prior_state_input(state):
         state['external']['prior_states'] = previous_states
     else: 
         state['external']['prior_states'] = ['-- none available --']
+    
+def load_prior_state_input(state):
+    print('>> load_prior_state_input <<')
+    next_state_default = state['external']['next_state']
+    print(f'next state on input {next_state_default}')
     if state['external'].get('load_prior_state', False):
         next_state = state['external']['prior_state_selected']
         with open(next_state, "rb") as f:
