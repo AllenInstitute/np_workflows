@@ -83,38 +83,34 @@ class EphysRouter(Ephys):
         if cls.io is None:
             return False        
         return cls.request_open_ephys_status()
-    
-    @classmethod    
-    def send(cls,message):
-        return cls.io.write(message)
 
     @classmethod
     def start_ecephys_recording(cls):
-        return cls.send(cls.send(ephys_messages.recording(command=1)))
+        return cls.io.write(ephys_messages.recording(command=1))
 
     @classmethod
     def stop_ecephys_recording(cls):
-        return cls.send(ephys_messages.recording(command=0))
+        return cls.io.write(ephys_messages.recording(command=0))
 
     @classmethod
     def start_ecephys_acquisition(cls):
-        return cls.send(ephys_messages.acquisition(command=1))
+        return cls.io.write(ephys_messages.acquisition(command=1))
 
     @classmethod
     def stop_ecephys_acquisition(cls):
-        return cls.send(ephys_messages.acquisition(command=0))
+        return cls.io.write(ephys_messages.acquisition(command=0))
 
     @classmethod
     def set_open_ephys_name(cls,path):
-        return cls.send(ephys_messages.set_data_file_path(path=path))
+        return cls.io.write(ephys_messages.set_data_file_path(path=path))
 
     @classmethod
     def clear_open_ephys_name(cls):
-        return cls.send(ephys_messages.set_data_file_path(path=''))
+        return cls.io.write(ephys_messages.set_data_file_path(path=''))
 
     @classmethod
     def request_open_ephys_status(cls):
-        return cls.send(ephys_messages.request_system_status())
+        return cls.io.write(ephys_messages.request_system_status())
 
     @classmethod
     def reset_open_ephys(cls):
