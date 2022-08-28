@@ -28,7 +28,7 @@ set sourcefolder=.\np\workflows
 @REM on NP.0 we want both passive and vis behav workflows
 IF %rig%==NP.0 (
     @REM install wfl files to non-default location, to leave current WSE operable for now
-    set destfolder=c:\ProgramData\AIBS_MPE\wfltk\new_workflows
+    set destfolder=c:\ProgramData\AIBS_MPE\wfltk\workflows
     del %destfolder%\*.wfl
     @REM include *remaster.wfl, exclude dynamic_routing.wfl:
     for /f %%d in ('dir %sourcefolder% /b /ad ') do (
