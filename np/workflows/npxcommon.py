@@ -72,7 +72,6 @@ def get_config() -> dict:
     with open(f"np/config/{local_config}.yml") as f:   
         yaml_config = yaml.safe_load(f)
     config.update(yaml_config)  
-    config["serialized_states_folder"] = ""
     
     return config
         # # pdb.set_trace()
@@ -248,8 +247,11 @@ def load_prior_state_input(state):
                 
     else:
         #  I think you may want to remove all the files here ...
-        for file in glob.glob(f'{config["serialized_states_folder"]}/*.pkl'):
-            os.unlink(file)
+        if pathlib.Path(config["serialized_states_folder"]).exists():
+            try:
+                [pkl.unlink() for pkl in pathlib.Path(config["serialized_states_folder"]).glob("*.pkl")]
+            except Exception as e:
+                print(f"removing prior state files failed: {e}")
         state['external']['next_state'] = next_state_default
         print(next_state_default)   
         state['external']['next_state'] = 'scan_mouse_id' #TODO update
