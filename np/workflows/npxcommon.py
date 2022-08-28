@@ -231,13 +231,6 @@ def find_prior_states():
     else:
         return ['-- none available --']
     
-def load_prior_state_enter(state):
-    print('>> load_prior_state_enter <<')
-    next_state_default = state['external']['next_state']
-    print(f'next state on enter {next_state_default}')
-    import pdb; pdb.set_trace()
-    state['external']['prior_states'] = find_prior_states()
-    
 def load_prior_state_input(state):
     print('>> load_prior_state_input <<')
     next_state_default = state['external']['next_state']
@@ -311,7 +304,7 @@ def initialize_enter(state_globals):
     else:
         ephys = EphysHTTP
 
-    
+    state_globals['external']['prior_states'] = find_prior_states()
     establish_proxies(state_globals)
 
     global mouse_director_proxy
