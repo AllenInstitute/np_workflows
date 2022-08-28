@@ -296,7 +296,7 @@ def initialize_enter(state_globals):
     # key = 'Post Processing Validation Agent'
     # if not (key in config['components']):
     #     config['components'][key] = {'desc': key, 'host': 'localhost', 'port': 1234, 'version': '0.1.0'}
-    global ehys 
+    global ephys 
     if Rig.ID == "NP.0":
         ephys = EphysRouter
         # add proxy for EphysRouter - not used in EphysHTTP
@@ -650,10 +650,10 @@ def clear_open_ephys_name(state_globals):
 def request_open_ephys_status(state_globals):
     try:
         print('checking open ephys status')
-        if isinstance(ephys, EphysHTTP):
-            message = ephys.request_open_ephys_status()
-        else:
-            message = send_ecephys_message(state_globals, 'REQUEST_SYSTEM_STATUS', path='')
+        # if isinstance(ephys, EphysHTTP):
+        message = ephys.request_open_ephys_status()
+        # else:
+            # message = send_ecephys_message(state_globals, 'REQUEST_SYSTEM_STATUS', path='')
         return message
     except Exception as E:
         print(f'Failed to get open ephys status')
@@ -2429,17 +2429,17 @@ def check_components(state_globals):
         else:  # the open ephys interface goes through the workflow router program, so need to set this up differently
             if not ('hab' in state_globals['external']['session_type']):
                 compStatusArray[key] = False
-                state_globals['resources']['io'].add_message_bundle(ephys_messages)
-                state_globals['resources']['io'].register_for_message('system_info', handle_message)
-                state_globals['resources']['io'].register_for_message('system_status', handle_message)
-                state_globals['resources']['io'].register_for_message('set_data_file_path', handle_message)
-                state_globals['resources']['io'].register_for_message('acquisition', handle_message)
-                state_globals['resources']['io'].register_for_message('recording', handle_message)
+                # state_globals['resources']['io'].add_message_bundle(ephys_messages)
+                # state_globals['resources']['io'].register_for_message('system_info', handle_message)
+                # state_globals['resources']['io'].register_for_message('system_status', handle_message)
+                # state_globals['resources']['io'].register_for_message('set_data_file_path', handle_message)
+                # state_globals['resources']['io'].register_for_message('acquisition', handle_message)
+                # state_globals['resources']['io'].register_for_message('recording', handle_message)
                 
                 # and now request the system info
                 try: 
                     message = request_open_ephys_status(state_globals) # = ephys_messages.request_system_info()
-                    state_globals['resources']['io'].write(message)
+                    # state_globals['resources']['io'].write(message)
                     compStatusArray[key] = True
                 except:
                     message = 'Open Ephys Interface did not respond. Is it running?'
