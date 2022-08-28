@@ -114,7 +114,7 @@ class EphysRouter(Ephys):
 
     @classmethod
     def request_open_ephys_status(cls):
-        return cls.send(ephys_messages.request_system_status(path=''))
+        return cls.send(ephys_messages.request_system_status())
 
     @classmethod
     def reset_open_ephys(cls):
