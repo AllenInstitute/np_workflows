@@ -30,7 +30,7 @@ set sourcefolder=.\np\workflows
 IF %rig%==NP.0 (
     @REM install wfl files to non-default location, to leave current WSE operable for now
     SET destfolder=C:\ProgramData\AIBS_MPE\wfltk\workflows\
-    del %destfolder%\*.wfl
+    del %destfolder%*.wfl
     @REM include *remaster.wfl, exclude dynamic_routing.wfl:
     for /f %%d in ('dir %sourcefolder% /b /ad ') do (
         robocopy %sourcefolder%\%%d %destfolder% *remaster.wfl /s /xf dynamic_routing.wfl 
