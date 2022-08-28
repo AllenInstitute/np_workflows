@@ -63,38 +63,61 @@ class Ephys(ABC):
 class EphysRouter(Ephys):
     """ Original ZMQ protobuf implementation - requires ephys_edi_pb2.py output from ephys_edi.proto """ 
     
-    proxy = None
+    io = None
     
-    @staticmethod
-    def start_ecephys_recording():
-        return ephys_messages.recording(command=1)
+    @classmethod
+    def setup_proxy(cls, io):
+        cls.io = io
+        cls.io.add_message_bundle(ephys_messages)
+        def handle_message(message_id, message, timestamp):
+            print(f'{timestamp}: Received message {message_id} from router')
+            print(message)
+        cls.io.register_for_message('system_info', handle_message)
+        cls.io.register_for_message('system_status', handle_message)
+        cls.io.register_for_message('set_data_file_path', handle_message)
+        cls.io.register_for_message('acquisition', handle_message)
+        cls.io.register_for_message('recording', handle_message)
+    
+    @classmethod    
+    def connected(cls):
+        if cls.io is None:
+            return False        
+        return cls.request_open_ephys_status()
+    
+    @classmethod    
+    def send(cls,message):
+        return cls.io.write(message)
 
-    @staticmethod
-    def stop_ecephys_recording():
-        return ephys_messages.recording(command=0)
+    @classmethod
+    def start_ecephys_recording(cls):
+        return cls.send(cls.send(ephys_messages.recording(command=1)))
 
-    @staticmethod
-    def start_ecephys_acquisition():
-        return ephys_messages.acquisition(command=1)
+    @classmethod
+    def stop_ecephys_recording(cls):
+        return cls.send(ephys_messages.recording(command=0))
 
-    @staticmethod
-    def stop_ecephys_acquisition():
-        return ephys_messages.acquisition(command=0)
+    @classmethod
+    def start_ecephys_acquisition(cls):
+        return cls.send(ephys_messages.acquisition(command=1))
 
-    @staticmethod
-    def set_open_ephys_name(path):
-        return ephys_messages.set_data_file_path(path=path)
+    @classmethod
+    def stop_ecephys_acquisition(cls):
+        return cls.send(ephys_messages.acquisition(command=0))
 
-    @staticmethod
-    def clear_open_ephys_name():
-        return ephys_messages.set_data_file_path(path='')
+    @classmethod
+    def set_open_ephys_name(cls,path):
+        return cls.send(ephys_messages.set_data_file_path(path=path))
 
-    @staticmethod
-    def request_open_ephys_status():
-        return ephys_messages.request_system_status(path='')
+    @classmethod
+    def clear_open_ephys_name(cls):
+        return cls.send(ephys_messages.set_data_file_path(path=''))
 
-    @staticmethod
-    def reset_open_ephys():
+    @classmethod
+    def request_open_ephys_status(cls):
+        return cls.send(ephys_messages.request_system_status(path=''))
+
+    @classmethod
+    def reset_open_ephys(cls):
         EphysRouter.clear_open_ephys_name()
         time.sleep(.5)
         EphysRouter.start_ecephys_recording()

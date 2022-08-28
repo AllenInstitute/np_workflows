@@ -105,11 +105,7 @@ except Exception:
         
 global_processes = {}
 
-global Ephys 
-if Rig.ID == "NP.0":
-    ephys = EphysRouter
-else:
-    ephys = EphysHTTP
+
 
 # ---------------- Network Service Objects ----------------
 
@@ -300,7 +296,15 @@ def initialize_enter(state_globals):
     # key = 'Post Processing Validation Agent'
     # if not (key in config['components']):
     #     config['components'][key] = {'desc': key, 'host': 'localhost', 'port': 1234, 'version': '0.1.0'}
+    global ehys 
+    if Rig.ID == "NP.0":
+        ephys = EphysRouter
+        # add proxy for EphysRouter - not used in EphysHTTP
+        ephys.setup_proxy(state_globals['resources']['io'])
+    else:
+        ephys = EphysHTTP
 
+    
     establish_proxies(state_globals)
 
     global mouse_director_proxy
