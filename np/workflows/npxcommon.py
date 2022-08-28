@@ -582,35 +582,27 @@ def pretest_input(state_globals):
 
 def start_ecephys_recording(state_globals):
     print('Attempting to start ecephys acquisiton')
-    if isinstance(ephys, EphysHTTP):
-        ephys.start_ecephys_recording()
-    else:
-        send_ecephys_message(state_globals, 'recording', command=1)
-        # time.sleep(15) #- the process can take this long but its annoying to have the WSE wait...
+    ephys.start_ecephys_recording()
+    # send_ecephys_message(state_globals, 'recording', command=1)
+    # time.sleep(15) #- the process can take this long but its annoying to have the WSE wait...
 
 
 def stop_ecephys_recording(state_globals):
-    if isinstance(ephys, EphysHTTP):
-        ephys.stop_ecephys_recording()
-    else:
-        send_ecephys_message(state_globals, 'recording', command=0)
-        # print('Attempting to stop ecephys acquisiton')
+    ephys.stop_ecephys_recording()
+    # send_ecephys_message(state_globals, 'recording', command=0)
+    # print('Attempting to stop ecephys acquisiton')
 
 def start_ecephys_acquisition(state_globals):
     print('Attempting to start ecephys acquisiton')
-    if isinstance(ephys, EphysHTTP):
-        return ephys.start_ecephys_acquisition()
-    else:
-        message = send_ecephys_message(state_globals, 'acquisition', command=1)
-        # time.sleep(15) # - the process can take this long but its annoying to have the WSE wait...
-        return message
+    return ephys.start_ecephys_acquisition()
+    # ephys.()message 
+    # = send_ecephys_message(state_globals, 'acquisition', command=1)
+    # time.sleep(15) # - the process can take this long but its annoying to have the WSE wait...
 
 def stop_ecephys_acquisition(state_globals):
     print('Attempting to stop ecephys acquisiton')
-    if isinstance(ephys, EphysHTTP):
-        ephys.stop_ecephys_acquisition()
-    else:
-        send_ecephys_message(state_globals, 'acquisition', command=0)
+    ephys.stop_ecephys_acquisition()
+    # send_ecephys_message(state_globals, 'acquisition', command=0)
         
 
 
@@ -625,10 +617,8 @@ def set_open_ephys_name(state_globals, add_prefix:str=''):
         # date = state_globals["external"]["sessionNameTimestamp"]
         add_prefix = add_prefix + '_' if add_prefix else ''
         path = f"{add_prefix}{folder_str}"
-        if isinstance(ephys, EphysHTTP):
-            ephys.set_open_ephys_name(path=path)
-        else:
-            send_ecephys_message(state_globals, 'set_data_file_path', path=state_globals["external"]["session_name"])
+        ephys.set_open_ephys_name(path=path)
+        # send_ecephys_message(state_globals, 'set_data_file_path', path=state_globals["external"]["session_name"])
             
 
     except Exception as E:
@@ -638,10 +628,8 @@ def set_open_ephys_name(state_globals, add_prefix:str=''):
 def clear_open_ephys_name(state_globals):
     try:
         print('Attempting to clear openephys session name')
-        if isinstance(ephys, EphysHTTP):
-            ephys.clear_open_ephys_name()
-        else:
-            send_ecephys_message(state_globals, 'set_data_file_path', path='')
+        ephys.clear_open_ephys_name()
+        # send_ecephys_message(state_globals, 'set_data_file_path', path='')
             
     except Exception as E:
         print(f'Failed to set open ephys name: {E}')
