@@ -69,7 +69,7 @@ class EphysRouter(Ephys):
     def setup_proxy(cls, io):
         cls.io = io
         cls.io.add_message_bundle(ephys_messages)
-        def handle_message(message_id, message, timestamp, cls.io):
+        def handle_message(message_id, message, timestamp, io):
             print(f'{timestamp}: Received message {message_id} from router')
             print(message)
         cls.io.register_for_message('system_info', handle_message)
