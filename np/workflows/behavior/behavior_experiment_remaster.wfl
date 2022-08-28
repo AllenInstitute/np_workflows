@@ -13,8 +13,9 @@ states:
         type: image
         desc: logo
       - field: user_id
-        type: text_entry
-        desc: Enter User ID
+        type: pulldown_menu
+        desc: Select User
+        options_field: users 
       # - field: components_skip_choice
       #   type: branch_radio_button
       #   desc: Would you like to check the components?

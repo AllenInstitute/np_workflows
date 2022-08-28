@@ -13,8 +13,9 @@ states:
         type: image
         desc: logo
       - field: user_id
-        type: text_entry
-        desc: Enter User ID please
+        type: pulldown_menu
+        desc: Select User
+        options_field: users 
     inputs:
       - desc: scan_mouse_id
         state: scan_mouse_id
