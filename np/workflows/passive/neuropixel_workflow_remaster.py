@@ -154,28 +154,8 @@ def default_exit(state_globals, label):
 
 # @state_transition
 def initialize_enter(state_globals):
-    
     state_globals['external']['logo'] = R".\np\images\logo_np_vis.png" 
-    
     state_globals['external']['session_type'] = 'behavior_experiment'
-
-    """
-    Processing_Agents = npxc.get_processing_agents(state_globals)
-    for agent, params in Processing_Agents.items():
-        key = 'Neuropixels Processing Agent '+agent
-        if not(key in npxc.config['components']):
-            params['desc'] = key
-            npxc.config['components'][key] = params
-
-    key = 'Neuropixels Processing Assistant'
-    if not(key in npxc.config['components']):
-            computer = npxc.config['components']['OpenEphys']['host']
-            port = '1212'
-            npxc.config['components'][key] = {'desc': key,
-                                  'host': computer,
-                                  'port': port,
-                                  'version': '0.0.1'}
-    """
 
     npxc.initialize_enter(state_globals)
 

@@ -262,13 +262,15 @@ def initialize_enter(state_globals):
     Entry function for state initialize
     """
 
-
-
-
     # logging.start_stop('Starting neuropixels project code', extra={'weblog': True})
     print('>> Starting neuropixels code <<')
 
     state_globals["external"]["workflow_start_time"] = dt.now().strftime('%Y%m%d%H%M%S')
+
+    state_globals["external"]["users"] = [
+        "ben.hardcastle",
+        "test.user",
+    ]
 
     compStatusArray = {}
     state_globals["external"]["component_status"] = {}
