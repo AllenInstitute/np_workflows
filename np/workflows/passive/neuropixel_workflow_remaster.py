@@ -158,7 +158,6 @@ def initialize_enter(state_globals):
     state_globals['external']['logo'] = R".\np\images\logo_np_vis.png" 
     
     state_globals['external']['session_type'] = 'behavior_experiment'
-    state_globals['external']['msg_text'] = 'username not found'
 
     """
     Processing_Agents = npxc.get_processing_agents(state_globals)
