@@ -253,7 +253,7 @@ def mtrain_change_stage_input(state):
         state["external"]["next_state"] = 'mtrain_change_stage'
 
     elif change_regimen:
-        state["external"]["next_state"] = 'mtrain_regimen_1'
+        state["external"]["next_state"] = 'mtrain_change_regimen_1'
 
 
 def mtrain_change_regimen_1_enter(state):
