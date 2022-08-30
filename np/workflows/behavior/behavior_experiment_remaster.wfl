@@ -96,7 +96,11 @@ states:
         state: LIMS_request
       - desc: check_experiment_day
         state: check_experiment_day
-
+    revert:
+      options:
+        - desc: Revert to initialize
+          state: initialize
+          
   LIMS_request:
     description: get data from LIMS
     display:

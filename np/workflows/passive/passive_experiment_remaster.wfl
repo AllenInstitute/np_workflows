@@ -12,24 +12,10 @@ states:
       - field: logo
         type: image
         desc: logo
-      # - field: user_id
-      #   type: text_entry
-      #   desc: Enter User ID
       - field: user_id
         type: pulldown_menu
         desc: Select User
-        options_field: users # this needs a default, but the widget doesn't have one 
-      # - field: components_skip_choice
-      #   type: branch_radio_button
-      #   desc: Would you like to check the components?
-      #   options:
-      #         - field: components_run
-      #           desc: Check the components
-      #           next: pretest
-      #           default: True
-      #         - field: components_skip
-      #           desc: Skip checking the components
-      #           next: scan_mouse_id
+        options_field: users 
     inputs:
       # - desc: components_error
       #   state: components_error
@@ -116,7 +102,7 @@ states:
       options:
         - desc: Revert to initialize
           state: initialize
-
+          
   LIMS_request:
     description: get data from LIMS
     display:
