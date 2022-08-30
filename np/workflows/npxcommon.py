@@ -176,7 +176,7 @@ def take_right_snapshot(state_globals, photo_path="C:/ProgramData/AIBS_MPE/wfltk
     else: 
         mvr_capture(photo_path) #  this returns error msgs, but cam3d proxy doesn't 
 
-def mvr_capture(photo_path="C:/ProgramData/AIBS_MPE/wfltk/temp/last_snapshot.jpg", timeout=30):
+def mvr_capture(photo_path="C:/ProgramData/AIBS_MPE/wfltk/temp/last_snapshot.jpg", timeout=10):
     """standard mvr image snapshot func, returning error mesg or img  """
     mvr_writer.take_snapshot()
     
