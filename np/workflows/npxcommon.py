@@ -216,7 +216,9 @@ def save_state(state_globals,state_transition_function):
         state_name = '_'.join(state_transition_function.__name__.split('_')[0:-1])
         if state_name == 'default':
             return None        
-        states_folder = state_globals['external']['prior_states_folder']
+        # TODO not clear which will come first, save_state or find_prior_states -
+        # depends on workflow setup
+        states_folder = state_globals['external']['prior_states_folder'] = config.get('serialized_states_folder',"C:/ProgramData/AIBS_MPE/wfltk/resume")
         pathlib.Path(states_folder).mkdir(exist_ok=True, parents=True)
         with open(f'{states_folder}/{time.strftime("%H-%M-%S",time.localtime())}_{state_name}.pkl', 'wb') as f:
             x = [{k:state_globals[k]} for k in state_globals.keys() if k not in ['resources','component_proxies']]        
@@ -225,8 +227,7 @@ def save_state(state_globals,state_transition_function):
 def find_prior_states(state_globals):
     #TODO tidy up naming (prior/serialized/resume)
     #TODO specify folders in exp model config... currently all pkls from all exps live in /resume
-    state_folder = config.get('serialized_states_folder',"C:/ProgramData/AIBS_MPE/wfltk/resume")
-    states_folder = state_globals['external']['prior_states_folder']
+    states_folder = state_globals['external']['prior_states_folder'] = config.get('serialized_states_folder',"C:/ProgramData/AIBS_MPE/wfltk/resume")
     if  pathlib.Path(states_folder).exists():
         return [state.name.replace('.pkl','') for state in states_folder.glob('*.pkl')]
     else:
