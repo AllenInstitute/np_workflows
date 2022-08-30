@@ -229,7 +229,7 @@ def find_prior_states(state_globals):
     #TODO specify folders in exp model config... currently all pkls from all exps live in /resume
     states_folder = state_globals['external']['prior_states_folder'] = config.get('serialized_states_folder',"C:/ProgramData/AIBS_MPE/wfltk/resume")
     if  pathlib.Path(states_folder).exists():
-        return [state.name.replace('.pkl','') for state in states_folder.glob('*.pkl')]
+        return [state.name.replace('.pkl','') for state in pathlib.Path(states_folder).glob('*.pkl')]
     else:
         return ['-- none available --']
     
@@ -239,8 +239,9 @@ def load_prior_state_input(state):
     print(f'next state on input {next_state_default}')
     if state['external'].get('load_prior_state', False):
         next_state = state['external']['prior_state_selected']
+        states_folder = state['external']['prior_states_folder']
         # we removed directory and suffix in find_prior_states() so add them back
-        with open(f'{config["serialized_states_folder"]}/{next_state}.pkl', "rb") as f:
+        with open(pathlib.Path(states_folder) / f'{next_state}.pkl', "rb") as f:
             loaded_state = pickle.load(f)
         # pdb.set_trace()
         for s in loaded_state:
