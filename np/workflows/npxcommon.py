@@ -286,7 +286,6 @@ def initialize_enter(state_globals):
     if isinstance(experiment,Passive):
         #check early on for reqd scripts and set dropdown for later screen
         state_globals['external']['passive_experiments'] = [os.path.basename(s)[:-3] for s in glob.glob(f"{config['scripts_path']}/*.py")]
-        passive_script = f"{config['scripts_path']}/{state_globals['external']['passive_script']}.py"
 
     compStatusArray = {}
     state_globals["external"]["component_status"] = {}
