@@ -66,8 +66,8 @@ def get_config() -> dict:
         local_config = "neuropixels_np0_behavior"
     elif Rig.ID == 'NP.1':
         local_config = "neuropixels_np1"
-    elif Rig.ID == 'NP.2' and isinstance(experiment, Passive):
-        local_config = "neuropixels_np2_passive"
+    elif Rig.ID == 'NP.2':
+        local_config = "neuropixels_np2"
         
     with open(f"np/config/{local_config}.yml") as f:   
         yaml_config = yaml.safe_load(f)
