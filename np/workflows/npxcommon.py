@@ -216,17 +216,19 @@ def save_state(state_globals,state_transition_function):
         state_name = '_'.join(state_transition_function.__name__.split('_')[0:-1])
         if state_name == 'default':
             return None        
-        state_folder = config.get('serialized_states_folder',"C:/ProgramData/AIBS_MPE/wfltk/resume")
-        pathlib.Path(state_folder).mkdir(exist_ok=True, parents=True)
-        
-        with open(f'{state_folder}/{time.strftime("%H-%M-%S",time.localtime())}_{state_name}.pkl', 'wb') as f:
+        states_folder = state_globals['external']['prior_states_folder']
+        pathlib.Path(states_folder).mkdir(exist_ok=True, parents=True)
+        with open(f'{states_folder}/{time.strftime("%H-%M-%S",time.localtime())}_{state_name}.pkl', 'wb') as f:
             x = [{k:state_globals[k]} for k in state_globals.keys() if k not in ['resources','component_proxies']]        
             pickle.dump(x, f)
 
-def find_prior_states():
-    state_folder = pathlib.Path(config['serialized_states_folder'])
-    if state_folder.exists():
-        return [state.name.replace('.pkl','') for state in state_folder.glob('*.pkl')]
+def find_prior_states(state_globals):
+    #TODO tidy up naming (prior/serialized/resume)
+    #TODO specify folders in exp model config... currently all pkls from all exps live in /resume
+    state_folder = config.get('serialized_states_folder',"C:/ProgramData/AIBS_MPE/wfltk/resume")
+    states_folder = state_globals['external']['prior_states_folder'] = pathlib.Path(state_folder).as_posix()
+    if states_folder.exists():
+        return [state.name.replace('.pkl','') for state in states_folder.glob('*.pkl')]
     else:
         return ['-- none available --']
     
@@ -236,7 +238,8 @@ def load_prior_state_input(state):
     print(f'next state on input {next_state_default}')
     if state['external'].get('load_prior_state', False):
         next_state = state['external']['prior_state_selected']
-        with open(next_state, "rb") as f:
+        # we removed directory and suffix in find_prior_states() so add them back
+        with open(f'{config["serialized_states_folder"]}/{next_state}.pkl', "rb") as f:
             loaded_state = pickle.load(f)
         # pdb.set_trace()
         for s in loaded_state:
@@ -312,7 +315,7 @@ def initialize_enter(state_globals):
     else:
         ephys = EphysHTTP
 
-    state_globals['external']['prior_states'] = find_prior_states()
+    state_globals['external']['prior_states'] = find_prior_states(state_globals)
     establish_proxies(state_globals)
 
     global mouse_director_proxy
