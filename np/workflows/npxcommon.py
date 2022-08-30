@@ -254,7 +254,7 @@ def load_prior_state_input(state):
         #  I think you may want to remove all the files here ...
         if pathlib.Path(config["serialized_states_folder"]).exists():
             try:
-                [pkl.unlink() for pkl in pathlib.Path(config["serialized_states_folder"]).glob("*.pkl")]
+                [pkl.unlink() for pkl in pathlib.Path(state['external']['prior_states_folder']).glob("*.pkl")]
             except Exception as e:
                 print(f"removing prior state files failed: {e}")
         state['external']['next_state'] = next_state_default
