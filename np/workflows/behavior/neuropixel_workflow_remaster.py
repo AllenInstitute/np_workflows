@@ -22,6 +22,7 @@ try:
     from mpetk import limstk
     from mpetk.aibsmw.routerio.router import ZMQHandler
     from mpetk.zro import Proxy
+    import pdb; pdb.set_trace()
     from np.models.model import (  # It can make sense to have a class to store experiment data.
         Behavior, DynamicRouting)
     from np.services.config import Rig
