@@ -2243,13 +2243,7 @@ def select_stimulus_input(state_globals):
 ###################
 
 
-@state_transition
-def initiate_behavior_experiment_enter(state_globals):
-    if isinstance(experiment, Passive):
-        state_globals['external']['passive_experiments'] = [os.path.basename(s)[:-3] for s in glob(f"{npxc.config['scripts_path']}/*.py")]
-    else:
-        return
-    
+
 @state_transition
 def initiate_behavior_experiment_input(state_globals):
     """

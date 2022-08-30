@@ -37,45 +37,46 @@ default_paths:
 neuropixel:
   file_ext: ecp
   notify:
-  - davidre@alleninstitute.org
+    - davidre@alleninstitute.org
 behavior_monitoring_string_exp: Check the pupil size? Screen brightness ok?
 behavior_monitoring_string_hab: Check the pupil size? Screen brightness ok?
-eye_dichroic_string: Eyetracking mirror in place, eye centered and face/body lighting
+eye_dichroic_string:
+  Eyetracking mirror in place, eye centered and face/body lighting
   appropriate?
 MTrainData:
   Regimen: VisualBehaviorEPHYS_Task1G
   Regimen_Version: 0.1.1
   Stage_Keywords: []
   Experiment_Keywords:
-  - EPHYS_1
+    - EPHYS_1
   Experiment_Sessions:
     Day1:
       Keywords:
-      - images_G
-      - 3uL_reward
+        - images_G
+        - 3uL_reward
       Full_String: VisualBehaviorEPHYS_Task1G_v0.1.1/EPHYS_1_images_G_3uL_reward
     Day2:
       Keywords:
-      - images_H
-      - 3uL_reward
+        - images_H
+        - 3uL_reward
       Full_String: VisualBehaviorEPHYS_Task1G_v0.1.1/EPHYS_1_images_H_3uL_reward
   Habituation_Keywords:
-  - HABITUATION_5, handoff_ready
+    - HABITUATION_5, handoff_ready
   Habituation_Sessions:
     Habituation:
       Keywords:
-      - images_G
-      - 3uL_reward
+        - images_G
+        - 3uL_reward
       Full_String: VisualBehaviorEPHYS_Task1G_v0.1.1/HABITUATION_5_images_G_handoff_ready_3uL_reward
     1:
       Keywords:
-      - images_G
-      - 3uL_reward
+        - images_G
+        - 3uL_reward
       Full_String: VisualBehaviorEPHYS_Task1G_v0.1.1/HABITUATION_5_images_G_handoff_ready_5uL_reward
     2:
       Keywords:
-      - images_G
-      - 3uL_reward
+        - images_G
+        - 3uL_reward
       Full_String: VisualBehaviorEPHYS_Task1G_v0.1.1/HABITUATION_5_images_G_handoff_ready_5uL_reward
 backup_location: allen\programs\mindscope\workgroups\np-exp
 validation:
@@ -93,13 +94,14 @@ open-ephys:
 new scale:
   log_path: C:/MPM_data/log.csv
 max_experiment_duration_min: 180
+scripts_path: //allen/aibs/mpe/Software/np_passive_scripts
 active_probes:
-- A
-- B
-- C
-- D
-- E
-- F
+  - A
+  - B
+  - C
+  - D
+  - E
+  - F
 components:
   # Cam3d:
   #   desc: Cam3d
@@ -111,18 +113,18 @@ components:
     host: W10DTSM18278
     port: 9999
     version: 0.1.0
-  OpenEphys:  # old: should be unused once all old worflow code is updated
+  OpenEphys: # old: should be unused once all old worflow code is updated
     desc: OpenEphys
-    host: W10DT05501 
+    host: W10DT05501
     version: 0.1.0
-  Stim:  # old: should be unused once all old worflow code is updated
-    desc: Stim # camstim 
+  Stim: # old: should be unused once all old worflow code is updated
+    desc: Stim # camstim
     host: W10DTSM118294
     port: 5000
     version: 0.2.4
-  Sync:  # old location: should be unused once all old worflow code is updated
+  Sync: # old location: should be unused once all old worflow code is updated
     desc: Sync
-    host: w10DTSM18306 
+    host: w10DTSM18306
     port: 5000
     version: 1.3.1 # unused?
   MouseDirector:
@@ -214,7 +216,7 @@ hardware:
     rotation_y_deg: 0.0
     rotation_z_deg: 0.0
 local_lims_head: \\W10DTSM18306\c$\ProgramData\AIBS_MPE\neuropixels_data
-local_lims_location: ''
+local_lims_location: ""
 local_trigger_dir: \\W10DTSM18306\c$\ProgramData\AIBS_MPE\neuropixels\lims_trigger
 mapped_lims_location: \\W10DTSM18306\c$\ProgramData\AIBS_MPE\neuropixels_data
 openephys_drives:
@@ -225,9 +227,9 @@ openephys_drives:
   E: //W10DT05501/B
   F: //W10DT05501/B
 possible_data_drives:
-- A
-- B
-- L
+  - A
+  - B
+  - L
 probe_slots:
   A: 2
   B: 2
@@ -245,15 +247,15 @@ sync_output_dir: C:/ProgramData/AIBS_MPE/sync/output
 videomon_output_dir: C:/ProgramData/AIBS_MPE/MVR/data
 final_depth_timer_s: 600
 cameras:
-- number: 1
-  label: eye
-  device_id: DEV_000F315BD375
-- number: 2
-  label: behavior
-  device_id: DEV_000F315C1497
-- number: 3
-  label: face
-  device_id: DEV_UNSPECIFIED
+  - number: 1
+    label: eye
+    device_id: DEV_000F315BD375
+  - number: 2
+    label: behavior
+    device_id: DEV_000F315C1497
+  - number: 3
+    label: face
+    device_id: DEV_UNSPECIFIED
 shared:
   water_calibration:
     NP-1-Stim:

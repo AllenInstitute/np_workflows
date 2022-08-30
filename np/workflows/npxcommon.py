@@ -226,8 +226,8 @@ def find_prior_states(state_globals):
     #TODO tidy up naming (prior/serialized/resume)
     #TODO specify folders in exp model config... currently all pkls from all exps live in /resume
     state_folder = config.get('serialized_states_folder',"C:/ProgramData/AIBS_MPE/wfltk/resume")
-    states_folder = state_globals['external']['prior_states_folder'] = pathlib.Path(state_folder).as_posix()
-    if states_folder.exists():
+    states_folder = state_globals['external']['prior_states_folder']
+    if  pathlib.Path(states_folder).exists():
         return [state.name.replace('.pkl','') for state in states_folder.glob('*.pkl')]
     else:
         return ['-- none available --']
@@ -1956,6 +1956,7 @@ def initiate_behavior(state_globals):
     print('Starting behavior session')
     try:
         if isinstance(experiment, Passive):
+            state_globals['external']['passive_experiments'] = [os.path.basename(s)[:-3] for s in glob(f"{config['scripts_path']}/*.py")]
             script = f"{config['scripts_path']}/{state_globals['external']['passive_script']}.py"
             camstim_proxy.start_script(script)
         else: 
