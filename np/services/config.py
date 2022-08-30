@@ -27,7 +27,6 @@ while not RIG_ID:
         break
     
     RIG_ID = "none"
-else:
     print("Not running from an NP rig: connections to services won't be made\nTry setting env var USE_TEST_RIG=1")
 
 print(f"Running from {COMP_ID}, connected to {RIG_ID}")
