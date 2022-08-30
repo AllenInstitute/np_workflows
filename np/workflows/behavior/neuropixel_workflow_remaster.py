@@ -41,7 +41,9 @@ global experiment
 if Rig.ID == "NP.0":
     experiment = npxc.experiment = Behavior()
 elif Rig.ID == "NP.1":
-    experiment = npxc.experiment = DynamicRouting()
+    experiment = npxc.experiment = DynamicRouting() # inherits from Behavior
+elif Rig.ID == "NP.2":
+    experiment = npxc.experiment = Behavior()
 
 global config
 config = npxc.config = npxc.get_config()
