@@ -2180,7 +2180,7 @@ def probe_quiescence_input(state_globals):
 @state_transition
 def check_data_dirs_enter(state_globals):
     print(">> check_data_dirs_enter <<")
-    npxc.set_open_ephys_name(state_globals)
+    # npxc.set_open_ephys_name(state_globals)
 
 
 @state_transition
@@ -2190,7 +2190,7 @@ def check_data_dirs_input(state_globals):
     time.sleep(3)
     npxc.stop_ecephys_recording(state_globals)
     time.sleep(5)
-    npxc.set_open_ephys_name(state_globals)
+    # npxc.set_open_ephys_name(state_globals)
     try:
         failed = npxc.check_data_drives(state_globals)
     except Exception:
@@ -2231,7 +2231,7 @@ def select_stimulus_input(state_globals):
     # state_globals['external']['next_state'] = 'initiate_experiment'
     state_globals["external"]["status_message"] = "success"
     state_globals["external"]["transition_result"] = True
-    npxc.set_open_ephys_name(state_globals)
+    # npxc.set_open_ephys_name(state_globals)
     npxc.save_platform_json(state_globals, manifest=False)
 
     # failed = component_check(state_globals)
@@ -2253,6 +2253,7 @@ def initiate_behavior_experiment_input(state_globals):
     # recreate the proxy
     # create a experiment start time timestamp (YYYYMMDDHHMMSS)
 
+    npxc.set_open_ephys_name(state_globals)
     npxc.start_common_experiment_monitoring(state_globals)
     wait_time = npxc.get_from_config(['experiment_stream_check_wait_time'], default=90)
     failed = npxc.check_data_stream_size(state_globals, wait_time=wait_time)
@@ -2652,12 +2653,12 @@ def post_removal_image_input(state_globals):
 
 @state_transition
 def post_removal_image_exit(state_globals):
-    npxc.reset_open_ephys(state_globals)
+    npxc.ephys.reset_open_ephys(state_globals)
 
 
 @state_transition
 def post_experiment_bleeding_severity_exit(state_globals):
-    npxc.reset_open_ephys(state_globals)
+    npxc.ephys.reset_open_ephys(state_globals)
 
 
 @state_transition
@@ -2777,7 +2778,7 @@ def check_files1_input(state_globals):
                         print(message)
         else:
             try:
-                npxc.reset_open_ephys(state_globals)
+                npxc.ephys.reset_open_ephys(state_globals)
             except Exception as E:
                 message = f'Failed to reset open ephys'
                 key = f'open_ephys_reset'

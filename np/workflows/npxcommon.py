@@ -873,16 +873,6 @@ def delete_dummy_recording(state_globals):
             print_error(state_globals, E)
 
 
-def reset_open_ephys(state_globals):
-    clear_open_ephys_name(state_globals)
-    time.sleep(.5)
-    start_ecephys_recording(state_globals)
-    time.sleep(3)
-    stop_ecephys_recording(state_globals)
-    time.sleep(.5)
-    # stop_ecephys_acquisition(state_globals)
-
-
 def remove_mouse_input(state_globals):
     """
     Input function for state remove_mouse
@@ -1882,6 +1872,8 @@ def start_common_session_monitoring(state_globals, video_prefix=''):
 
 def start_common_experiment_monitoring(state_globals, video_prefix=''):
     start_common_session_monitoring(state_globals, video_prefix)
+    start_ecephys_acquisition(state_globals)
+    time.sleep(.5)
     start_ecephys_recording(state_globals)
     # failed = check_data_stream_size(state_globals)
     # return failed
@@ -1955,8 +1947,9 @@ def initiate_behavior(state_globals):
     camstim_proxy = state_globals['component_proxies']['Stim']
     print('Starting behavior session')
     try:
-        if isinstance(experiment, Passive):
-            state_globals['external']['passive_experiments'] = [os.path.basename(s)[:-3] for s in glob(f"{config['scripts_path']}/*.py")]
+        if isinstance(experiment, Passive):   
+            state_globals['external']['passive_experiments'] = [os.path.basename(s)[:-3] for s in glob(f"{npxc.config['scripts_path']}/*.py")]
+
             script = f"{config['scripts_path']}/{state_globals['external']['passive_script']}.py"
             camstim_proxy.start_script(script)
         else: 

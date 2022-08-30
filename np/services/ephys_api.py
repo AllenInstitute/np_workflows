@@ -106,7 +106,7 @@ class EphysRouter(Ephys):
 
     @classmethod
     def clear_open_ephys_name(cls):
-        return cls.io.write(ephys_messages.set_data_file_path(path=''))
+        return cls.io.write(ephys_messages.set_data_file_path(path='_temp_'))
 
     @classmethod
     def request_open_ephys_status(cls):
@@ -114,7 +114,15 @@ class EphysRouter(Ephys):
 
     @classmethod
     def reset_open_ephys(cls):
+        # if EphysHTTP.request_open_ephys_status() == "RECORD":
+        EphysRouter.stop_ecephys_recording()
+        time.sleep(.5)
+        # if EphysHTTP.request_open_ephys_status() == "ACQUIRE":
+        EphysRouter.stop_ecephys_acquisition()
+        time.sleep(.5)
         EphysRouter.clear_open_ephys_name()
+        time.sleep(.5)
+        EphysRouter.start_ecephys_acquisition()
         time.sleep(.5)
         EphysRouter.start_ecephys_recording()
         time.sleep(3)
@@ -209,7 +217,7 @@ class EphysHTTP(Ephys):
 
     @staticmethod
     def clear_open_ephys_name():
-        return EphysHTTP.set_open_ephys_name(path="temp", prepend_text="_", append_text="_")
+        return EphysHTTP.set_open_ephys_name(path="_temp_", prepend_text="", append_text="")
 
     @staticmethod
     def request_open_ephys_status():
@@ -231,8 +239,7 @@ class EphysHTTP(Ephys):
         time.sleep(3)
         EphysHTTP.stop_ecephys_recording()
         time.sleep(.5)
-        EphysHTTP.stop_ecephys_acquisition()
-        time.sleep(.5)
+
         
     """  
     @staticmethod
