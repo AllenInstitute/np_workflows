@@ -1950,7 +1950,7 @@ def initiate_behavior(state_globals):
     print('Starting behavior session')
     try:
         if isinstance(experiment, Passive):   
-            state_globals['external']['passive_experiments'] = [os.path.basename(s)[:-3] for s in glob(f"{npxc.config['scripts_path']}/*.py")]
+            state_globals['external']['passive_experiments'] = [os.path.basename(s)[:-3] for s in glob(f"{config['scripts_path']}/*.py")]
 
             script = f"{config['scripts_path']}/{state_globals['external']['passive_script']}.py"
             camstim_proxy.start_script(script)
