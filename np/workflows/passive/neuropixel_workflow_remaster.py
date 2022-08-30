@@ -15,12 +15,10 @@ try:
     import socket
     import time
     import traceback
-    import webbrowser
     from datetime import datetime as dt
     from glob import glob
     from pprint import pformat
-    
-    import np.services.mvr as mvr
+
     import requests
     from mpetk import limstk
     from mpetk.aibsmw.routerio.router import ZMQHandler
@@ -48,7 +46,6 @@ config = npxc.config = npxc.get_config()
 router: ZMQHandler = None
 camstim: Proxy = None
 mouse_director: Proxy = None
-mvr_writer: mvr.MVRConnector
 sync: Proxy
 
 
@@ -2129,7 +2126,21 @@ def pre_stimulus_wait_input(state_globals):
 
 @state_transition
 def move_lickspout_to_mouse_offset_enter(state_globals):
-    pass
+    if isinstance(experiment,Passive):
+        return
+    
+    try:
+        print('Attempting to send mouse ID to mouse director')
+        mouse_director.set_mouse_id(state_globals["external"]["mouse_id"])
+    except Exception as E:
+        alert_string = f'Failed to send mouse ID to mouse director'
+        npxc.alert_text(alert_string, state_globals)
+    try:
+        print('Attempting to send userID to mouse director')
+        mouse_director.set_user_id(state_globals["external"]["user_id"])
+    except Exception as E:
+        alert_string = f'Failed to send userID to mouse director'
+        npxc.alert_text(alert_string, state_globals)  # Todo put this back
 
 
 @state_transition
@@ -2231,9 +2242,14 @@ def select_stimulus_input(state_globals):
 
 ###################
 
-def initiate_behavior_experiment_enter(state_globals):
-    state_globals['external']['passive_experiments'] = [os.path.basename(s)[:-3] for s in glob(f"{npxc.config['scripts_path']}/*.py")]
 
+@state_transition
+def initiate_behavior_experiment_enter(state_globals):
+    if isinstance(experiment, Passive):
+        state_globals['external']['passive_experiments'] = [os.path.basename(s)[:-3] for s in glob(f"{npxc.config['scripts_path']}/*.py")]
+    else:
+        return
+    
 @state_transition
 def initiate_behavior_experiment_input(state_globals):
     """

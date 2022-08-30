@@ -15,7 +15,6 @@ try:
     import socket
     import time
     import traceback
-    import webbrowser
     from datetime import datetime as dt
     from pprint import pformat
 
@@ -156,28 +155,8 @@ def default_exit(state_globals, label):
 
 # @state_transition
 def initialize_enter(state_globals):
-    
     state_globals['external']['logo'] = R".\np\images\logo_np_vis.png" 
-    
     state_globals['external']['session_type'] = 'behavior_experiment'
-
-    """
-    Processing_Agents = npxc.get_processing_agents(state_globals)
-    for agent, params in Processing_Agents.items():
-        key = 'Neuropixels Processing Agent '+agent
-        if not(key in npxc.config['components']):
-            params['desc'] = key
-            npxc.config['components'][key] = params
-
-    key = 'Neuropixels Processing Assistant'
-    if not(key in npxc.config['components']):
-            computer = npxc.config['components']['OpenEphys']['host']
-            port = '1212'
-            npxc.config['components'][key] = {'desc': key,
-                                  'host': computer,
-                                  'port': port,
-                                  'version': '0.0.1'}
-    """
 
     npxc.initialize_enter(state_globals)
 
@@ -472,7 +451,7 @@ def scan_mouse_id_input(state_globals):
     
     # now we can set the mouseID in mtrain 
     npxc.mtrain.mouse_id = mouse_id
-    
+
     logging.info(f'MID, {mouse_id}, UID, {user_id}, BID, {comp_id}, Received', extra={'weblog':True})
 
     state_globals["external"]["local_log"] = f'Mouse ID :{mouse_id}'
