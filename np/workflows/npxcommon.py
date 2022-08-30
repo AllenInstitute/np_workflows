@@ -3123,7 +3123,7 @@ def get_from_config(key_list, default=''):
 
 def settle_timer_enter(state_globals, wait_time=300):
     stop_time = dt.now()
-    time_elapsed = (stop_time - state_globals["resources"]["final_depth_timer_start"]).total_seconds()
+    time_elapsed = (stop_time - state_globals["resources"].get("final_depth_timer_start",dt.now())).total_seconds()
     total_seconds = max(0, wait_time - time_elapsed)
     state_globals['external']['settle_time_remaining_num'] = total_seconds
     state_globals['external']['settle_time_remaining'] = convert_seconds_to_time_string(total_seconds)

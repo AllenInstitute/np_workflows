@@ -2255,7 +2255,7 @@ def initiate_behavior_experiment_input(state_globals):
 
     # recreate the proxy
     # create a experiment start time timestamp (YYYYMMDDHHMMSS)
-    
+
     npxc.set_open_ephys_name(state_globals)
     npxc.start_common_experiment_monitoring(state_globals)
     wait_time = npxc.get_from_config(['experiment_stream_check_wait_time'], default=90)
