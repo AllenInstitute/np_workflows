@@ -106,7 +106,7 @@ class EphysRouter(Ephys):
 
     @classmethod
     def clear_open_ephys_name(cls):
-        return cls.io.write(ephys_messages.set_data_file_path(path=''))
+        return cls.io.write(ephys_messages.set_data_file_path(path='_temp_'))
 
     @classmethod
     def request_open_ephys_status(cls):

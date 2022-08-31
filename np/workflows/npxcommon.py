@@ -601,6 +601,7 @@ def start_ecephys_recording(state_globals):
 
 def stop_ecephys_recording(state_globals):
     ephys.stop_ecephys_recording()
+    ephys.reset_open_ephys()
     # send_ecephys_message(state_globals, 'recording', command=0)
     # print('Attempting to stop ecephys acquisiton')
 
