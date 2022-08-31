@@ -23,8 +23,8 @@ class MPEConfig:
         ): -> dict
     
     """
-    project_name = None
-    version = 'unknown'
+    lims_project_name:str = None # should be the class name, but just in case
+    version:str = 'unknown'
 
 class Model(abc.ABC):
     mpe_config = MPEConfig()
@@ -35,12 +35,21 @@ class Behavior(Model):
 
 class Passive(Model):
     mpe_config = MPEConfig()
-    mpe_config.project_name = 'neuropixels_passive_experiment_workflow'
+    mpe_config.lims_project_name = 'neuropixels_passive_experiment_workflow'
     mpe_config.version = '1.4.0+g6c8db37.b73352'
+
+class OpenScopeIllusion(Passive):
+    lims_project_name = "OpenScopeIllusion"
     
+class OpenScopeGlobalLocalOddball(Passive):
+    lims_project_name = "OpenScopeGlobalLocalOddball"
+
+class VariabilitySpontaneous(Passive):
+    lims_project_name = "VariabilitySpontaneous"
+
 class DynamicRouting(Model):
     mpe_config = MPEConfig()
-    mpe_config.project_name = 'dynamic_routing'
+    mpe_config.lims_project_name = 'dynamic_routing'
     
     
     def __init__(self):
