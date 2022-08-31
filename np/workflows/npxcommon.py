@@ -24,7 +24,7 @@ import zmq
 from np.models.model import \
     Model  # this is the type for concrete experiment models below
 from np.models.model import (  # these are the currently supported exps
-    Behavior, DynamicRouting, Passive, VariabilitySpontaneous)
+    DynamicRouting, VariabilitySpontaneous)
 # sys.path.append("..")
 from np.services import \
     ephys_edi_pb2 as \
@@ -60,10 +60,8 @@ def get_config() -> dict:
         project_name=experiment.mpe_config.lims_project_name,
         version=experiment.mpe_config.version)
 
-    if Rig.ID == 'NP.0' and isinstance(experiment, VariabilitySpontaneous):
-        local_config = "neuropixels_np0_passive"
-    elif Rig.ID == 'NP.0' and isinstance(experiment, Behavior):
-        local_config = "neuropixels_np0_behavior"
+    if Rig.ID == 'NP.0':
+        local_config = "neuropixels_np0"
     elif Rig.ID == 'NP.1':
         local_config = "neuropixels_np1"
     elif Rig.ID == 'NP.2':
