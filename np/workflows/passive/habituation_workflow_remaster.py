@@ -14,12 +14,12 @@ try:
     from datetime import timedelta as timedelta
     from pprint import pformat
 
-    import np.workflows.npxcommon as npxc
+    import np.workflows.npxcommon as npxc   
     import requests
     from mpetk import limstk
     from mpetk.aibsmw.routerio.router import ZMQHandler
     from mpetk.zro import Proxy
-    from np.models.model import Passive
+    from np.models.model import Passive, VariabilitySpontaneous
 
 except Exception as e:
     # import errors aren't printed to console by default
@@ -28,7 +28,7 @@ except Exception as e:
 # -------------- experiment-specific objects --------------
 global experiment
 # this should be the first line of code executed
-experiment = npxc.experiment = Passive()
+experiment = npxc.experiment = VariabilitySpontaneous()
 
 global config
 config = npxc.config = npxc.get_config()

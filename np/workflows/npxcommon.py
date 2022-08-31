@@ -57,10 +57,10 @@ def get_config() -> dict:
 
     global config
     config = mpeconfig.source_configuration(
-        project_name=experiment.mpe_config.project_name,
+        project_name=experiment.mpe_config.lims_project_name,
         version=experiment.mpe_config.version)
 
-    if Rig.ID == 'NP.0' and isinstance(experiment, Passive):
+    if Rig.ID == 'NP.0' and isinstance(experiment, VariabilitySpontaneous):
         local_config = "neuropixels_np0_passive"
     elif Rig.ID == 'NP.0' and isinstance(experiment, Behavior):
         local_config = "neuropixels_np0_behavior"
@@ -259,7 +259,7 @@ def load_prior_state_input(state):
                 print(f"removing prior state files failed: {e}")
         state['external']['next_state'] = next_state_default
         print(next_state_default)   
-        state['external']['next_state'] = 'scan_mouse_id' #TODO update
+        state['external']['next_state'] = 'scan_mouse_id' 
 
       
 
@@ -283,7 +283,7 @@ def initialize_enter(state_globals):
         "ben.hardcastle",
     ]
     
-    if isinstance(experiment,Passive):
+    if isinstance(experiment,VariabilitySpontaneous):
         #check early on for reqd scripts and set dropdown for later screen
         state_globals['external']['passive_experiments'] = [os.path.basename(s)[:-3] for s in glob.glob(f"{config['scripts_path']}/*.py")]
 

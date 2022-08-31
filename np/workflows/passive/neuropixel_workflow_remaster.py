@@ -21,8 +21,8 @@ try:
     from mpetk import limstk
     from mpetk.aibsmw.routerio.router import ZMQHandler
     from mpetk.zro import Proxy
-    from np.models.model import \
-        Passive  # It can make sense to have a class to store experiment data.
+    from np.models.model import (  # It can make sense to have a class to store experiment data.
+        Passive, VariabilitySpontaneous)
     from wfltk import middleware_messages_pb2 as wfltk_msgs
     messages = wfltk_msgs
 
@@ -34,7 +34,7 @@ except Exception as e:
     
 # -------------- experiment-specific objects --------------
 global experiment
-experiment = npxc.experiment = Passive() # this should be the first line of code executed
+experiment = npxc.experiment = VariabilitySpontaneous() # this should be the first line of code executed
 
 global config
 config = npxc.config = npxc.get_config()
@@ -2123,10 +2123,7 @@ def pre_stimulus_wait_input(state_globals):
 
 
 @state_transition
-def move_lickspout_to_mouse_offset_enter(state_globals):
-    if isinstance(experiment,Passive):
-        return
-    
+def move_lickspout_to_mouse_offset_enter(state_globals):  
     try:
         print('Attempting to send mouse ID to mouse director')
         mouse_director.set_mouse_id(state_globals["external"]["mouse_id"])
