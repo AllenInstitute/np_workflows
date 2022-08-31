@@ -24,7 +24,7 @@ import zmq
 from np.models.model import \
     Model  # this is the type for concrete experiment models below
 from np.models.model import (  # these are the currently supported exps
-    Behavior, DynamicRouting, Passive)
+    Behavior, DynamicRouting, Passive, VariabilitySpontaneous)
 # sys.path.append("..")
 from np.services import \
     ephys_edi_pb2 as \
@@ -409,14 +409,15 @@ def initialize_enter(state_globals):
     
 
 
-    global mtrain
-    mtrain = MTrain()
-    # set the mouse ID from the workflow py
-    if not mtrain.connected():
-        print("Failed to connect to MTrain")
-    else:
-        print("MTrain connected")
-    
+    if not isinstance(experiment,VariabilitySpontaneous):
+        global mtrain
+        mtrain = MTrain()
+        # set the mouse ID from the workflow py
+        if not mtrain.connected():
+            print("Failed to connect to MTrain")
+        else:
+            print("MTrain connected")
+        
     # initialize some choice fields
     # state_globals['external']['components_run'] = True
     print('Done with initialize_enter')
@@ -1954,7 +1955,7 @@ def initiate_behavior(state_globals):
     camstim_proxy = state_globals['component_proxies']['Stim']
     print('Starting behavior session')
     try:
-        if isinstance(experiment, Passive):   
+        if isinstance(experiment, VariabilitySpontaneous):   
             script = f"{config['scripts_path']}/{state_globals['external']['passive_script']}.py"
             camstim_proxy.start_script(script)
         else: 

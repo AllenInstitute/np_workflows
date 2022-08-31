@@ -16,8 +16,6 @@ try:
     import time
     import traceback
     from datetime import datetime as dt
-    from glob import glob
-    from pprint import pformat
 
     import requests
     from mpetk import limstk
@@ -174,7 +172,7 @@ def initialize_input(state_globals):
     global camstim
     host = npxc.config["components"]["Stim"]["host"]
     port = npxc.config["components"]["Stim"]["port"]
-    state_globals['mtrain_text'] = pformat(npxc.config['MTrainData'])
+    # state_globals['mtrain_text'] = pformat(npxc.config['MTrainData']) # removed for passive
     camstim = Proxy(f"{host}:{port}", serialization="json")
 
     global router
@@ -446,7 +444,7 @@ def scan_mouse_id_input(state_globals):
     user_id = state_globals["external"]["user_id"]
     
     # now we can set the mouseID in mtrain 
-    npxc.mtrain.mouse_id = mouse_id
+    #npxc.mtrain.mouse_id = mouse_id
 
     logging.info(f'MID, {mouse_id}, UID, {user_id}, BID, {comp_id}, Received', extra={'weblog':True})
 
@@ -912,6 +910,7 @@ def probes_not_aligned_input(state_globals):
 
 @state_transition
 def check_stimulus_enter(state_globals):
+    """Bypassed in VariabilitySpontaneous experiments"""
     # url = f'http://mtrain:5000/set_state/{state_globals["external"]["mouse_id"]}'
     # webbrowser.open(url)
     session_day = state_globals['external']['entered_experiment_day']

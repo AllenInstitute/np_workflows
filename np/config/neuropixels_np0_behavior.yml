@@ -93,6 +93,7 @@ open-ephys:
 new scale:
   log_path: C:/MPM_data/log.csv
 max_experiment_duration_min: 180
+passive_scripts_path: //allen/aibs/mpe/Software/np_passive_scripts
 active_probes:
 - A
 - B
@@ -219,7 +220,6 @@ probe_type: PXI
 slot_drives:
   2: A
   3: B
-stim_file_dir: C:/ecephys_stimulus_scripts/deciphering_variability
 stim_output_dir: C:/ProgramData/AIBS_MPE/camstim/output
 sync_output_dir: C:/ProgramData/AIBS_MPE/sync/output
 videomon_output_dir: C:/ProgramData/AIBS_MPE/MVR/data

@@ -261,7 +261,9 @@ states:
             default: True
           - field: manual_date_string
             desc: Use the new date string entered above
-            next: check_stimulus
+            next: check_experiment_day 
+            #bypassing unused manual entry 
+            #TODO remove BRB widget
     inputs:
       - desc: check_experiment_day
         state: check_experiment_day
@@ -353,8 +355,8 @@ states:
         type: text_entry
         desc: Please type which habituation day it is. Options are <session_type_option_string>
     inputs:
-      - desc: mtrain_change_stage
-        state: mtrain_change_stage
+      - desc: configure_hardware
+        state: configure_hardware
     revert:
       options:
         - desc: Revert to scan_mouse_id
@@ -490,8 +492,8 @@ states:
         state: flush_lines
     revert:
       options:
-        - desc: Revert to mtrain_change_stage
-          state: mtrain_change_stage
+        - desc: Revert to check_experiment_day
+          state: check_experiment_day
 
   flush_lines:
     description: flush_lines

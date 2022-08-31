@@ -283,13 +283,14 @@ states:
         type: text_entry
         desc: Please type which experiment day it is. Options are<colon> <session_type_option_string>
     inputs:
-      - desc: mtrain_change_stage
-        state: mtrain_change_stage
+      - desc: flush_lines
+        state: flush_lines
     revert:
       options:
         - desc: Revert to date_string_check
           state: date_string_check
 
+  # bypassed for passive exps 
   check_stimulus:
     description: check the stimulus for experiment
     display:
@@ -456,8 +457,8 @@ states:
         state: flush_lines
     revert:
       options:
-        - desc: Revert to check_stimulus
-          state: check_stimulus
+        - desc: Revert to check_experiment_day
+          state: check_experiment_day
 
   flush_lines:
     description: flush_lines
@@ -485,8 +486,8 @@ states:
         state: configure_hardware_openephys
     revert:
       options:
-        - desc: Revert to mtrain_change_stage
-          state: mtrain_change_stage
+        - desc: Revert to check_experiment_day
+          state: check_experiment_day
 
   configure_hardware_openephys:
     description: configure open ephys
