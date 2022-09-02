@@ -14,13 +14,12 @@ try:
     from datetime import timedelta as timedelta
     from pprint import pformat
 
-    import np.workflows.npxcommon as npxc   
+    import np.workflows.npxcommon as npxc
     import requests
     from mpetk import limstk
     from mpetk.aibsmw.routerio.router import ZMQHandler
     from mpetk.zro import Proxy
     from np.models.model import Passive, VariabilitySpontaneous
-
 except Exception as e:
     # import errors aren't printed to console by default
     print(e)
@@ -344,7 +343,7 @@ def scan_mouse_id_input(state_globals):
     comp_id = os.environ.get('aibs_comp_id', socket.gethostname())
     mouse_id = state_globals["external"]["mouse_id"]
     user_id = state_globals["external"]["user_id"]
-        
+    
     # now we can set the mouseID in mtrain 
     npxc.mtrain.mouse_id = mouse_id
     
@@ -906,8 +905,8 @@ def brain_surface_focus_input(state_globals):
         state_globals['external']['surface_1_right_name'] = f'{state_globals["external"]["session_name"]}_surface-image1-right.png'
 
         try:
-            npxc.take_left_snapshot(surface_1_left_path)
-            npxc.take_right_snapshot(surface_1_right_path)
+            npxc.take_left_snapshot(state_globals,surface_1_left_path)
+            npxc.take_right_snapshot(state_globals,surface_1_right_path)
 
             state_globals['external']['status_message'] = 'success'
             state_globals['external']['local_log'] = f'Surface_1_Path:{surface_1_local_path}'

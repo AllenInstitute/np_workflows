@@ -1,5 +1,4 @@
 try:
-    
     import inspect
     import json
     import logging
@@ -15,11 +14,10 @@ try:
     from datetime import timedelta as timedelta
     from pprint import pformat
 
-    # pdb.set_trace()
-    from mpetk.aibsmw.routerio.router import ZMQHandler
     import np.workflows.npxcommon as npxc
     import requests
     from mpetk import limstk
+    from mpetk.aibsmw.routerio.router import ZMQHandler
     from mpetk.zro import Proxy
     from np.models.model import (  # It can make sense to have a class to store experiment data.
         Behavior, DynamicRouting)
@@ -28,7 +26,7 @@ try:
 except Exception as e:
     # import errors aren't printed to console by default
     print(e)
-    
+
 # -------------- experiment-specific objects --------------
 global experiment
 # this should be the first line of code executed
@@ -915,7 +913,6 @@ def brain_surface_focus_input(state_globals):
         try:
             npxc.take_left_snapshot(state_globals,surface_1_left_path)
             npxc.take_right_snapshot(state_globals,surface_1_right_path)
-
 
             state_globals['external']['status_message'] = 'success'
             state_globals['external']['local_log'] = f'Surface_1_Path:{surface_1_local_path}'
