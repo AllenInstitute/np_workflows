@@ -1381,8 +1381,8 @@ def check_files2(state_globals, session_type, checkpoint):
         sync_report_path = os.path.join(state_globals['external']['local_lims_location'], sync_report_name)
         print(f'attempting to open sync report for manual insection from path {sync_report_path}')
         open_report_process = subprocess.Popen(sync_report_path, shell=True)
-    except Exception as E:
-        logging.debug('Error opening sync report', exc_info=True)
+    except Exception as e:
+        logging.debug(f'Error opening sync report {e}', exc_info=True)
     return stop
 
 
@@ -1415,7 +1415,7 @@ def videomon_copy_wrapup(state_globals, wait_time=15):
                     rename_video_files(state_globals)
                     return None
                 time.sleep(wait_time)
-            except Exception as E:
+            except Exception as e:
                 print_error(state_globals, e)
                 break
                 # logging.debug('Error confirming eyetracking fully copied')
