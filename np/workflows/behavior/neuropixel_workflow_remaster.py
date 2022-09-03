@@ -56,102 +56,27 @@ mouse_director: Proxy = None
 sync: Proxy
 
 
-# ------------------- UTILITY FUNCTIONS -------------------
-
-def fail_state(message: str, state: dict):
-    """
-    Set the current transition to failed and fill out the dictionary with the appropriate information
-    :param message: the fail reason
-    :param state: the state dictionary
-    :return:
-    """
-
-    if 'fail_state_override' in state['external'] and state['external']['fail_state_override']:
-        state['external'].pop('fail_state_override', None)
-    else:
-        current_frame = inspect.currentframe()
-        calling_frame = inspect.getouterframes(current_frame, 2)[1][3]
-        state_name = calling_frame[: calling_frame.rfind("_")]
-        logging.info(f"{state_name} failed to advance: {message}")
-        state['external']['alert'] = True
-        state["external"]["transition_result"] = False
-        state["external"]["next_state"] = state_name
-        message = npxc.append_alert(message, state)
-        state["external"]["msg_text"] = message
-
-
-def skip_states(state_globals, states_skipped, fields_skipped=()):
-    for field in fields_skipped:
-        state_globals['external'][field] = True
-    for state_name in states_skipped:
-        for transition in ['enter', 'input', 'exit']:
-            func_name = state_name + '_' + transition
-            default_func_name = 'default_' + transition
-            if func_name in globals():
-                method_to_call = globals()[func_name]
-                method_to_call(state_globals)
-            else:
-                method_to_call = globals()[default_func_name]
-                method_to_call(state_globals, state_name)
-
-
-def state_transition(state_transition_function):
-    def wrapper(state_globals, *args):
-        try:
-            # reload(npxc)
-            transition_type = state_transition_function.__name__.split('_')[-1]
-            if ((transition_type == 'input') or (transition_type == 'revert')) and ('msg_text' in state_globals["external"]):
-                state_globals["external"].pop("msg_text")
-            if args:
-                state_transition_function(state_globals, args)
-            else:
-                state_transition_function(state_globals)
-            npxc.save_state(state_globals,state_transition_function)
-            npxc.save_platform_json(state_globals, manifest=False)
-        except Exception as e:
-            npxc.print_error(state_globals, e)
-            message = f'An exception occurred in state transition {state_transition_function.__name__}'
-            logging.debug(message)
-            npxc.alert_text(message, state_globals)
-        return None
-
-    return wrapper
-
-
-def component_check(state: dict) -> list:
-    failed = []
-    for name, proxy in state['component_proxies'].items():
-        try:
-            logging.info(f'{name} uptime: {proxy.uptime}')
-            state["external"]["component_status"][name] = True
-        except Exception:
-            state["external"]["component_status"][name] = False
-            logging.debug(f'Cannot communicate with {name}.')
-            failed.append(name)
-    return failed
-
-
 
 
 
 
 # ------------------- State Transitions -------------------
-# @state_transition
+# @npxc.state_transition
 def default_enter(state_globals, label):
     npxc.default_enter(state_globals, label)
 
 
-# @state_transition
+# @npxc.state_transition
 def default_input(state_globals, label):
     npxc.default_input(state_globals, label)
 
 
-# @state_transition
+# @npxc.state_transition
 def default_exit(state_globals, label):
     npxc.default_exit(state_globals, label)
 
 
-# @state_transition
+# @npxc.state_transition
 def initialize_enter(state_globals):
     state_globals['external']['logo'] = R".\np\images\logo_np_vis.png" 
     state_globals['external']['session_type'] = 'behavior_experiment'
@@ -159,7 +84,7 @@ def initialize_enter(state_globals):
     npxc.initialize_enter(state_globals)
 
 
-# @state_transition
+# @npxc.state_transition
 def initialize_input(state_globals):
     """
     Input test function for state initialize
@@ -221,34 +146,34 @@ def initialize_input(state_globals):
             state_globals["external"]["local_log"] = f'User {state_globals["external"]["user_id"]} found in LIMS'
         else:
             state_globals["external"]["next_state"] = "initialize"
-            fail_state(f'No LIMS ID for User:{state_globals["external"]["user_id"]} found in LIMS', state_globals)
+            npxc.fail_state(f'No LIMS ID for User:{state_globals["external"]["user_id"]} found in LIMS', state_globals)
     except (KeyError, IndexError):
         print('Failed user ID test')
-        fail_state(f'No LIMS ID for User:{state_globals["external"]["user_id"]} found in LIMS', state_globals)
+        npxc.fail_state(f'No LIMS ID for User:{state_globals["external"]["user_id"]} found in LIMS', state_globals)
         state_globals["external"]["next_state"] = "initialize"    
 
     npxc.probes_need_cleaning(state_globals)
 
-@state_transition
+@npxc.state_transition
 def load_prior_state_input(state_globals):
     npxc.load_prior_state_input(state_globals)
 
-@state_transition
+@npxc.state_transition
 def components_error_input(state_globals):
     npxc.components_error_input(state_globals, 'load_prior_state')
 
 
-@state_transition
+@npxc.state_transition
 def prepare_for_pretest_enter(state_globals):
     npxc.prepare_for_pretest_input(state_globals)
 
 
-@state_transition
+@npxc.state_transition
 def prepare_for_pretest_input(state_globals):
     pass
 
 
-@state_transition
+@npxc.state_transition
 def check_data_drives_input(state_globals):
     for slot in state_globals["external"]["PXI"]:
         state_globals["external"]["PXI"][slot] = state_globals["external"][f"slot_{slot}_drive"]
@@ -354,7 +279,7 @@ def mtrain_change_regimen_2_input(state):
 
 
 
-@state_transition
+@npxc.state_transition
 def start_pretest_input(state_globals):
     state_globals['external']['session_name'] = dt.now().strftime("%Y%m%d%H%M%S") + '_pretest'
     state_globals["external"]["local_lims_location"] = os.path.join(state_globals["external"]["local_lims_head"],
@@ -378,7 +303,7 @@ def start_pretest_input(state_globals):
         logging.debug(fail_message_1)
 
 
-@state_transition
+@npxc.state_transition
 def pretest_input(state_globals):
     if not('water_calibration_heights' in state_globals["external"]):
         state_globals["external"]["water_calibration_heights"] = []
@@ -408,7 +333,7 @@ def pretest_input(state_globals):
                 npxc.alert_text(message, state_globals)
         except Exception as E:
             message = 'The values entered must be numbers. Please enter a number'
-            fail_state(message, state_globals)
+            npxc.fail_state(message, state_globals)
             return
 
     camstim_running = npxc.camstim_running(state_globals)
@@ -421,24 +346,24 @@ def pretest_input(state_globals):
     npxc.pretest_wrapup(state_globals)
 
 
-@state_transition
+@npxc.state_transition
 def pretest_exit(state_globals):
     npxc.stop_ecephys_recording(state_globals)
     pass
 
 
-@state_transition
+@npxc.state_transition
 def pretest_stim_finished_error_input(state_globals):
     npxc.handle_2_choice_button('pretest_stim_wait', 'pretest', 'configure_hardware_videomon', state_globals)
     if state_globals['external']['next_state'] == 'configure_hardware_videomon':
         npxc.pretest_wrapup(state_globals)
 
-@state_transition
+@npxc.state_transition
 def pretest_error_input(state_globals):
     npxc.pretest_error_input(state_globals)
 
 
-@state_transition
+@npxc.state_transition
 def scan_mouse_id_input(state_globals):
     """
     Input test function for state initialize
@@ -474,7 +399,7 @@ def scan_mouse_id_input(state_globals):
 
     except limstk.LIMSUnavailableError:
         message = f'Could not retrieve donor_info for {mouse_id} from LIMS.'
-        fail_state(message, state_globals)
+        npxc.fail_state(message, state_globals)
         return
 
     npxc.assess_previous_sessions(state_globals)
@@ -514,11 +439,11 @@ def scan_mouse_id_input(state_globals):
     if 'use_auto' in state_globals['external'] and state_globals['external']['use_auto']:
         states_skipped = ['LIMS_request', 'date_string_check']
         fields_skipped = ['auto_generated_date_string', 'Project.Code.lims']
-        skip_states(state_globals, states_skipped, fields_skipped)
+        npxc.skip_states(state_globals, states_skipped, fields_skipped, globals())
         state_globals['external']['next_state'] = 'check_experiment_day'
 
 
-@state_transition
+@npxc.state_transition
 def LIMS_request_enter(state):
     """
     Entry function for state initialize
@@ -527,7 +452,7 @@ def LIMS_request_enter(state):
 
 
 
-@state_transition
+@npxc.state_transition
 def LIMS_request_input(state):
     """
     Input test function for state initialize
@@ -550,10 +475,10 @@ def LIMS_request_input(state):
 
         state["external"]["transition_result"] = True
     except limstk.LIMSUnavailableError:
-        fail_state(f'Error validating project code {state["external"]["Project.Code.LIMS"]} in LIMS', state)
+        npxc.fail_state(f'Error validating project code {state["external"]["Project.Code.LIMS"]} in LIMS', state)
 
 
-@state_transition
+@npxc.state_transition
 def LIMS_request_revert(state_globals):
     ...
 
@@ -561,7 +486,7 @@ def date_string_check_enter(state_globals):
     state_globals['external']['Manual.Date.String'] = state_globals['external']['Auto.Date.String']
 
 
-@state_transition
+@npxc.state_transition
 def date_string_check_input(state):
     """
     Input test function for state initialize
@@ -572,7 +497,7 @@ def date_string_check_input(state):
         result = limstk.isi_experiment_prod(state["external"]["mouse_id"])
 
     if not result:
-        fail_state(f'Could not find an ISI experiment for mouse id:{state["external"]["mouse_id"]} failure', state)
+        npxc.fail_state(f'Could not find an ISI experiment for mouse id:{state["external"]["mouse_id"]} failure', state)
         state["external"]["next_state"] = "lims_abort_confirm"
         return
     else:
@@ -626,7 +551,7 @@ def date_string_check_input(state):
             lims_result = requests.get(url)
             project_id = json.loads(lims_result.text)[0]["id"]
         except (KeyError, IndexError):
-            fail_state(f"Error getting project id for project {project_name}", state)
+            npxc.fail_state(f"Error getting project id for project {project_name}", state)
             return
 
     state["external"]["selected_isi_id"] = state["external"]["ISI_ids"][selected_index]
@@ -673,10 +598,10 @@ def date_string_check_input(state):
     #     state["external"]["status_message"] = "success"
     #     state["external"]["component_status"]["Notes"] = True
     # except KeyError:
-    #     fail_state('SurgeryNotes proxy is not defined.', state)
+    #     npxc.fail_state('SurgeryNotes proxy is not defined.', state)
     #     state["external"]["component_status"]["Notes"] = False
     # except Exception:
-    #     fail_state('Error setting mouse and session name in SurgeryNotes', state)
+    #     npxc.fail_state('Error setting mouse and session name in SurgeryNotes', state)
     #     state["external"]["component_status"]["Notes"] = False
 
 
@@ -688,12 +613,12 @@ def date_string_check_input(state):
     state["external"]["status_message"] = "success"
     
 
-@state_transition
+@npxc.state_transition
 def date_string_check_revert(state_globals):
     ...
 
 
-@state_transition
+@npxc.state_transition
 def lims_abort_confirm_input(state):
     """
     Input test function for state initialize
@@ -705,15 +630,15 @@ def lims_abort_confirm_input(state):
     elif "lims_abort_cancel" in state["external"] and state["external"]["lims_abort_cancel"]:
         state["external"]["next_state"] = "pull_ISI_data"
     else:
-        fail_state('No valid inputs', state)
+        npxc.fail_state('No valid inputs', state)
 
 
-@state_transition
+@npxc.state_transition
 def lims_abort_confirm_revert(state):
     ...
 
 
-@state_transition
+@npxc.state_transition
 def probe_abort_confirm_input(state):
     """
     Input test function for state initialize
@@ -725,20 +650,20 @@ def probe_abort_confirm_input(state):
     elif "probe_abort_cancel" in state["external"] and state["external"]["probe_abort_cancel"]:
         state["external"]["next_state"] = "scan_mouse_id"
     else:
-        fail_state('No valid inputs', state)
+        npxc.fail_state('No valid inputs', state)
 
 
-@state_transition
+@npxc.state_transition
 def probe_abort_confirm_revert(state):
     ...
 
 
-@state_transition
+@npxc.state_transition
 def pull_ISI_data_input(state):
     pass
 
 
-@state_transition
+@npxc.state_transition
 def ecephys_id_check_enter(state_globals):
     """
     Input test function for state ecephys_id_check
@@ -747,12 +672,12 @@ def ecephys_id_check_enter(state_globals):
     state_globals["external"]["transition_result"] = True
     state_globals["external"]["status_message"] = "success"
 
-@state_transition
+@npxc.state_transition
 def ecephys_id_check_input(state_globals):
     pass
 
 
-@state_transition
+@npxc.state_transition
 def check_experiment_day_enter(state_globals):
     # url = f'http://mtrain:5000'
     # webbrowser.open(url)
@@ -760,13 +685,13 @@ def check_experiment_day_enter(state_globals):
     npxc.start_ecephys_acquisition(state_globals)
 
 
-@state_transition
+@npxc.state_transition
 def check_experiment_day_input(state_globals):
     entered_experiment_day = state_globals['external']['entered_experiment_day']
     session_types_options = state_globals['external']['session_types_options']
     if not (entered_experiment_day in session_types_options):
         message = 'Session Type Not Valid: please type exactly as listed'
-        fail_state(message, state_globals)
+        npxc.fail_state(message, state_globals)
     else:
         state_globals['external']['full_session_type'] = state_globals['external'][
                                                              'session_type'] + '_' + entered_experiment_day.lower()
@@ -779,7 +704,7 @@ def check_experiment_day_input(state_globals):
             state_globals['external']['dii_description'] = npxc.get_from_config(['dii_description_day2'], default='CM-DiI 100%')
 
 
-@state_transition
+@npxc.state_transition
 def configure_hardware_camstim_enter(state_globals):
     """
     Entry function for state configure_hardware_camstim
@@ -787,7 +712,7 @@ def configure_hardware_camstim_enter(state_globals):
     pass
 
 
-@state_transition
+@npxc.state_transition
 def configure_hardware_camstim_input(state_globals):
     """
     Input test function for state workflow_complete
@@ -796,7 +721,7 @@ def configure_hardware_camstim_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def configure_hardware_videomon_enter(state_globals):
     """
     Entry function for state configure_hardware_camstim
@@ -811,7 +736,7 @@ def configure_hardware_videomon_enter(state_globals):
     pass
 
 
-@state_transition
+@npxc.state_transition
 def configure_hardware_openephys_enter(state_globals):
     """
     Input test function for state configure_hardware_openephys
@@ -828,14 +753,14 @@ def configure_hardware_openephys_enter(state_globals):
         state_globals["external"]["status_message"] = "success"
         state_globals["external"]["component_status"]["Sync"] = True
     except KeyError:
-        fail_state('Sync proxy undefined', state_globals)
+        npxc.fail_state('Sync proxy undefined', state_globals)
         state_globals["external"]["component_status"]["Sync"] = False
     except Exception as e:
-        fail_state(f"Sync load config failure:{e}", state_globals)
+        npxc.fail_state(f"Sync load config failure:{e}", state_globals)
         state_globals["external"]["component_status"]["Sync"] = False
 
 
-@state_transition
+@npxc.state_transition
 def configure_hardware_openephys_exit(state_globals):
     """
     Exit function for state configure_hardware_openephys
@@ -845,7 +770,7 @@ def configure_hardware_openephys_exit(state_globals):
     pass
 
 
-@state_transition
+@npxc.state_transition
 def configure_hardware_openephys_input(state_globals):
     """
     Input test function for state configure_hardware_openephys
@@ -855,7 +780,7 @@ def configure_hardware_openephys_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def configure_hardware_rig_input(state_globals):
     """
     Input function for configure_hardware_rig
@@ -864,7 +789,7 @@ def configure_hardware_rig_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def calibrate_probe_offset_input(state_globals):
     """
     Input function for calibrate_probe_offset
@@ -874,7 +799,7 @@ def calibrate_probe_offset_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def align_probes_start_input(state_globals):
     """
     Input test function for state align_probes_start
@@ -883,12 +808,12 @@ def align_probes_start_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def align_probes_start_revert(state_globals):
     ...
 
 
-@state_transition
+@npxc.state_transition
 def align_probes_complete_input(state):
     """
     Input test function for state align_probes_complete
@@ -902,7 +827,7 @@ def align_probes_complete_input(state):
         state["external"]["next_state"] = "diI_application"
 
 
-@state_transition
+@npxc.state_transition
 def probes_not_aligned_input(state_globals):
     """
     Input test function for state probes_not_aligned
@@ -912,7 +837,7 @@ def probes_not_aligned_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def check_stimulus_enter(state_globals):
     # url = f'http://mtrain:5000/set_state/{state_globals["external"]["mouse_id"]}'
     # webbrowser.open(url)
@@ -925,12 +850,12 @@ def check_stimulus_enter(state_globals):
 
 
 
-@state_transition
+@npxc.state_transition
 def diI_application_enter(state):
     pass
 
 
-@state_transition
+@npxc.state_transition
 def diI_application_input(state):
     """
     Input test function for state diI_application
@@ -942,14 +867,14 @@ def diI_application_input(state):
     npxc.save_platform_json(state, manifest=False)
 
 
-@state_transition
+@npxc.state_transition
 def diI_probe_depth_confirmation_enter(state_globals):
     """
     Entry function for state diI_probe_depth_confirmation
     """
 
 
-@state_transition
+@npxc.state_transition
 def diI_probe_depth_confirmation_input(state_globals):
     """
     Input test function for state diI_probe_depth_confirmation
@@ -957,7 +882,7 @@ def diI_probe_depth_confirmation_input(state_globals):
     ...
 
 
-@state_transition
+@npxc.state_transition
 def diI_photoDoc_setup_input(state):
     """
     Input test function for state diI_photoDoc_setup
@@ -1059,7 +984,7 @@ def diI_photoDoc_setup_input(state):
 
 
 
-@state_transition
+@npxc.state_transition
 def diI_photoDocumentation_input(state_globals):
     """
     Input test function for state diI_photoDocumentation
@@ -1074,14 +999,14 @@ def diI_photoDocumentation_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def diI_info_and_remove_enter(state_globals):
     """
     Entry function for state diI_info_and_remove
     """
 
 
-@state_transition
+@npxc.state_transition
 def diI_info_and_remove_input(state_globals):
     """
     Exit function for state diI_info_and_remove
@@ -1105,11 +1030,11 @@ def diI_info_and_remove_input(state_globals):
     state_globals["external"]["status_message"] = "success"
     npxc.save_platform_json(state_globals, manifest=False)
 
-@state_transition
+@npxc.state_transition
 def load_mouse_enter(state_globals):
     npxc.load_mouse_enter(state_globals)
 
-@state_transition
+@npxc.state_transition
 def load_mouse_input(state_globals):
     """
     Input test function for state load_mouse_headframe
@@ -1121,23 +1046,23 @@ def load_mouse_input(state_globals):
     # state_globals['external']['next_state'] = 'lower_probe_cartridge'
     message = npxc.load_mouse_behavior(state_globals)
     if message:
-        fail_state(message, state_globals)
+        npxc.fail_state(message, state_globals)
     state_globals["external"]["transition_result"] = True
     state_globals["external"]["status_message"] = "success"
     npxc.save_platform_json(state_globals, manifest=False)
 
 
-@state_transition
+@npxc.state_transition
 def load_mouse_revert(state_globals):
     print("doing load mouse revert stuff")
 
 
-@state_transition
+@npxc.state_transition
 def lower_probe_cartridge_enter(state_globals):
     state_globals["external"]["clear_sticky"] = True
 
 
-@state_transition
+@npxc.state_transition
 def ground_connected_check_input(state_globals):
     """
     Input test function for state ground_connected_check
@@ -1153,7 +1078,7 @@ def ground_connected_check_input(state_globals):
         state_globals["external"]["transition_result"] = False
 
 
-@state_transition
+@npxc.state_transition
 def ground_abort_confirm_input(state_globals):
     """
     Input test function for state initialize
@@ -1173,12 +1098,12 @@ def ground_abort_confirm_input(state_globals):
         state_globals["external"]["transition_result"] = False
 
 
-@state_transition
+@npxc.state_transition
 def ground_abort_confirm_revert(state_globals):
     print("doing ground_abort_confirm_revert stuff")
 
 
-@state_transition
+@npxc.state_transition
 def ground_abort_shutdown_input(state_globals):
     """
     Input test function for state initialize
@@ -1190,12 +1115,12 @@ def ground_abort_shutdown_input(state_globals):
     state_globals["external"]["next_state"] = "remove_mouse_and_move_files2"
 
 
-@state_transition
+@npxc.state_transition
 def ground_abort_shutdown_revert(state_globals):
     print("ground_abort_shutdown_confirm_revert stuff")
 
 
-@state_transition
+@npxc.state_transition
 def eyetracking_dichroic_input(state_globals):
     """
     Input test function for state eyetracking_dichroic
@@ -1205,7 +1130,7 @@ def eyetracking_dichroic_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def eye_visible_check_input(state_globals):
     """
     Input test function for state eye_visible_check
@@ -1221,7 +1146,7 @@ def eye_visible_check_input(state_globals):
         state_globals["external"]["transition_result"] = False
 
 
-@state_transition
+@npxc.state_transition
 def eye_visible_abort_confirm_input(state_globals):
     """
     Input test function for state initialize
@@ -1245,12 +1170,12 @@ def eye_visible_abort_confirm_input(state_globals):
         state_globals["external"]["transition_result"] = False
 
 
-@state_transition
+@npxc.state_transition
 def eye_visible_abort_confirm_revert(state_globals):
     print("doing ground_abort_confirm_revert stuff")
 
 
-@state_transition
+@npxc.state_transition
 def lower_probe_cartridge_input(state_globals):
     """
     Input test function for state lower_probe_cartridge
@@ -1275,12 +1200,12 @@ def lower_probe_cartridge_input(state_globals):
     #     print(f"Notes proxy failure:{e}!")
 
 
-@state_transition
+@npxc.state_transition
 def brain_surface_focus_enter(state_globals):
     state_globals["external"]["clear_sticky"] = True
 
 
-@state_transition
+@npxc.state_transition
 def brain_surface_focus_input(state_globals):
     """
     Input test function for state brain_surface_focus
@@ -1379,7 +1304,7 @@ def brain_surface_focus_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def insert_probes_start_enter(state_globals):
     """
     Entry function for state insert_probes_start_enter
@@ -1390,7 +1315,7 @@ def insert_probes_start_enter(state_globals):
     npxc.start_ecephys_acquisition(state_globals)
 
 
-@state_transition
+@npxc.state_transition
 def insert_probes_start_input(state_globals):
     """
     Input test function for state insert_probes_start
@@ -1409,7 +1334,7 @@ def insert_probes_start_input(state_globals):
     npxc.save_platform_json(state_globals, manifest=False)
 
 
-@state_transition
+@npxc.state_transition
 def probe_brain_surface_enter(state_globals):
     """
     Entry function for state probe_brain_surface
@@ -1417,7 +1342,7 @@ def probe_brain_surface_enter(state_globals):
     state_globals["external"]["clear_sticky"] = True
 
 
-@state_transition
+@npxc.state_transition
 def probe_brain_surface_input(state_globals):
     """
     Input test function for state probe_brain_surface
@@ -1507,7 +1432,7 @@ def probe_brain_surface_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def brain_surface_abort_confirm_input(state_globals):
     """
     Input test function for state initialize
@@ -1530,12 +1455,12 @@ def brain_surface_abort_confirm_input(state_globals):
         state_globals["external"]["status_message"] = f"No valid inputs"
         state_globals["external"]["transition_result"] = False
 
-@state_transition
+@npxc.state_transition
 def photodoc_setup3_enter(state_globals):
     message = f"- Adjust the zoom to {state_globals['external']['high_zoom_level']}"
     npxc.alert_text(message, state_globals)
 
-@state_transition
+@npxc.state_transition
 def photodoc_setup3_input(state_globals):
     """
 
@@ -1633,7 +1558,7 @@ def photodoc_setup3_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def photodoc_confirm3_input(state_globals):
     """
     Input test function for state lower_probes_automatically
@@ -1649,12 +1574,12 @@ def photodoc_confirm3_input(state_globals):
     state_globals["external"]["status_message"] = "success"
     npxc.save_platform_json(state_globals, manifest=False)
 
-@state_transition
+@npxc.state_transition
 def lower_probes_automatically_enter(state_globals):
     message = f"- Adjust the zoom to {state_globals['external']['low_zoom_level']}"
     npxc.alert_text(message, state_globals)
 
-@state_transition
+@npxc.state_transition
 def lower_probes_automatically_input(state_globals):
     """
     Input test function for state eyetracking_dichroic
@@ -1676,7 +1601,7 @@ def lower_probes_automatically_input(state_globals):
     npxc.save_platform_json(state_globals, manifest=False)
 
 
-@state_transition
+@npxc.state_transition
 def probe_a_notes_input(state_globals):
     """
     Input test function for state probe_a_notes
@@ -1700,7 +1625,7 @@ def probe_a_notes_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def probe_b_notes_input(state_globals):
     """
     Input test function for state probe_b_notes
@@ -1723,7 +1648,7 @@ def probe_b_notes_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def probe_c_notes_input(state_globals):
     """
     Input test function for state probe_c_notes
@@ -1746,7 +1671,7 @@ def probe_c_notes_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def probe_d_notes_input(state_globals):
     """
     Input test function for state probe_d_notes
@@ -1769,7 +1694,7 @@ def probe_d_notes_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def probe_e_notes_input(state_globals):
     """
     Input test function for state probe_e_notes
@@ -1792,7 +1717,7 @@ def probe_e_notes_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def probe_f_notes_input(state_globals):
     """
     Input test function for state probe_f_notes
@@ -1816,7 +1741,7 @@ def probe_f_notes_input(state_globals):
     npxc.save_platform_json(state_globals, manifest=False)
 
 
-@state_transition
+@npxc.state_transition
 def probes_final_depth_enter(state_globals):
     """
     Entry function for state insertion_photodocumentation
@@ -1849,7 +1774,7 @@ def probes_final_depth_enter(state_globals):
     if depth_retract_bool:
         npxc.alert_text(depth_retract_string, state_globals)
 
-@state_transition
+@npxc.state_transition
 def probes_final_depth_exit(state_globals):
     """
     Exit function for state insertion_photodocumentation
@@ -1857,7 +1782,7 @@ def probes_final_depth_exit(state_globals):
     pass
 
 
-@state_transition
+@npxc.state_transition
 def probes_final_depth_input(state_globals):
     """
     Input test function for state probes_final_depth
@@ -1883,7 +1808,7 @@ def probes_final_depth_input(state_globals):
     npxc.save_platform_json(state_globals, manifest=False)
 
 
-@state_transition
+@npxc.state_transition
 def photodoc_setup4_input(state_globals):
     """
 
@@ -1977,7 +1902,7 @@ def photodoc_setup4_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def insertion_photodocumentation_input(state_globals):
     """
     Input test function for state insertion_photodocumentation
@@ -1996,7 +1921,7 @@ def insertion_photodocumentation_input(state_globals):
     npxc.save_platform_json(state_globals, manifest=False)
 
 
-@state_transition
+@npxc.state_transition
 def pre_experiment_bleeding_severity_enter(state_globals):
     """
     Entry function for bleeding_severity
@@ -2016,7 +1941,7 @@ def pre_experiment_bleeding_severity_enter(state_globals):
     ] = 0
 
 
-@state_transition
+@npxc.state_transition
 def pre_experiment_bleeding_severity_input(state_globals):
     """
     Input function for bleeding severity
@@ -2058,7 +1983,7 @@ def pre_experiment_bleeding_severity_input(state_globals):
     npxc.save_platform_json(state_globals, manifest=False)
 
 
-@state_transition
+@npxc.state_transition
 def bleeding_abort_confirm_input(state_globals):
     """
     Input test function for state initialize
@@ -2081,7 +2006,7 @@ def bleeding_abort_confirm_input(state_globals):
         state_globals["external"]["transition_result"] = False
 
 
-@state_transition
+@npxc.state_transition
 def bleeding_abort_confirm_revert(state_globals):
     print("doing bleeding_abort_confirm_revert stuff")
 
@@ -2092,13 +2017,13 @@ def get_exp_wait_time(state_globals):
     wait_time = npxc.get_from_config(key_list, defaults)
     return wait_time
 
-@state_transition
+@npxc.state_transition
 def pre_stimulus_wait_enter(state_globals):
     wait_time = get_exp_wait_time(state_globals)
     npxc.settle_timer_enter(state_globals, wait_time)
 
 
-@state_transition
+@npxc.state_transition
 def pre_stimulus_wait_input(state_globals):
     """
     Input test function for state pre_stimulus_wait
@@ -2116,7 +2041,7 @@ def pre_stimulus_wait_input(state_globals):
 
     if float(state_globals['external']['settle_time_remaining_num'])>0:  # total_seconds < npxc.config['final_depth_timer_s']:
         message = 'The settle time has not elapsed! Please wait until the state timer matches the remaining time'
-        fail_state(message, state_globals)
+        npxc.fail_state(message, state_globals)
         return
 
     # state_globals['external']['next_state'] = 'check_data_dirs'
@@ -2125,7 +2050,7 @@ def pre_stimulus_wait_input(state_globals):
     npxc.save_platform_json(state_globals, manifest=False)
 
 
-@state_transition
+@npxc.state_transition
 def move_lickspout_to_mouse_offset_enter(state_globals):
     try:
         print('Attempting to send mouse ID to mouse director')
@@ -2141,7 +2066,7 @@ def move_lickspout_to_mouse_offset_enter(state_globals):
         npxc.alert_text(alert_string, state_globals)  # Todo put this back
 
 
-@state_transition
+@npxc.state_transition
 def move_lickspout_to_mouse_offset_input(state_globals):
     ...
 
@@ -2154,12 +2079,12 @@ def move_lickspout_to_mouse_offset_input(state_globals):
                                       message=alert_string)
 
 
-@state_transition
+@npxc.state_transition
 def move_lickspout_to_mouse_offset_exit(state_globals):
     npxc.get_start_experiment_params(state_globals)
 
 
-@state_transition
+@npxc.state_transition
 def probe_quiescence_enter(state_globals):
     rest_time = npxc.config['final_depth_timer_s']
     stop_time = datetime.datetime.now()
@@ -2170,18 +2095,18 @@ def probe_quiescence_enter(state_globals):
         router.write(wfltk_msgs.state_ready(message="ready"))
 
 
-@state_transition
+@npxc.state_transition
 def probe_quiescence_input(state_globals):
     ...
 
 
-@state_transition
+@npxc.state_transition
 def check_data_dirs_enter(state_globals):
     print(">> check_data_dirs_enter <<")
     # npxc.set_open_ephys_name(state_globals)
 
 
-@state_transition
+@npxc.state_transition
 def check_data_dirs_input(state_globals):
     npxc.clear_open_ephys_name(state_globals)
     time.sleep(0.5)
@@ -2205,7 +2130,7 @@ def check_data_dirs_input(state_globals):
     state_globals["external"]["transition_result"] = True
 
 
-@state_transition
+@npxc.state_transition
 def data_dir_error_input(state_globals):
     print(">> data_dir_error_input <<")
 
@@ -2219,7 +2144,7 @@ def data_dir_error_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def select_stimulus_input(state_globals):
     """
     Input test function for state select_stimulus
@@ -2233,9 +2158,9 @@ def select_stimulus_input(state_globals):
     # npxc.set_open_ephys_name(state_globals)
     npxc.save_platform_json(state_globals, manifest=False)
 
-    # failed = component_check(state_globals)
+    # failed = npxc.component_check(state_globals)
     # if failed:
-    #    fail_state(f'The following proxies are not available: {", ".join(failed)}', state_globals)
+    #    npxc.fail_state(f'The following proxies are not available: {", ".join(failed)}', state_globals)
     #    return
 
 
@@ -2243,7 +2168,7 @@ def select_stimulus_input(state_globals):
 
 
 
-@state_transition
+@npxc.state_transition
 def initiate_behavior_experiment_input(state_globals):
     """
     Input test function for state initiate_experiment
@@ -2266,7 +2191,7 @@ def initiate_behavior_experiment_input(state_globals):
         # fail_message_1 = f'The following data streams are not recording: {", ".join(failed)}'
         # npxc.alert_text(fail_message_1,state_globals)
         state_globals['external']['next_state'] = 'streams_error_state'
-        # fail_state(f'The following data streams are not recording: {", ".join(failed)}', state_globals)
+        # npxc.fail_state(f'The following data streams are not recording: {", ".join(failed)}', state_globals)
         # return
     else:
         state_globals['external']['next_state'] = 'experiment_running_timer'
@@ -2278,7 +2203,7 @@ def initiate_behavior_experiment_input(state_globals):
     npxc.save_platform_json(state_globals, manifest=False)
 
 
-@state_transition
+@npxc.state_transition
 def initiate_behavior_stimulus_input(state_globals):
     """
     Input test function for state initiate_experiment
@@ -2302,18 +2227,18 @@ def initiate_behavior_stimulus_input(state_globals):
                 fail_message_1 = npxc.alert_from_error_dict(state_globals, failed, primary_key=False)
 
 
-@state_transition
+@npxc.state_transition
 def overrideable_error_state_input(state_globals):
     npxc.overrideable_error_state_input(state_globals)
 
 
-@state_transition
+@npxc.state_transition
 def overrideable_error_state_exit(state_globals):
     npxc.overrideable_error_state_exit(state_globals)
 
 
 
-@state_transition
+@npxc.state_transition
 def initiate_experiment_input(state_globals):
     """
     Input test function for state initiate_experiment
@@ -2343,7 +2268,7 @@ def get_exp_message_1(state_globals):
         npxc.alert_text(message_1, state_globals)
     return message_1
 
-@state_transition
+@npxc.state_transition
 def experiment_running_timer_enter(state_globals):
     """
     Entry function for state experiment_running_timer
@@ -2351,18 +2276,18 @@ def experiment_running_timer_enter(state_globals):
     print("in experiment running enter")
 
 
-@state_transition
+@npxc.state_transition
 def monitor_experiment_input(state_globals):
     npxc.monitor_experiment_input(state_globals)
 
 
 
-@state_transition
+@npxc.state_transition
 def end_experiment_enter(state_globals):
     pass
 
 
-@state_transition
+@npxc.state_transition
 def end_experiment_input(state_globals):
     """
     Input test function for state end_experiment
@@ -2414,7 +2339,7 @@ def end_experiment_input(state_globals):
     npxc.save_platform_json(state_globals, manifest=False)
 
 
-@state_transition
+@npxc.state_transition
 def end_experiment_photodocumentation_input(state_globals):
     """
     Input test function for state end_experiment_photodocumentation
@@ -2509,7 +2434,7 @@ def end_experiment_photodocumentation_input(state_globals):
     npxc.save_platform_json(state_globals, manifest=False)
 
 
-@state_transition
+@npxc.state_transition
 def remove_probes_start_input(state_globals):
     """
     Input test function for state remove_probes_start
@@ -2525,7 +2450,7 @@ def remove_probes_start_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def remove_probes_end_input(state_globals):
     """
     Input test function for state remove_probes_end
@@ -2535,7 +2460,7 @@ def remove_probes_end_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def post_removal_photodocumentation_input(state_globals):
     """
     Input test function for state workflow_complete
@@ -2626,7 +2551,7 @@ def post_removal_photodocumentation_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def post_removal_image_input(state_globals):
     """
     Input test function for state workflow_complete
@@ -2650,17 +2575,17 @@ def post_removal_image_input(state_globals):
     npxc.save_platform_json(state_globals, manifest=False)
 
 
-@state_transition
+@npxc.state_transition
 def post_removal_image_exit(state_globals):
     npxc.ephys.reset_open_ephys(state_globals)
 
 
-@state_transition
+@npxc.state_transition
 def post_experiment_bleeding_severity_exit(state_globals):
     npxc.ephys.reset_open_ephys(state_globals)
 
 
-@state_transition
+@npxc.state_transition
 def post_experiment_bleeding_severity_enter(state_globals):
     """
     Entry function for bleeding_severity
@@ -2680,7 +2605,7 @@ def post_experiment_bleeding_severity_enter(state_globals):
     ] = 0
 
 
-@state_transition
+@npxc.state_transition
 def post_experiment_bleeding_severity_input(state_globals):
     """
     Input function for bleeding severity
@@ -2720,34 +2645,34 @@ def post_experiment_bleeding_severity_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def remove_mouse_and_move_files2_input(state_globals):
     message = npxc.remove_mouse_input(state_globals)
     if message:
-        fail_state(message, state_globals)
+        npxc.fail_state(message, state_globals)
     npxc.save_platform_json(state_globals, manifest=False)
     if 'day2' in state_globals['external']['full_session_type'].lower():
         message = 'Please mark the cap so LAS knows this mouse is safe to perfuse'
         message = npxc.get_from_config(['cap_message'], default=message)
         npxc.alert_text(message, state_globals)
 
-@state_transition
+@npxc.state_transition
 def water_mouse_enter(state_globals):
     print('water_mouse_enter')
     npxc.water_mouse_enter(state_globals)
 
-@state_transition
+@npxc.state_transition
 def water_mouse_input(state_globals):
     print('water_mouse_input')
     npxc.water_mouse_input(state_globals)
 
-@state_transition
+@npxc.state_transition
 def water_mouse_exit(state_globals):
     print('water_mouse_exit')
     npxc.water_mouse_exit(state_globals)
 
 
-@state_transition
+@npxc.state_transition
 def check_files1_input(state_globals):
     print('>> check_files1_input <<')
     session_type = state_globals['external']['full_session_type']
@@ -2844,7 +2769,7 @@ def check_files1_input(state_globals):
     state_globals['external']['status_message'] = 'success'
 
 
-@state_transition
+@npxc.state_transition
 def files_error1_input(state_globals):
     print(">> files_error_input <<")
     if "check_files_retry" in state_globals["external"] and state_globals["external"]["check_files_retry"]:
@@ -2862,7 +2787,7 @@ def files_error1_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def foraging_ID_error_input(state_globals):
     #print('foraging ID:' + state_globals['external']['foraging_id'])
     #print('stimulus_name:' + state_globals['external']['stimulus_name'])
@@ -2872,13 +2797,13 @@ def foraging_ID_error_input(state_globals):
     #npxc.overrideable_error_state_input(state_globals)
 
 
-@state_transition
+@npxc.state_transition
 def foraging_ID_error_exit(state_globals):
     #npxc.overrideable_error_state_exit(state_globals)
     pass
 
 
-@state_transition
+@npxc.state_transition
 def create_manifest_and_platform_json_enter(state_globals):
     """
     Input test function for state create_manifest_and_platform_json_and_sync_report
@@ -2890,7 +2815,7 @@ def create_manifest_and_platform_json_enter(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def cleanup_enter(state_globals):
     """
     Entry function for state workflow_complete
@@ -2901,7 +2826,7 @@ def cleanup_enter(state_globals):
 
 
 
-@state_transition
+@npxc.state_transition
 def cleanup_input(state_globals):
     """
     Input test function for state workflow_complete
@@ -2916,7 +2841,7 @@ def cleanup_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def check_files2_input(state_globals):
     print(">> check_files2_input <<")
     stop = npxc.check_files2(state_globals)
@@ -2929,14 +2854,14 @@ def check_files2_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def check_files2_revert(state_globals):
     print(">> check_files2_revert <<")
     message = 'Reverting to this state will generate a second platform_json. You should delete the old one'
     npxc.alert_text(message, state_globals)
 
 
-@state_transition
+@npxc.state_transition
 def files_error2_input(state_globals):
     print(">> files_error2_input <<")
     if "check_files2_retry" in state_globals["external"] and state_globals["external"]["check_files2_retry"]:
@@ -2953,7 +2878,7 @@ def files_error2_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def initiate_data_processing_enter(state_globals):
     """
     Entry function for state workflow_complete
@@ -2962,7 +2887,7 @@ def initiate_data_processing_enter(state_globals):
     logging.info("Neuropixels behavior workflow complete", extra={"weblog": True})
 
 
-@state_transition
+@npxc.state_transition
 def initiate_data_processing_input(state_globals):
     """
     Input test function for state workflow_complete
@@ -2985,7 +2910,7 @@ def initiate_data_processing_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def data_error_input(state_globals):
     print(">> data_error_input <<")
     if "data_retry" in state_globals["external"] and state_globals["external"]["data_retry"]:
@@ -2998,7 +2923,7 @@ def data_error_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def copy_files_to_network_input(state_globals):
     """
     Input test function for state workflow_complete
@@ -3008,7 +2933,7 @@ def copy_files_to_network_input(state_globals):
     npxc.backup_files(state_globals)
 
 
-@state_transition
+@npxc.state_transition
 def ready_to_check_network_input(state_globals):
     """
     Input test function for state workflow_complete
@@ -3020,7 +2945,7 @@ def ready_to_check_network_input(state_globals):
     try:
         if npxc.global_processes['network_backup_process'].poll() is None:
             message = 'Files are not finished copying to the network. Wait a bit and try again'
-            fail_state(message, state_globals)
+            npxc.fail_state(message, state_globals)
     except Exception as E:
         npxc.alert_text('Failed to test if network backup is finished'. state_globals)
     failed = {}
@@ -3039,7 +2964,7 @@ def ready_to_check_network_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def network_backup_error_input(state_globals):
     print(">> files_error2_input <<")
     if "copy_retry" in state_globals["external"] and state_globals["external"]["copy_retry"]:
@@ -3056,7 +2981,7 @@ def network_backup_error_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def workflow_complete_enter(state_globals):
     """
     Entry function for state workflow_complete
@@ -3066,7 +2991,7 @@ def workflow_complete_enter(state_globals):
     state_globals["external"]["workflow_complete_time"] = dt.now().strftime('%Y%m%d%H%M%S')
 
 
-@state_transition
+@npxc.state_transition
 def workflow_complete_input(state_globals):
     """
     Input test function for state workflow_complete

@@ -46,86 +46,29 @@ mouse_director: Proxy = None
 sync: Proxy = None
 
 
-# ------------------- UTILITY FUNCTIONS -------------------
-def fail_state(message: str, state: dict):
-    """
-    Set the current transition to failed and fill out the dictionary with the appropriate information
-    :param message: the fail reason
-    :param state: the state dictionary
-    :return:
-    """
 
-    if 'fail_state_override' in state['external'] and state['external']['fail_state_override']:
-        state['external'].pop('fail_state_override', None)
-    else:
-        current_frame = inspect.currentframe()
-        calling_frame = inspect.getouterframes(current_frame, 2)[1][3]
-        state_name = calling_frame[: calling_frame.rfind("_")]
-        logging.info(f"{state_name} failed to advance: {message}")
-        state['external']['alert'] = True
-        state["external"]["transition_result"] = False
-        state["external"]["next_state"] = state_name
-        message = npxc.append_alert(message, state)
-        state["external"]["msg_text"] = message
-
-def skip_states(state_globals, states_skipped, fields_skipped=()):
-    for field in fields_skipped:
-        state_globals['external'][field] = True
-    for state_name in states_skipped:
-        for transition in ['enter', 'input', 'exit']:
-            func_name = state_name + '_' + transition
-            default_func_name = 'default_' + transition
-            if func_name in globals():
-                method_to_call = globals()[func_name]
-                method_to_call(state_globals)
-            else:
-                method_to_call = globals()[default_func_name]
-                method_to_call(state_globals, state_name)
-
-def state_transition(state_transition_function):
-    def wrapper(state_globals, *args):
-        try:
-            #reload(npxc)
-            transition_type = state_transition_function.__name__.split('_')[-1]
-            if (transition_type == 'input') and ('msg_text' in state_globals["external"]):
-                state_globals["external"].pop("msg_text")
-            if args:
-                state_transition_function(state_globals, args)
-            else:
-                state_transition_function(state_globals)
-            npxc.save_platform_json(state_globals, manifest=False)
-        except Exception as e:
-            npxc.print_error(state_globals, e)
-            message = f'An exception occurred in state transition {state_transition_function.__name__}'
-            logging.debug(message)
-            npxc.alert_text(message, state_globals)
-        return None
-
-    return wrapper
-
-
-# @state_transition
+# @npxc.state_transition
 def default_exit(state_globals,label):
     npxc.default_exit(state_globals,label)
 
-# @state_transition
+# @npxc.state_transition
 def default_enter(state_globals,label):
     npxc.default_enter(state_globals,label)
 
-# @state_transition
+# @npxc.state_transition
 def default_input(state_globals, label):
     npxc.default_input(state_globals, label)
 
 
-@state_transition
+@npxc.state_transition
 def overrideable_error_state_input(state_globals):
     npxc.overrideable_error_state_input(state_globals)
 
-@state_transition
+@npxc.state_transition
 def overrideable_error_state_exit(state_globals):
     npxc.overrideable_error_state_exit(state_globals)
 
-# @state_transition
+# @npxc.state_transition
 def initialize_enter(state_globals):
     
     state_globals["external"]["logo"] = R".\np\images\logo_np_hab.png"
@@ -204,10 +147,10 @@ def initialize_input(state_globals):
         else:
             state_globals["external"]["next_state"] = "initialize"
             print('Failed user ID test')
-            fail_state(f'No LIMS ID for User:{state_globals["external"]["user_id"]} found in LIMS', state_globals)
+            npxc.fail_state(f'No LIMS ID for User:{state_globals["external"]["user_id"]} found in LIMS', state_globals)
     except (KeyError, IndexError):
         print('Failed user ID test')
-        fail_state(f'No LIMS ID for User:{state_globals["external"]["user_id"]} found in LIMS', state_globals)
+        npxc.fail_state(f'No LIMS ID for User:{state_globals["external"]["user_id"]} found in LIMS', state_globals)
         state_globals["external"]["next_state"] = "initialize"
 
 
@@ -370,7 +313,7 @@ def scan_mouse_id_input(state_globals):
 
     except limstk.LIMSUnavailableError:
         message = f'Could not retrieve donor_info for {mouse_id} from LIMS.'
-        fail_state(message, state_globals)
+        npxc.fail_state(message, state_globals)
         return
 
     npxc.assess_previous_sessions(state_globals)
@@ -414,7 +357,7 @@ def scan_mouse_id_input(state_globals):
     if 'use_auto' in state_globals['external'] and state_globals['external']['use_auto']:
         states_skipped = ['LIMS_request', 'date_string_check']
         fields_skipped = ['auto_generated_date_string', 'Project.Code.lims']
-        skip_states(state_globals, states_skipped, fields_skipped)
+        npxc.skip_states(state_globals, states_skipped, fields_skipped, globals())
         state_globals['external']['next_state'] = 'check_experiment_day'
 
 
@@ -449,7 +392,7 @@ def LIMS_request_input(state):
 
         state["external"]["transition_result"] = True
     except limstk.LIMSUnavailableError:
-        fail_state(f'Error validating project code {state["external"]["Project.Code.LIMS"]} in LIMS', state)
+        npxc.fail_state(f'Error validating project code {state["external"]["Project.Code.LIMS"]} in LIMS', state)
 
 
 
@@ -500,7 +443,7 @@ def date_string_check_input(state):
         result = limstk.isi_experiment_prod(state["external"]["mouse_id"])
 
     if not result:
-        fail_state(f'Could not find an ISI experiment for mouse id:{state["external"]["mouse_id"]} failure', state)
+        npxc.fail_state(f'Could not find an ISI experiment for mouse id:{state["external"]["mouse_id"]} failure', state)
         state["external"]["next_state"] = "lims_abort_confirm"
         return
     else:
@@ -553,7 +496,7 @@ def date_string_check_input(state):
             lims_result = requests.get(url)
             project_id = json.loads(lims_result.text)[0]["id"]
         except (KeyError, IndexError):
-            fail_state(f"Error getting project id for project {project_name}", state)
+            npxc.fail_state(f"Error getting project id for project {project_name}", state)
             return
 
     state["external"]["selected_isi_id"] = state["external"]["ISI_ids"][selected_index]
@@ -607,11 +550,11 @@ def date_string_check_input(state):
     #     state["external"]["status_message"] = "success"
     #     state["external"]["component_status"]["Notes"] = True
     # except KeyError:
-    #     fail_state('SurgeryNotes proxy is not defined.', state)
+    #     npxc.fail_state('SurgeryNotes proxy is not defined.', state)
     #     state["external"]["component_status"]["Notes"] = False
     #     return
     # except Exception:
-    #     fail_state('Error setting mouse and session name in SurgeryNotes', state)
+    #     npxc.fail_state('Error setting mouse and session name in SurgeryNotes', state)
     #     state["external"]["component_status"]["Notes"] = False
     #     return
     mapped_lims_location = f"{npxc.config['mapped_lims_location']}/{state['external']['session_name']}"
@@ -635,7 +578,7 @@ def lims_abort_confirm_input(state):
     elif "lims_abort_cancel" in state["external"] and state["external"]["lims_abort_cancel"]:
         state["external"]["next_state"] = "pull_ISI_data"
     else:
-        fail_state('No valid inputs', state)
+        npxc.fail_state('No valid inputs', state)
 
 
 def lims_abort_confirm_revert(state):
@@ -659,7 +602,7 @@ def check_experiment_day_input(state_globals):
     session_types_options = state_globals['external']['session_types_options']
     if not (entered_experiment_day in session_types_options):
         message = 'Session Type Not Valid: please type exactly as listed'
-        fail_state(message, state_globals)
+        npxc.fail_state(message, state_globals)
     else:
         state_globals['external']['full_session_type'] = state_globals['external'][
                                                              'session_type'] + '_' + entered_experiment_day.lower()
@@ -735,7 +678,7 @@ def load_mouse_input(state_globals):
     #state_globals['external']['next_state'] = 'lower_probe_cartridge'
     message = npxc.load_mouse_behavior(state_globals)
     if message:
-        fail_state(message, state_globals)
+        npxc.fail_state(message, state_globals)
     state_globals['external']['transition_result'] = True
     state_globals['external']['status_message'] = 'success'
     npxc.save_platform_json(state_globals, manifest=False)
@@ -843,7 +786,7 @@ def pre_stimulus_wait_input(state_globals):
 
     if state_globals['external']['settle_time_remaining_num']:  # total_seconds < npxc.config['final_depth_timer_s']:
         message = 'The settle time has not elapsed! Please wait until the state timer matches the remaining time'
-        fail_state(message, state_globals)
+        npxc.fail_state(message, state_globals)
         return
 
     # state_globals['external']['next_state'] = 'check_data_dirs'
@@ -1205,7 +1148,7 @@ def remove_mouse_and_move_files2_input(state_globals):
     print('>> remove_mouse_and_move_files2_input <<')
     message = npxc.remove_mouse_input(state_globals)
     if message:
-        fail_state(message, state_globals)
+        npxc.fail_state(message, state_globals)
 
     ###Can't do this without retrieving water earned which we don't do...
     predict_earned = npxc.get_from_config(['predict_earned'], default=True)
@@ -1291,7 +1234,7 @@ def check_files1_input(state_globals):
     print(f'Missing files is {failed}')
 
 
-@state_transition
+@npxc.state_transition
 def foraging_ID_error_input(state_globals):
     #print('foraging ID:' + state_globals['external']['foraging_id'])
     #print('stimulus_name:' + state_globals['external']['stimulus_name'])
@@ -1300,7 +1243,7 @@ def foraging_ID_error_input(state_globals):
     pass
 
 
-@state_transition
+@npxc.state_transition
 def foraging_ID_error_exit(state_globals):
     pass
     #npxc.overrideable_error_state_exit(state_globals)
@@ -1327,7 +1270,7 @@ def create_manifest_and_platform_json_and_sync_report_input(state_globals):
     state_globals["external"]["status_message"] = "success"
 
 
-@state_transition
+@npxc.state_transition
 def cleanup_enter(state_globals):
     """
     Entry function for state workflow_complete
@@ -1338,7 +1281,7 @@ def cleanup_enter(state_globals):
 
 
 
-@state_transition
+@npxc.state_transition
 def cleanup_input(state_globals):
     """
     Input test function for state workflow_complete
@@ -1406,7 +1349,7 @@ def ready_to_check_network_input(state_globals):
     session_type = state_globals['external']['session_type']
     if npxc.global_processes['network_backup_process'].poll() is None:
         message = 'Files are not finished copying to the network. Wait a bit and try again'
-        fail_state(message, state_globals)
+        npxc.fail_state(message, state_globals)
     else:
         failed = {}
         failed = npxc.check_files_network(state_globals, session_type, {1, 2})

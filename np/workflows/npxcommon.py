@@ -1,4 +1,5 @@
 import glob
+import inspect
 import json
 import logging
 import os
@@ -6,6 +7,7 @@ import pathlib
 import pickle
 import re
 import shutil
+import socket
 import subprocess
 import time
 import traceback
@@ -108,6 +110,80 @@ global_processes = {}
 
 mouse_director_proxy = None
 
+
+# ------------------- UTILITY FUNCTIONS -------------------
+
+def fail_state(message: str, state: dict):
+    """
+    Set the current transition to failed and fill out the dictionary with the appropriate information
+    :param message: the fail reason
+    :param state: the state dictionary
+    :return:
+    """
+
+    if 'fail_state_override' in state['external'] and state['external']['fail_state_override']:
+        state['external'].pop('fail_state_override', None)
+    else:
+        current_frame = inspect.currentframe()
+        calling_frame = inspect.getouterframes(current_frame, 2)[1][3]
+        state_name = calling_frame[: calling_frame.rfind("_")]
+        logging.info(f"{state_name} failed to advance: {message}")
+        state['external']['alert'] = True
+        state["external"]["transition_result"] = False
+        state["external"]["next_state"] = state_name
+        message = append_alert(message, state)
+        state["external"]["msg_text"] = message
+
+
+def skip_states(state_globals, states_skipped, fields_skipped, globals):
+    for field in fields_skipped:
+        state_globals['external'][field] = True
+    for state_name in states_skipped:
+        for transition in ['enter', 'input', 'exit']:
+            func_name = state_name + '_' + transition
+            default_func_name = 'default_' + transition
+            if func_name in globals:
+                method_to_call = globals[func_name]
+                method_to_call(state_globals)
+            else:
+                method_to_call = globals[default_func_name]
+                method_to_call(state_globals, state_name)
+
+
+def state_transition(state_transition_function):
+    def wrapper(state_globals, *args):
+        try:
+            # reload(npxc)
+            transition_type = state_transition_function.__name__.split('_')[-1]
+            if ((transition_type == 'input') or (transition_type == 'revert')) and ('msg_text' in state_globals["external"]):
+                state_globals["external"].pop("msg_text")
+            if args:
+                state_transition_function(state_globals, args)
+            else:
+                state_transition_function(state_globals)
+            save_state(state_globals,state_transition_function)
+            save_platform_json(state_globals, manifest=False)
+        except Exception as e:
+            print_error(state_globals, e)
+            message = f'An exception occurred in state transition {state_transition_function.__name__}'
+            logging.debug(message)
+            alert_text(message, state_globals)
+        return None
+
+    return wrapper
+
+
+def component_check(state: dict) -> list:
+    failed = []
+    for name, proxy in state['component_proxies'].items():
+        try:
+            logging.info(f'{name} uptime: {proxy.uptime}')
+            state["external"]["component_status"][name] = True
+        except Exception:
+            state["external"]["component_status"][name] = False
+            logging.debug(f'Cannot communicate with {name}.')
+            failed.append(name)
+    return failed
 
 
 def interlace(left, right, stereo):
