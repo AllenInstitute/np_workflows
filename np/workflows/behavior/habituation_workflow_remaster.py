@@ -103,12 +103,6 @@ def state_transition(state_transition_function):
 
     return wrapper
 
-# function to interlace the left/right images into one image and save to a path
-def interlace(left, right, stereo):
-    npxc.interlace(left, right, stereo)
-
-def handle_message(message_id, message, timestamp, io):
-    npxc.handle_message(message_id, message, timestamp, io)
 
 # @state_transition
 def default_exit(state_globals,label):

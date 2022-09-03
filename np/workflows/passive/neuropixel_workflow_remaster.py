@@ -122,13 +122,8 @@ def component_check(state: dict) -> list:
     return failed
 
 
-# function to interlace the left/right images into one image and save to a path
-def interlace(left, right, stereo):
-    npxc.interlace(left, right, stereo)
 
 
-def handle_message(message_id, message, timestamp, io):
-    npxc.handle_message(message_id, message, timestamp, io)
 
 
 # ------------------- State Transitions -------------------
