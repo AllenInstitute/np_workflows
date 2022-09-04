@@ -59,7 +59,7 @@ def get_config() -> dict:
 
     global config
     config = mpeconfig.source_configuration(
-        project_name=experiment.mpe_config.lims_project_name,
+        project_name=experiment.mpe_config.project_name,
         version=experiment.mpe_config.version)
 
     if Rig.ID == 'NP.0':
