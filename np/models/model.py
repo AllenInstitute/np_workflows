@@ -1,5 +1,6 @@
 import abc
 import json
+import os
 import pathlib
 import time
 from pathlib import Path
@@ -32,19 +33,26 @@ class Model(abc.ABC):
     lims_project_name:str = None # should be the class name, but just in case
     mpe_config = MPEConfig()
     local_config = None
+    session_folder = None
     
     @classmethod
-    def files(cls, session_type:str='D1', session_str:str=None) -> Dict[str, Dict[str,str]]:
+    def files(cls, session_folder:str=None, session_type:str='D1') -> Dict[str, Dict[str,str]]:
         """Return a list of files that could be entered directly into platform json.
         
-        session_type: 'D1', 'habituation', 'D2'
+        session_type: 'D1' (default), 'habituation', 'D2'
         session_str: [lims_id]_[mouse_id]_[session_id]
         """
+        if not session_folder and not cls.session_folder:
+            raise ValueError(f"{cls.__class__} requires a session folder")
+        elif not session_folder:
+            # use the class's session folder if none provided
+            session_folder = cls.session_folder
+            
         if session_type not in ['D1', 'habituation', 'D2']:
             raise ValueError(f'{session_type} is not a valid session type')
         
-        if len(session_str.split('_')) != 3:
-            raise ValueError(f'{session_str} is not a valid session string')
+        if not session_folder or len(session_folder.split('_')) != 3:
+            raise ValueError(f'{session_folder} is not a valid session string')
         
         template_root = pathlib.Path(R"\\allen\programs\mindscope\workgroups\dynamicrouting\ben\npexp_data_manifests")
         template = template_root / session_type / f"{cls.__name__}.json"
@@ -55,7 +63,7 @@ class Model(abc.ABC):
         # convert dict to str
         # replace % with session string
         # switch ' and " so we can convert str back to dict with json.loads()
-        return json.loads(str(x).replace('%',str(session_str)).replace('\'','"'))
+        return json.loads(str(x).replace('%',str(session_folder)).replace('\'','"'))
     
 
 class Behavior(Model):
