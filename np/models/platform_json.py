@@ -1,20 +1,21 @@
+import csv
 import datetime
 import json
 import logging
 import os
-import re
-import sys
 import pathlib
-import time
+import re
+import shutil
+import sys
 from typing import Dict, Union
+
 import requests
 
 sys.path.append("c:/program files/aibs_mpe/workflow_launcher")
 
 try:
     from np.services import config as nptk
-    from mpetk import lims
-except ImportError:
+    except ImportError:
     pass
 try:
     from np.services import config as nptk
@@ -24,9 +25,10 @@ except ImportError:
 WSE_DATETIME_FORMAT = '%Y%m%d%H%M%S' # should match the pattern used throughout the WSE
 
 MVR_RELATIVE_PATH = pathlib.Path("C/ProgramData/AIBS_MPE/mvr/data")
+NEWSCALE_RELATIVE_PATH = pathlib.Path("C/MPM_data")
 CAMVIEWER_RELATIVE_PATH = pathlib.Path("C/Users/svc_neuropix/cv3dImages") # NP.0 only
-CAMSTIM_RELATIVE_PATH = pathlib.Path("C/ProgramData/AIBS_MPE/camstim/output")
-SYNC_RELATIVE_PATH = pathlib.Path("C/ProgramData/AIBS_MPE/sync/output")
+CAMSTIM_RELATIVE_PATH = pathlib.Path("C/ProgramData/AIBS_MPE/camstim/data")
+SYNC_RELATIVE_PATH = pathlib.Path("C/ProgramData/AIBS_MPE/sync/data")
 
 NEUROPIXELS_DATA_RELATIVE_PATH = pathlib.Path("C/ProgramData/AIBS_MPE/neuropixels_data")
 NPEXP_PATH = pathlib.Path("//allen/programs/mindscope/workgroups/np-exp")
@@ -299,7 +301,7 @@ class SessionFile:
 
 class PlatformJson(SessionFile):
     
-    files_template: dict
+    # files_template: dict
     
     def __init__(self,path: os.PathLike = None):
         if path:
@@ -366,51 +368,173 @@ class PlatformJson(SessionFile):
     
     @property
     def src_video(self) -> pathlib.Path:
-        return pathlib.Path(f"//{self.mon}") / MVR_RELATIVE_PATH
+        return pathlib.Path(fR"\\{self.mon}\{MVR_RELATIVE_PATH}")
+    
+    @property
+    def src_motor_locs(self) -> pathlib.Path:
+        return pathlib.Path(fR"\\{self.mon}\{NEWSCALE_RELATIVE_PATH}")
     
     @property
     def src_image(self) -> pathlib.Path:
         if self.rig == 'NP.0':
-            return pathlib.Path(f"//{self.mon}") / CAMVIEWER_RELATIVE_PATH
-        return pathlib.Path(f"//{self.mon}") / MVR_RELATIVE_PATH
+            return pathlib.Path(fR"\\{self.mon}\{CAMVIEWER_RELATIVE_PATH}")
+        return pathlib.Path(fR"\\{self.mon}\{MVR_RELATIVE_PATH}")
     
     @property
     def src_pkl(self) -> pathlib.Path:
-        return pathlib.Path(f"//{self.stim}") / CAMSTIM_RELATIVE_PATH
+        return pathlib.Path(fR"\\{self.stim}\{CAMSTIM_RELATIVE_PATH}")
     
     @property
     def src_sync(self) -> pathlib.Path:
-        return pathlib.Path(f"//{self.sync}") / SYNC_RELATIVE_PATH
+        return pathlib.Path(fR"\\{self.sync}\{SYNC_RELATIVE_PATH}") 
     
-    # @property
-    # def project
-    # # class FilesEntry:
+    
+    
+class Files(PlatformJson):
+    
+    def __init__(self,*args,**kwargs):
+        super().__init__(*args,**kwargs)
+        
+    @property
+    def template(self) -> dict:
+        template_root = pathlib.Path(R"\\allen\programs\mindscope\workgroups\dynamicrouting\ben\npexp_data_manifests")
+        if self.session.type == 'behavior':
+            session_type = 'habituation'
+        elif 'D1' in self.path.stem:
+            session_type = 'D1'
+        elif 'D2' in self.path.stem:
+            session_type = 'D2'
+        template_path = template_root / session_type / f"{self.session.project}.json"
+        with template_path.open('r') as f:
+            return json.load(f)['files']
         
         
-def get_created_timestamp_from_file(file, date_format=WSE_DATETIME_FORMAT):
+    @property
+    def expected(self) -> dict:
+        # convert template dict to str
+        # replace % with session string
+        # switch ' and " so we can convert str back to dict with json.loads()
+        return json.loads(str(self.template).replace('%',str(self.session.folder)).replace("'",'"'))
+        
+    @property
+    def current(self) -> dict:
+        return self.contents['files']
+    
+    @property
+    def missing(self) -> dict:
+        return {k:v for k,v in self.expected.items() if k not in self.current}
+    
+    @property
+    def extra(self) -> dict:
+        return {k:v for k,v in self.current.items() if k not in self.expected}
+    
+    class Entry:
+        def __init__(self, entry:dict=None):
+            self.descriptive_name = entry[0]
+            self.type = list(entry[1].keys())[0]
+            self.dir_or_file = list(entry[1].values())[0]
+        def __dict__(self):
+            return {self.descriptive_name: {self.type:self.dir_or_file}}
+        
+    @property
+    def entries(self) -> list[Entry]:
+        return [self.Entry(entry) for entry in self.expected.items()]
+    
+    @property
+    def paths(self) -> list[Entry]:
+        return [self.path.parent / pathlib.Path(v.dir_or_file) for v in self.entries]
+    
+    @property
+    def exist(self) -> list[Entry]:
+        return [f.exists() for f in self.paths]
+    
+    def fetch_missing(self):
+        for file in self.paths:
+            if file.exists():
+                continue
+            
+            glob = '*' # default
+            if file.suffix in ['.pkl']:
+                src = self.src_pkl
+                pkl = file.name.split('.')[-2] 
+                
+                if pkl in ['opto', 'replay']:
+                    glob = f"*{pkl}*.pkl"
+                elif pkl in ['stim','behavior','mapping']:
+                    glob = f"*{self.contents['stimulus_name']}*.pkl"
+            
+            elif file.suffix in ['.mp4','.avi']:
+                # TODO match camera idx to behav/face/eye
+                src = self.src_video
+                glob = f'*{file.suffix}'
+                
+            elif file.suffix in ['.json'] and file.name.split('.')[-2] in ['behavior','face','eye']:
+                src = self.src_video
+                glob = f'*{file.suffix}'
+                
+            elif (file.suffix in ['.png','.bmp']
+                  and 'surface-image' in file.stem):
+                src = self.src_image
+                
+            elif file.suffix in ['.sync']:
+                src = self.src_sync
+                glob = f"*{file.suffix}"
+                
+            elif 'motor-locs' in file.stem:
+                src = self.src_motor_locs
+                log = src / 'log.csv'
+                try:
+                    file.write_text(log.read_text())
+                except PermissionError as e:
+                    try:
+                        shutil.copy2(log, file)
+                    except PermissionError as e:
+                        print(f"{e}")
+                # TODO only copy locs from the exp date
+                file.touch() # permission denied from ben user
+                with log.open('r') as o:
+                    locs = csv.reader(o)
+                    with file.open('w') as n:
+                        locs_from_exp_date = csv.writer(n)
+                        
+                    for row in locs:
+                        print(row)
+                        break
+                    if  == 'motor'row[0]:
+                        new_locs.writerow(row)
+                glob = '*.csv'
+                # TODO open csv file and extract locs from the same day
+                
+            else:
+                continue
+            
+            #TODO surgery notes 
+            
+            x = get_files_created_between(src,glob,self.exp_start,self.exp_end)
+            print(f"missing: {file}\nfound:{x}")
+        
+    
+def get_created_timestamp_from_file(file:os.PathLike):
+    timestamp = pathlib.Path(file).stat().st_ctime
+    return datetime.datetime.fromtimestamp(timestamp)
 
-    t = os.path.getctime(str(file))
-    # t = os.path.getmtime(file)
-    t = time.localtime(t)
-    t = time.strftime(date_format, t)
 
-    return t
-
-def get_files_created_between(dir, strsearch, start, end):
+def get_files_created_between(dir: os.PathLike, strsearch, start:datetime.datetime, end:datetime.datetime):
     """"Returns a generator of Path objects"""
-    path_select_list = []
-    paths_all = pathlib.Path(dir).glob(strsearch)
-    for path in paths_all:
-        time_created = int(get_created_timestamp_from_file(path))
-        if time_created in range(start, end):
-            path_select_list.append(path)
+    hits = []
+    glob_matches = pathlib.Path(dir).rglob(strsearch)
+    for match in glob_matches:
+        t = get_created_timestamp_from_file(match)
+        if start <= t <= end:
+            hits.append(match)
 
-    return path_select_list
+    return hits
+
 
 if __name__ == "__main__":
-    j = PlatformJson(R"\\w10dtsm112719\c$\ProgramData\AIBS_MPE\neuropixels_data\1196157974_631510_20220803\1196157974_631510_20220803_platformD1.json")
-    j.session.project
-    j = PlatformJson(R"C:\ProgramData\AIBS_MPE\neuropixels_data\1204734093_601734_20220901\1204734093_601734_20220901_platformD1.json")
+    j = Files(R"\\w10DTSM112719\C\ProgramData\AIBS_MPE\neuropixels_data\1204677304_632487_20220901\1204677304_632487_20220901_platformD1.json")
+    j.fetch_missing()
+    j = PlatformJson(R"\\w10dtsm18307\c$\ProgramData\AIBS_MPE\neuropixels_data\1204734093_601734_20220901\1204734093_601734_20220901_platformD1.json")
     j.session.type
     from model import VariabilitySpontaneous
     experiment = VariabilitySpontaneous() 
