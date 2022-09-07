@@ -1,5 +1,5 @@
-import csv
 import datetime
+import enum
 import json
 import logging
 import os
@@ -7,7 +7,7 @@ import pathlib
 import re
 import shutil
 import sys
-from typing import Dict, Union
+from typing import Dict, List, Union
 
 import requests
 
@@ -15,7 +15,7 @@ sys.path.append("c:/program files/aibs_mpe/workflow_launcher")
 
 try:
     from np.services import config as nptk
-    except ImportError:
+except ImportError:
     pass
 try:
     from np.services import config as nptk
@@ -365,6 +365,7 @@ class PlatformJson(SessionFile):
     @property
     def acq(self):
         return nptk.ConfigHTTP.hostname(f'{self.rig}-Acq')
+    # no src_acq because it depends on probe letter (A:/ B:/)
     
     @property
     def src_video(self) -> pathlib.Path:
@@ -387,9 +388,239 @@ class PlatformJson(SessionFile):
     @property
     def src_sync(self) -> pathlib.Path:
         return pathlib.Path(fR"\\{self.sync}\{SYNC_RELATIVE_PATH}") 
+     
+# entries ------------------------------------------------------------------------------ #
+
+# depending on the data type of each entry, the method to find the corresponding
+# original data files will be quite different
+# - from each entry in platform.json "files" field we create an Entry object of a
+#   specific subtype, using the factory method below e.g. entry_from_factory(self, entry)
+
+class Entry:
+    def __init__(self, entry:Dict=None, platform_json:PlatformJson=None):
+        self.descriptive_name = entry[0]
+        self.dir_or_file_type = list(entry[1].keys())[0]
+        self.dir_or_file_name = list(entry[1].values())[0]
+        self.platform_json = platform_json
+        self.path = self.platform_json.path / self.dir_or_file_name
+        
+    @property
+    def original(self) -> os.PathLike:
+        """Path to original file for this entry"""
+        raise NotImplementedError
+    
+    def copy(self,dest: os.PathLike=None):
+        """Copy original file to a specified destination folder"""
+        if dest is None:
+            dest = self.path
+        # TODO add checksum of file/dir to db
+        if self.dir_or_file_type == 'directory_name':
+            return shutil.copytree(self.original,dest)
+        if self.dir_or_file_type == 'filename':
+            return shutil.copy2(self.original,dest)
+            
+    def __dict__(self):
+        return {self.descriptive_name: {self.dir_or_file_type:self.dir_or_file_name}}
+    
+# -------------------------------------------------------------------------------------- #
+class EphysRaw(Entry):
+    
+    probe_drive_map = {
+        'A':'A',
+        'B':'A',
+        'C':'A',
+        'D':'B',
+        'E':'B',
+        'F':'B'
+    }
+    probe_group_map = {
+        'A':'_probeABC',
+        'B':'_probeABC',
+        'C':'_probeABC',
+        'D':'_probeDEF',
+        'E':'_probeDEF',
+        'F':'_probeDEF'
+    }
+    
+    descriptors = [f'ephys_raw_data_probe_{c}' for c in 'ABCDEF']
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.probe_letter = self.descriptive_name[-1].upper() # A-F           
+    
+    @property
+    def original(self) -> os.PathLike:
+        
+        drive = pathlib.Path(f"//{self.platform_json.acq}/{self.probe_drive_map[self.probe_letter]}")
+        
+        hits = get_dirs_created_between(drive,self.platform_json.session.folder,self.platform_json.exp_start,self.platform_json.exp_end)
+        # TODO if multiple folders found, find the largest
+        # TODO locate even if no folders with matching session folder or creation time
+        if len(hits) == 1:
+            return hits[0]
+        print(f"No folders matching {self.platform_json.session.folder} not found in {drive}")
+        
+# -------------------------------------------------------------------------------------- #
+class Sync(Entry):
+    
+    descriptors = ['synchronization_data']
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        
+    @property
+    def original(self) -> os.PathLike:
+        src = self.platform_json.src_sync
+        hits = get_files_created_between(src,self.path.suffix,self.platform_json.exp_start,self.platform_json.exp_end)
+        return hits[0] if len(hits) == 1 else None
+        print(f"No matching sync file found")
+        
+# -------------------------------------------------------------------------------------- #
+class Camstim(Entry):
+    pkls = ['behavior','optogenetic','visual','replay']
+    descriptors = [f"{pkl}_stimulus" for pkl in pkls]
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.pkl = self.dir_or_file_name.split('.')[-2] 
+        
+    @property
+    def original(self) -> os.PathLike:
+        src = self.platform_json.src_pkl
+        hits = []
+        glob = f"*{self.pkl}*.pkl"
+        hits.append(get_files_created_between(src,glob,self.platform_json.exp_start,self.platform_json.exp_end))
+        
+        glob = f"*{self.platform_json.contents['stimulus_name']}*.pkl"
+        hits.append(get_files_created_between(src,glob,self.platform_json.exp_start,self.platform_json.exp_end))
+        
+        if len(hits) == 0:
+            print(f"No matching {self.pkl}.pkl found")
+            return None
+        if len(hits) == 1:
+            return hits[0]
+        if len(hits) > 1:
+            return hits[max([h.stat().st_size for h in hits if h])]
+        
+# -------------------------------------------------------------------------------------- #
+class VideoTracking(Entry):
+    cams = ['behavior','eye', 'face']
+    descriptors =[f"{cam}_tracking" for cam in cams]
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.cam = self.dir_or_file_name.split('.')[-2] 
+        
+    @property
+    def original(self) -> os.PathLike:
+        hits = []
+        src = self.platform_json.src_video
+        glob = f"*{self.cam}*{self.path.suffix}"
+        hits.append(get_files_created_between(src,glob,self.platform_json.exp_start,self.platform_json.exp_end))
+
+class VideoInfo(Entry):
+    cams = ['beh','eye', 'face']
+    descriptors =[f"{cam}_cam_json" for cam in cams]
+        
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+    
+    # inherits behavior from VideoTracking while being subclass of Entry (for ease of
+    # luookingp Entry's subclasses )
+    @property
+    def original(self) -> os.PathLike:
+        return VideoTracking(self).original
+    
+# -------------------------------------------------------------------------------------- #
+class SurfaceImage(Entry):
+    imgs = ['pre_experiment','brain','pre_insertion','post_insertion','post_stimulus','post_experiment']
+    descriptors =[f"{img}_surface_image_{side}" for img in imgs for side in ['left','right'] ]
+    
+    #TODO assign total surface images to each instance
+    total_imgs_per_exp:int = None
+    
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.side = self.descriptive_name.split('_')[-1]
+        
+    @property
+    def original(self) -> os.PathLike:
+        if self.total_imgs_per_exp is None:
+            print(f"No total images needs to be assigned")
+            return None
+        src = self.platform_json.src_image
+        glob = f"*{self.path.suffix}"
+        hits = get_files_created_between(src,glob,self.platform_json.exp_start,self.platform_json.exp_end)
+        if len(hits) == 0:
+            print(f"No matching surface image found")
+            return None
+        # need to know how many surface images there should be in total for this experiment
+        if len(hits) == self.total_imgs_per_exp:
+            img_idx0 = self.descriptors.index(self.descriptive_name)
+            #decsriptors are in order left, then right - return right or left of a pair
+            img_idx1 = img_idx0 - 1 if img_idx0%2 else img_idx0 + 1
+            return hits[img_idx0] if self.side in hits[img_idx0].name else hits[img_idx1]
+# --------------------------------------------------------------------------------------
+class NewscaleLog(Entry):
+    descriptors = ['newstep_csv']
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)   
+    
+    @property
+    def original(self) -> os.PathLike:
+        src = self.platform_json.src_motor_locs
+        return src / 'log.csv'
     
     
+    # TODO trim the MPM logs or copy only what's needed
+    ##* the lines below will extract relevant motor locs without using pandas,
+    ##* but it's unreasonably slow with 500k lines in the csv file
+    # with log.open('r') as o:
+    #     locs = csv.reader(o)
+    #     with file.open('w') as n:
+    #         locs_from_exp_date = csv.writer(n)
+            
+    #     for row in locs:
+    #         sys.stdout.write(f"{locs.line_num}\r")
+    #         sys.stdout.flush()
+            
+    #         if self.exp_start.strftime(R"%Y/%m/%d") in row[0]:
+    #             # find csv entries recorded on the same day as the
+    #             # experiment
+    #             locs_from_exp_date.writerow(row)
     
+# --------------------------------------------------------------------------------------
+class Notebook(Entry):
+    descriptors = [
+                'area_classifications',
+                'fiducial_image',
+                'overlay_image',
+                'insertion_location_image',
+                'isi_registration_coordinates',
+                'isi _registration_coordinates'
+                ]
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)   
+    
+    @property
+    def original(self) -> os.PathLike:    
+        pass
+        #TODO notebook entries
+        
+# --------------------------------------------------------------------------------------
+class Surgery(Entry):
+    descriptors = ['surgery_notes','post_removal_surgery_image','final_surgery_image']
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)   
+    
+    @property
+    def original(self) -> os.PathLike:    
+        pass
+        #TODO surgery notes 
+    
+# -------------------------------------------------------------------------------------- #
+    
+ 
 class Files(PlatformJson):
     
     def __init__(self,*args,**kwargs):
@@ -428,99 +659,47 @@ class Files(PlatformJson):
     def extra(self) -> dict:
         return {k:v for k,v in self.current.items() if k not in self.expected}
     
-    class Entry:
-        def __init__(self, entry:dict=None):
-            self.descriptive_name = entry[0]
-            self.type = list(entry[1].keys())[0]
-            self.dir_or_file = list(entry[1].values())[0]
-        def __dict__(self):
-            return {self.descriptive_name: {self.type:self.dir_or_file}}
+    def entry_from_factory(self, entry:Dict) -> Entry:
+        descriptive_name = Entry(entry,self).descriptive_name
+        for entry_class in Entry.__subclasses__():
+            if descriptive_name in entry_class.descriptors:
+                return entry_class(entry,self)
+        raise ValueError(f"{descriptive_name} is not a recognized platform.json[files] entry-type")
         
     @property
-    def entries(self) -> list[Entry]:
-        return [self.Entry(entry) for entry in self.expected.items()]
+    def entries(self) -> List[Entry]:
+        return [self.entry_from_factory(entry) for entry in self.expected.items()]
     
     @property
-    def paths(self) -> list[Entry]:
-        return [self.path.parent / pathlib.Path(v.dir_or_file) for v in self.entries]
+    def paths(self) -> List[Entry]:
+        return [self.path.parent / pathlib.Path(v.dir_or_file_name) for v in self.entries]
     
     @property
-    def exist(self) -> list[Entry]:
+    def exist(self) -> List[Entry]:
         return [f.exists() for f in self.paths]
     
     def fetch_missing(self):
-        for file in self.paths:
-            if file.exists():
-                continue
+        for entry in self.entries:
             
-            glob = '*' # default
-            if file.suffix in ['.pkl']:
-                src = self.src_pkl
-                pkl = file.name.split('.')[-2] 
-                
-                if pkl in ['opto', 'replay']:
-                    glob = f"*{pkl}*.pkl"
-                elif pkl in ['stim','behavior','mapping']:
-                    glob = f"*{self.contents['stimulus_name']}*.pkl"
-            
-            elif file.suffix in ['.mp4','.avi']:
-                # TODO match camera idx to behav/face/eye
-                src = self.src_video
-                glob = f'*{file.suffix}'
-                
-            elif file.suffix in ['.json'] and file.name.split('.')[-2] in ['behavior','face','eye']:
-                src = self.src_video
-                glob = f'*{file.suffix}'
-                
-            elif (file.suffix in ['.png','.bmp']
-                  and 'surface-image' in file.stem):
-                src = self.src_image
-                
-            elif file.suffix in ['.sync']:
-                src = self.src_sync
-                glob = f"*{file.suffix}"
-                
-            elif 'motor-locs' in file.stem:
-                src = self.src_motor_locs
-                log = src / 'log.csv'
-                try:
-                    file.write_text(log.read_text())
-                except PermissionError as e:
-                    try:
-                        shutil.copy2(log, file)
-                    except PermissionError as e:
-                        print(f"{e}")
-                # TODO only copy locs from the exp date
-                file.touch() # permission denied from ben user
-                with log.open('r') as o:
-                    locs = csv.reader(o)
-                    with file.open('w') as n:
-                        locs_from_exp_date = csv.writer(n)
-                        
-                    for row in locs:
-                        print(row)
-                        break
-                    if  == 'motor'row[0]:
-                        new_locs.writerow(row)
-                glob = '*.csv'
-                # TODO open csv file and extract locs from the same day
-                
-            else:
-                continue
-            
-            #TODO surgery notes 
-            
-            x = get_files_created_between(src,glob,self.exp_start,self.exp_end)
-            print(f"missing: {file}\nfound:{x}")
-        
-    
+            print(f"missing: {entry.dir_or_file_name}\nfound:{entry.original}")
+          
 def get_created_timestamp_from_file(file:os.PathLike):
     timestamp = pathlib.Path(file).stat().st_ctime
     return datetime.datetime.fromtimestamp(timestamp)
 
-
-def get_files_created_between(dir: os.PathLike, strsearch, start:datetime.datetime, end:datetime.datetime):
-    """"Returns a generator of Path objects"""
+def get_dirs_created_between(dir: os.PathLike, strsearch, start:datetime.datetime, end:datetime.datetime) -> List[pathlib.Path]:
+    """"Returns a list of Path objects"""
+    hits = []
+    glob_matches = pathlib.Path(dir).glob(strsearch)
+    for match in glob_matches:
+        if match.is_dir():
+            t = get_created_timestamp_from_file(match)
+            if start <= t <= end:
+                hits.append(match)
+    return hits
+    
+def get_files_created_between(dir: os.PathLike, strsearch, start:datetime.datetime, end:datetime.datetime) -> List[pathlib.Path]:
+    """"Returns a list of Path objects"""
     hits = []
     glob_matches = pathlib.Path(dir).rglob(strsearch)
     for match in glob_matches:
@@ -533,8 +712,9 @@ def get_files_created_between(dir: os.PathLike, strsearch, start:datetime.dateti
 
 if __name__ == "__main__":
     j = Files(R"\\w10DTSM112719\C\ProgramData\AIBS_MPE\neuropixels_data\1204677304_632487_20220901\1204677304_632487_20220901_platformD1.json")
+    j = Files(R"\\w10dtsm18307\c$\ProgramData\AIBS_MPE\neuropixels_data\1204734093_601734_20220901\1204734093_601734_20220901_platformD1.json")
+    j.entries
     j.fetch_missing()
-    j = PlatformJson(R"\\w10dtsm18307\c$\ProgramData\AIBS_MPE\neuropixels_data\1204734093_601734_20220901\1204734093_601734_20220901_platformD1.json")
     j.session.type
     from model import VariabilitySpontaneous
     experiment = VariabilitySpontaneous() 
