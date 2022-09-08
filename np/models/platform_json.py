@@ -1,5 +1,5 @@
 import datetime
-import enum
+import hashlib
 import json
 import logging
 import os
@@ -127,8 +127,14 @@ class Session:
         
     @property
     def type(self) -> str:
-        result = re.findall(fR"(behavior|ecephys)(?=_session_{self.id})",self.lims['storage_directory'])
-        return result[0] if result else None
+        try:
+            result = re.findall(fR"(behavior|ecephys)(?=_session_{self.id})",self.lims['storage_directory'])
+            return result[0]
+        except Exception as e:
+            print(e)
+            return None
+                
+    
     
     # @property
     # def lims_path(self) -> Union[pathlib.Path, None]:
@@ -354,6 +360,10 @@ class PlatformJson(SessionFile):
         return self.contents.get('rig_id',None)
     
     @property
+    def experiment(self):
+        return self.contents.get('experiment', self.session.project)
+    
+    @property
     def mon(self):
         return nptk.ConfigHTTP.hostname(f'{self.rig}-Mon')
     @property
@@ -397,27 +407,88 @@ class PlatformJson(SessionFile):
 #   specific subtype, using the factory method below e.g. entry_from_factory(self, entry)
 
 class Entry:
+    
     def __init__(self, entry:Dict=None, platform_json:PlatformJson=None):
         self.descriptive_name = entry[0]
         self.dir_or_file_type = list(entry[1].keys())[0]
         self.dir_or_file_name = list(entry[1].values())[0]
         self.platform_json = platform_json
-        self.path = self.platform_json.path / self.dir_or_file_name
+        self.destination = self.platform_json.path.parent / self.dir_or_file_name
         
     @property
     def original(self) -> os.PathLike:
         """Path to original file for this entry"""
         raise NotImplementedError
     
-    def copy(self,dest: os.PathLike=None):
+    def return_single_hit(self, hits:List[os.PathLike]) -> os.PathLike:
+        """Return a single hit if possible, or None if no hits.
+        
+        Processes the output from get_files[or dirs]_created_between() according to some
+        common rule(s) 
+        - (Current) take the largest filesize,
+        - (add?) look for session folder string, 
+        - (add?) exclude pretest/temp, 
+        """
+        if not hits:
+            return None
+        if len(hits) == 1:
+            return hits[0]
+        
+        if len(hits) > 1 and all(h.is_file() for h in hits):
+            sizes = [h.stat().st_size for h in hits if h]
+            if all(s == sizes[0] for s in sizes):
+                return hits[0] # all matches the same size
+            else: 
+                return hits[sizes.index(max(sizes))] # largest file size
+        
+        if len(hits) > 1 and all(h.is_dir() for h in hits):
+            raise NotImplementedError 
+            #TODO get logic from oe060 sorting
+    
+    def copy(self, dest: os.PathLike=None):
         """Copy original file to a specified destination folder"""
-        if dest is None:
-            dest = self.path
         # TODO add checksum of file/dir to db
+        if not self.original:
+            print("Copy aborted - no original file found")
+            return
+        
+        if dest is None:
+            dest = self.destination
+        dest = pathlib.Path(dest)
+        
+        if self.original.is_dir():
+            pass
+            # TODO add size comparison
+            
+        if self.original.is_file() and dest.is_file():
+            
+            if dest.stat().st_size == 0:
+                pass
+            elif dest.stat().st_size < self.original.stat().st_size:
+                pass
+            elif dest.stat().st_size == self.original.stat().st_size:
+                hashes = []
+                for idx, file in enumerate([dest, self.original]):
+                    print(f"Generating checksum for {file} - may take a while.." )
+                    with open(file,'rb') as f:
+                        hashes += [hashlib.md5(f.read()).hexdigest()]
+                
+                if hashes[0] == hashes[1]:
+                    print(f"Original data and copy in folder are identical")
+                    return
+            
+            elif dest.stat().st_size > self.original.stat().st_size:
+                print(f"{self.original} is smaller than {dest} - copy manually if you really want to overwrite")
+                return
+                    
+        # do the actual copying
         if self.dir_or_file_type == 'directory_name':
-            return shutil.copytree(self.original,dest)
+            shutil.copytree(self.original,dest)
+            print('Copied directory:', self.original)
+        
         if self.dir_or_file_type == 'filename':
-            return shutil.copy2(self.original,dest)
+            shutil.copy2(self.original,dest)
+            print('Copied file:', self.original)
             
     def __dict__(self):
         return {self.descriptive_name: {self.dir_or_file_type:self.dir_or_file_name}}
@@ -447,18 +518,26 @@ class EphysRaw(Entry):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.probe_letter = self.descriptive_name[-1].upper() # A-F           
+        self.source = pathlib.Path(f"//{self.platform_json.acq}/{self.probe_drive_map[self.probe_letter]}")
     
     @property
     def original(self) -> os.PathLike:
         
-        drive = pathlib.Path(f"//{self.platform_json.acq}/{self.probe_drive_map[self.probe_letter]}")
+        glob = f"*{self.platform_json.session.folder}*"
+        hits = get_dirs_created_between(self.source,glob,self.platform_json.exp_start,self.platform_json.exp_end)
         
-        hits = get_dirs_created_between(drive,self.platform_json.session.folder,self.platform_json.exp_start,self.platform_json.exp_end)
+        single_hit = self.return_single_hit(hits)
+        if single_hit:
+            return single_hit
+            
+        hits = get_dirs_created_between(self.source,'*',self.platform_json.exp_start,self.platform_json.exp_end)
+        single_hit = self.return_single_hit(hits)          
+        if single_hit:
+            return single_hit   
+                   
         # TODO if multiple folders found, find the largest
         # TODO locate even if no folders with matching session folder or creation time
-        if len(hits) == 1:
-            return hits[0]
-        print(f"No folders matching {self.platform_json.session.folder} not found in {drive}")
+        print(f"No matches for {self.platform_json.session.folder} in {self.source} or no folders created during the experiment")
         
 # -------------------------------------------------------------------------------------- #
 class Sync(Entry):
@@ -467,13 +546,31 @@ class Sync(Entry):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.source = self.platform_json.src_sync
         
     @property
     def original(self) -> os.PathLike:
-        src = self.platform_json.src_sync
-        hits = get_files_created_between(src,self.path.suffix,self.platform_json.exp_start,self.platform_json.exp_end)
-        return hits[0] if len(hits) == 1 else None
-        print(f"No matching sync file found")
+        glob = f"*{self.destination.suffix}"
+        hits = get_files_created_between(self.source,glob,self.platform_json.exp_start,self.platform_json.exp_end)
+        if hits:
+            return self.return_single_hit(hits)
+       
+        # try again with differnt search
+        glob = f"*{self.platform_json.session.folder}*.sync"
+        start = self.platform_json.exp_start
+        end = self.platform_json.exp_end + datetime.timedelta(minutes=30)
+        hits = get_files_created_between(self.source,glob,start,end)
+        if hits:
+            return self.return_single_hit(hits)
+        # try again with differnt search
+        glob = f"*{self.platform_json.session.folder}*.h5"
+        start = self.platform_json.exp_start
+        end = self.platform_json.exp_end + datetime.timedelta(minutes=30)
+        hits = get_files_created_between(self.source,glob,start,end)
+        if hits:
+            return self.return_single_hit(hits)
+       
+            print(f"No matching sync file found")
         
 # -------------------------------------------------------------------------------------- #
 class Camstim(Entry):
@@ -482,26 +579,23 @@ class Camstim(Entry):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.source = self.platform_json.src_pkl
         self.pkl = self.dir_or_file_name.split('.')[-2] 
         
     @property
     def original(self) -> os.PathLike:
-        src = self.platform_json.src_pkl
         hits = []
         glob = f"*{self.pkl}*.pkl"
-        hits.append(get_files_created_between(src,glob,self.platform_json.exp_start,self.platform_json.exp_end))
+        hits += get_files_created_between(self.source,glob,self.platform_json.exp_start,self.platform_json.exp_end)
         
         glob = f"*{self.platform_json.contents['stimulus_name']}*.pkl"
-        hits.append(get_files_created_between(src,glob,self.platform_json.exp_start,self.platform_json.exp_end))
+        hits += get_files_created_between(self.source,glob,self.platform_json.exp_start,self.platform_json.exp_end)
         
         if len(hits) == 0:
             print(f"No matching {self.pkl}.pkl found")
-            return None
-        if len(hits) == 1:
-            return hits[0]
-        if len(hits) > 1:
-            return hits[max([h.stat().st_size for h in hits if h])]
         
+        return self.return_single_hit(hits)
+
 # -------------------------------------------------------------------------------------- #
 class VideoTracking(Entry):
     cams = ['behavior','eye', 'face']
@@ -509,67 +603,109 @@ class VideoTracking(Entry):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.source = self.platform_json.src_video
         self.cam = self.dir_or_file_name.split('.')[-2] 
         
     @property
     def original(self) -> os.PathLike:
-        hits = []
-        src = self.platform_json.src_video
-        glob = f"*{self.cam}*{self.path.suffix}"
-        hits.append(get_files_created_between(src,glob,self.platform_json.exp_start,self.platform_json.exp_end))
-
+        glob = f"*{self.cam}*{self.destination.suffix}"
+        start = self.platform_json.exp_start
+        end = self.platform_json.exp_end + datetime.timedelta(seconds=10)
+        hits = get_files_created_between(self.source,glob,start,end)
+        if not hits:
+            print(f"No matching video file found {self.dir_or_file_name}")
+        return self.return_single_hit(hits)
+    
 class VideoInfo(Entry):
+    # preference would be to inherit from VideoTracking
+    # but then this class wouldn't be a direct subclass of Entry
+    # and Entry.__subclasses__() no longer returns this class
+    
     cams = ['beh','eye', 'face']
     descriptors =[f"{cam}_cam_json" for cam in cams]
         
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.source = self.platform_json.src_video
+        self.cam = self.dir_or_file_name.split('.')[-2] 
     
-    # inherits behavior from VideoTracking while being subclass of Entry (for ease of
-    # luookingp Entry's subclasses )
     @property
     def original(self) -> os.PathLike:
-        return VideoTracking(self).original
+        hits = []
+        glob = f"*{self.cam}*{self.destination.suffix}"
+        start = self.platform_json.exp_start
+        end = self.platform_json.exp_end + datetime.timedelta(seconds=10)
+        hits = get_files_created_between(self.source,glob,start,end)
+        if not hits:
+            print(f"No matching video info json found {self.dir_or_file_name}")
+        return self.return_single_hit(hits)
     
 # -------------------------------------------------------------------------------------- #
 class SurfaceImage(Entry):
+
     imgs = ['pre_experiment','brain','pre_insertion','post_insertion','post_stimulus','post_experiment']
-    descriptors =[f"{img}_surface_image_{side}" for img in imgs for side in ['left','right'] ]
+    descriptors =[f"{img}_surface_image_{side}" for img in imgs for side in ['left','right'] ] # dorder of left/right is important for self.original
     
     #TODO assign total surface images to each instance
     total_imgs_per_exp:int = None
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        self.source = self.platform_json.src_image
         self.side = self.descriptive_name.split('_')[-1]
-        
+    
+    @property
+    def total_imgs_per_exp(self):
+        return sum('_surface_image_' in descriptive_name for descriptive_name in self.platform_json.template.keys())
+    
     @property
     def original(self) -> os.PathLike:
-        if self.total_imgs_per_exp is None:
-            print(f"No total images needs to be assigned")
+        if not self.total_imgs_per_exp:
+            print(f"Num. total images needs to be assigned")
             return None
-        src = self.platform_json.src_image
-        glob = f"*{self.path.suffix}"
-        hits = get_files_created_between(src,glob,self.platform_json.exp_start,self.platform_json.exp_end)
+        glob = f"*{self.destination.suffix}"
+        hits = get_files_created_between(self.source,glob,self.platform_json.exp_start,self.platform_json.exp_end)
+        
         if len(hits) == 0:
             print(f"No matching surface image found")
             return None
+        
+        right_labels_only = True if all('right' in hit.name for hit in hits) else False
+        lefts_labels_only = True if all('left' in hit.name for hit in hits) else False
+        equal_right_left_labels = True if sum('left' in hit.name for hit in hits) == sum('right' in hit.name for hit in hits) else False
+
         # need to know how many surface images there should be in total for this experiment
-        if len(hits) == self.total_imgs_per_exp:
+        if len(hits) == self.total_imgs_per_exp and equal_right_left_labels:
+            # we have all expected left/right pairs of images
+            # hits is sorted by creation time, so we just have to work out which pair
+            # matches this entry (self), then grab the left or right image from the pair
             img_idx0 = self.descriptors.index(self.descriptive_name)
             #decsriptors are in order left, then right - return right or left of a pair
             img_idx1 = img_idx0 - 1 if img_idx0%2 else img_idx0 + 1
             return hits[img_idx0] if self.side in hits[img_idx0].name else hits[img_idx1]
+        
+        if len(hits) == 0.5*self.total_imgs_per_exp and right_labels_only or lefts_labels_only:
+            # we have only the left or the right image for each pair
+            img_idx = self.descriptors.index(self.descriptive_name)//2
+            # regardless of which self.side this entry is, we have no choice but to
+            # return the image that we have (relabeled inaccurately as the other side in half the cases)
+            return hits[img_idx]
+        print(f"{self.total_imgs_per_exp} images found - can't determine which is {self.dir_or_file_name}")
+        
 # --------------------------------------------------------------------------------------
 class NewscaleLog(Entry):
     descriptors = ['newstep_csv']
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)   
-    
+        self.source = self.platform_json.src_motor_locs
+        
     @property
     def original(self) -> os.PathLike:
-        src = self.platform_json.src_motor_locs
-        return src / 'log.csv'
+        log = self.source / 'log.csv'
+        if log.exists():
+            return log
+        else:
+            print(f"No matching newscale log found at {log}")
     
     
     # TODO trim the MPM logs or copy only what's needed
@@ -635,7 +771,7 @@ class Files(PlatformJson):
             session_type = 'D1'
         elif 'D2' in self.path.stem:
             session_type = 'D2'
-        template_path = template_root / session_type / f"{self.session.project}.json"
+        template_path = template_root / session_type / f"{self.experiment}.json"
         with template_path.open('r') as f:
             return json.load(f)['files']
         
@@ -677,18 +813,22 @@ class Files(PlatformJson):
     @property
     def exist(self) -> List[Entry]:
         return [f.exists() for f in self.paths]
-    
-    def fetch_missing(self):
-        for entry in self.entries:
-            
-            print(f"missing: {entry.dir_or_file_name}\nfound:{entry.original}")
+
+                
+    def fetch_data_missing_from_folder(self):
+        # this is currently finding fields that are in the template but missing from the
+        # platform json - implicitly also missing from folder 
+        missing = [self.entry_from_factory(entry) for entry in self.missing.items()]
+        for entry in missing:
+            print(f"\nMissing: {entry.dir_or_file_name}\nFound  : {entry.original}")
+            entry.copy()
           
 def get_created_timestamp_from_file(file:os.PathLike):
     timestamp = pathlib.Path(file).stat().st_ctime
     return datetime.datetime.fromtimestamp(timestamp)
 
 def get_dirs_created_between(dir: os.PathLike, strsearch, start:datetime.datetime, end:datetime.datetime) -> List[pathlib.Path]:
-    """"Returns a list of Path objects"""
+    """"Returns a list of Path objects, sorted by creation time"""
     hits = []
     glob_matches = pathlib.Path(dir).glob(strsearch)
     for match in glob_matches:
@@ -696,25 +836,27 @@ def get_dirs_created_between(dir: os.PathLike, strsearch, start:datetime.datetim
             t = get_created_timestamp_from_file(match)
             if start <= t <= end:
                 hits.append(match)
-    return hits
+    return sorted(hits, key=get_created_timestamp_from_file)
     
 def get_files_created_between(dir: os.PathLike, strsearch, start:datetime.datetime, end:datetime.datetime) -> List[pathlib.Path]:
-    """"Returns a list of Path objects"""
+    """"Returns a list of Path objects, sorted by creation time"""
     hits = []
     glob_matches = pathlib.Path(dir).rglob(strsearch)
     for match in glob_matches:
         t = get_created_timestamp_from_file(match)
         if start <= t <= end:
             hits.append(match)
-
-    return hits
-
+    return sorted(hits, key=get_created_timestamp_from_file)
 
 if __name__ == "__main__":
-    j = Files(R"\\w10DTSM112719\C\ProgramData\AIBS_MPE\neuropixels_data\1204677304_632487_20220901\1204677304_632487_20220901_platformD1.json")
     j = Files(R"\\w10dtsm18307\c$\ProgramData\AIBS_MPE\neuropixels_data\1204734093_601734_20220901\1204734093_601734_20220901_platformD1.json")
-    j.entries
-    j.fetch_missing()
+    j = Files(R"\\w10DTSM112719\C\ProgramData\AIBS_MPE\neuropixels_data\1204677304_632487_20220901\1204677304_632487_20220901_platformD1.json")
+    j = Files(R"\\w10dtsm18306\neuropixels_data\1208053773_623319_20220907\1208053773_623319_20220907_platformD1.json")
+    j.fetch_data_missing_from_folder()
+    # TODO update entries in platform json to reflect new additions to the folder
+    # TODO fix entried in platform json that don't match the template (eg not fields
+    # aren't missing from 'files', but they have the wrong filename etc)
+    
     j.session.type
     from model import VariabilitySpontaneous
     experiment = VariabilitySpontaneous() 
