@@ -7,7 +7,7 @@ import pathlib
 import re
 import shutil
 import sys
-from typing import Dict, List, Union
+from typing import Dict, List, Tuple, Union
 
 import requests
 
@@ -125,40 +125,10 @@ class Session:
     def project(self) -> str:
         return self.lims['project']['code']
         
-    @property
-    def type(self) -> str:
-        try:
-            result = re.findall(fR"(behavior|ecephys)(?=_session_{self.id})",self.lims['storage_directory'])
-            return result[0]
-        except Exception as e:
-            print(e)
-            return None
-                
-    
-    
     # @property
-    # def lims_path(self) -> Union[pathlib.Path, None]:
-    #     '''get lims id from path/str and lookup the corresponding directory in lims'''
-    #     if not (self.folder or self.id):
-    #         return None
-        
-    #     try:
-    #         lims_dg = dg.lims_data_getter(self.id)
-    #         WKF_QRY =   '''
-    #                     SELECT es.storage_directory
-    #                     FROM ecephys_sessions es
-    #                     WHERE es.id = {}
-    #                     '''
-    #         lims_dg.cursor.execute(WKF_QRY.format(lims_dg.lims_id))
-    #         exp_data = lims_dg.cursor.fetchall()
-    #         if exp_data and exp_data[0]['storage_directory']:
-    #             return pathlib.Path('/'+exp_data[0]['storage_directory'])
-    #         else:
-    #             return None
-            
-    #     except:
-    #         return None
-
+    # def type(self) -> str:
+    # TODO if there's a way to get exp vs hab from lims, provide that info here
+                
 
 class SessionFile:
     """ Represents a single file belonging to a neuropixels ecephys session """
@@ -408,17 +378,49 @@ class PlatformJson(SessionFile):
 
 class Entry:
     
-    def __init__(self, entry:Dict=None, platform_json:PlatformJson=None):
-        self.descriptive_name = entry[0]
-        self.dir_or_file_type = list(entry[1].keys())[0]
-        self.dir_or_file_name = list(entry[1].values())[0]
-        self.platform_json = platform_json
-        self.destination = self.platform_json.path.parent / self.dir_or_file_name
+    def __init__(self, entry:Union[Dict,Tuple]=None, platform_json:PlatformJson=None):
+        # entry in platform json 'files' has the format:
+        #   'ephys_raw_data_probe_A': {
+        #          'directory_name': '1208053773_623319_20...7_probeABC'}
+        # we'll call the first key the 'descriptive_name'
+        # second is 'dir_or_file_type' (values are 'directory_name', 'filename')
+        # the value is the name of the directory or file: 'dir_or_file_name'
         
+        self.descriptive_name = d = entry[0] if isinstance(entry, tuple) else list(entry.keys())[0]
+        self.dir_or_file_type: str = list(entry[1].keys())[0] if isinstance(entry, tuple) else list(entry[d].keys())[0]
+        self.dir_or_file_name: str = list(entry[1].values())[0] if isinstance(entry, tuple) else list(entry[d].values())[0]
+        
+        # we'll need some general info about the experiment:
+        self.platform_json: PlatformJson = Files(platform_json.path) if not isinstance(platform_json, Files) else platform_json
+        
+        self.actual: pathlib.Path = self.platform_json.path.parent / self.dir_or_file_name
+        # a presumed path to the data in the same folder as the platform json file
+        self.expected: pathlib.Path = self.platform_json.path.parent / self.platform_json.expected[self.descriptive_name][self.dir_or_file_type]
+
+    def __eq__(self, other):
+        # when comparing entries we want to know whether they have the same
+        # descriptive name key and the same file/folder name
+        return self.descriptive_name == other.descriptive_name and self.dir_or_file_name == other.dir_or_file_name
+    
     @property
-    def original(self) -> os.PathLike:
+    def is_correct(self) -> bool:
+        return self.expected.name == self.actual.name
+        # return self in [self.platform_json.entry_from_factory(entry) for entry in self.platform_json.expected.items()]
+    
+    @property
+    def exists(self) -> bool:
+        # exists only to be overloaded by ephys entry
+        return self.expected.exists()
+    
+    @property
+    def origin(self) -> pathlib.Path:
         """Path to original file for this entry"""
-        raise NotImplementedError
+        raise NotImplementedError # should be implemented by subclasses
+
+    def rename():
+        """Rename the current data in the same folder as the platform json file"""
+        pass
+        # TODO 
     
     def return_single_hit(self, hits:List[os.PathLike]) -> os.PathLike:
         """Return a single hit if possible, or None if no hits.
@@ -448,27 +450,27 @@ class Entry:
     def copy(self, dest: os.PathLike=None):
         """Copy original file to a specified destination folder"""
         # TODO add checksum of file/dir to db
-        if not self.original:
+        if not self.origin:
             print("Copy aborted - no original file found")
             return
         
         if dest is None:
-            dest = self.destination
+            dest = self.expected
         dest = pathlib.Path(dest)
         
-        if self.original.is_dir():
+        if self.origin.is_dir():
             pass
             # TODO add size comparison
             
-        if self.original.is_file() and dest.is_file():
+        if self.origin.is_file() and dest.is_file():
             
             if dest.stat().st_size == 0:
                 pass
-            elif dest.stat().st_size < self.original.stat().st_size:
+            elif dest.stat().st_size < self.origin.stat().st_size:
                 pass
-            elif dest.stat().st_size == self.original.stat().st_size:
+            elif dest.stat().st_size == self.origin.stat().st_size:
                 hashes = []
-                for idx, file in enumerate([dest, self.original]):
+                for idx, file in enumerate([dest, self.origin]):
                     print(f"Generating checksum for {file} - may take a while.." )
                     with open(file,'rb') as f:
                         hashes += [hashlib.md5(f.read()).hexdigest()]
@@ -477,18 +479,18 @@ class Entry:
                     print(f"Original data and copy in folder are identical")
                     return
             
-            elif dest.stat().st_size > self.original.stat().st_size:
-                print(f"{self.original} is smaller than {dest} - copy manually if you really want to overwrite")
+            elif dest.stat().st_size > self.origin.stat().st_size:
+                print(f"{self.origin} is smaller than {dest} - copy manually if you really want to overwrite")
                 return
                     
         # do the actual copying
         if self.dir_or_file_type == 'directory_name':
-            shutil.copytree(self.original,dest)
-            print('Copied directory:', self.original)
+            shutil.copytree(self.origin,dest)
+            print('Copied directory:', self.origin)
         
         if self.dir_or_file_type == 'filename':
-            shutil.copy2(self.original,dest)
-            print('Copied file:', self.original)
+            shutil.copy2(self.origin,dest)
+            print('Copied file:', self.origin)
             
     def __dict__(self):
         return {self.descriptive_name: {self.dir_or_file_type:self.dir_or_file_name}}
@@ -521,24 +523,49 @@ class EphysRaw(Entry):
         self.source = pathlib.Path(f"//{self.platform_json.acq}/{self.probe_drive_map[self.probe_letter]}")
     
     @property
-    def original(self) -> os.PathLike:
+    def origin(self) -> os.PathLike:
+        
+        def filter_hits(hits:List[os.PathLike]) -> List[os.PathLike]:
+            return [h for h in hits if not any(f in h.as_posix() for f in ['_temp', '_pretest'])]
         
         glob = f"*{self.platform_json.session.folder}*"
         hits = get_dirs_created_between(self.source,glob,self.platform_json.exp_start,self.platform_json.exp_end)
         
-        single_hit = self.return_single_hit(hits)
+        single_hit = self.return_single_hit(filter_hits(hits))
         if single_hit:
             return single_hit
             
         hits = get_dirs_created_between(self.source,'*',self.platform_json.exp_start,self.platform_json.exp_end)
-        single_hit = self.return_single_hit(hits)          
+        single_hit = self.return_single_hit(filter_hits(hits))      
         if single_hit:
             return single_hit   
                    
         # TODO if multiple folders found, find the largest
         # TODO locate even if no folders with matching session folder or creation time
         print(f"No matches for {self.platform_json.session.folder} in {self.source} or no folders created during the experiment")
-        
+    
+    @property 
+    def platform_json_on_z_drive(self) -> bool:
+        # raw probe data isn't stored on the z drive like other data, so this flag will
+        # be queried by other functions
+        if any(s in str(self.platform_json.path.parent).lower() for s in ['neuropixels_data', 'z:/', 'z:\\']):
+            return True
+        return False
+    
+    def copy(self, *args, **kwargs):
+        if self.platform_json_on_z_drive:
+            print(f"Copying not implemented for {self.__class__.__name__} to {self.expected}: these data don't live on Z: drive")
+        else:
+            super().copy(*args, **kwargs)
+            
+    @property
+    def exists(self) -> bool:
+        # overloaded to return True if the platform json being examined is on the
+        # z-drive and data exists at origin
+        if self.platform_json_on_z_drive and self.origin:
+            return True
+        return super().exists
+    
 # -------------------------------------------------------------------------------------- #
 class Sync(Entry):
     
@@ -549,8 +576,8 @@ class Sync(Entry):
         self.source = self.platform_json.src_sync
         
     @property
-    def original(self) -> os.PathLike:
-        glob = f"*{self.destination.suffix}"
+    def origin(self) -> os.PathLike:
+        glob = f"*{self.expected.suffix}"
         hits = get_files_created_between(self.source,glob,self.platform_json.exp_start,self.platform_json.exp_end)
         if hits:
             return self.return_single_hit(hits)
@@ -583,7 +610,7 @@ class Camstim(Entry):
         self.pkl = self.dir_or_file_name.split('.')[-2] 
         
     @property
-    def original(self) -> os.PathLike:
+    def origin(self) -> os.PathLike:
         hits = []
         glob = f"*{self.pkl}*.pkl"
         hits += get_files_created_between(self.source,glob,self.platform_json.exp_start,self.platform_json.exp_end)
@@ -607,8 +634,8 @@ class VideoTracking(Entry):
         self.cam = self.dir_or_file_name.split('.')[-2] 
         
     @property
-    def original(self) -> os.PathLike:
-        glob = f"*{self.cam}*{self.destination.suffix}"
+    def origin(self) -> os.PathLike:
+        glob = f"*{self.cam}*{self.expected.suffix}"
         start = self.platform_json.exp_start
         end = self.platform_json.exp_end + datetime.timedelta(seconds=10)
         hits = get_files_created_between(self.source,glob,start,end)
@@ -630,9 +657,9 @@ class VideoInfo(Entry):
         self.cam = self.dir_or_file_name.split('.')[-2] 
     
     @property
-    def original(self) -> os.PathLike:
+    def origin(self) -> os.PathLike:
         hits = []
-        glob = f"*{self.cam}*{self.destination.suffix}"
+        glob = f"*{self.cam}*{self.expected.suffix}"
         start = self.platform_json.exp_start
         end = self.platform_json.exp_end + datetime.timedelta(seconds=10)
         hits = get_files_created_between(self.source,glob,start,end)
@@ -659,11 +686,11 @@ class SurfaceImage(Entry):
         return sum('_surface_image_' in descriptive_name for descriptive_name in self.platform_json.template.keys())
     
     @property
-    def original(self) -> os.PathLike:
+    def origin(self) -> os.PathLike:
         if not self.total_imgs_per_exp:
             print(f"Num. total images needs to be assigned")
             return None
-        glob = f"*{self.destination.suffix}"
+        glob = f"*{self.expected.suffix}"
         hits = get_files_created_between(self.source,glob,self.platform_json.exp_start,self.platform_json.exp_end)
         
         if len(hits) == 0:
@@ -700,7 +727,7 @@ class NewscaleLog(Entry):
         self.source = self.platform_json.src_motor_locs
         
     @property
-    def original(self) -> os.PathLike:
+    def origin(self) -> os.PathLike:
         log = self.source / 'log.csv'
         if log.exists():
             return log
@@ -739,7 +766,7 @@ class Notebook(Entry):
         super().__init__(*args, **kwargs)   
     
     @property
-    def original(self) -> os.PathLike:    
+    def origin(self) -> os.PathLike:    
         pass
         #TODO notebook entries
         
@@ -750,7 +777,7 @@ class Surgery(Entry):
         super().__init__(*args, **kwargs)   
     
     @property
-    def original(self) -> os.PathLike:    
+    def origin(self) -> os.PathLike:    
         pass
         #TODO surgery notes 
     
@@ -765,7 +792,10 @@ class Files(PlatformJson):
     @property
     def template(self) -> dict:
         template_root = pathlib.Path(R"\\allen\programs\mindscope\workgroups\dynamicrouting\ben\npexp_data_manifests")
-        if self.session.type == 'behavior':
+        if (
+            any(h in self.contents.get('stimulus_name','') for h in ['hab','habituation'])
+        or any(h in self.contents.get('workflow','') for h in ['hab','habituation'])
+        ):
             session_type = 'habituation'
         elif 'D1' in self.path.stem:
             session_type = 'D1'
@@ -814,15 +844,54 @@ class Files(PlatformJson):
     def exist(self) -> List[Entry]:
         return [f.exists() for f in self.paths]
 
-                
-    def fetch_data_missing_from_folder(self):
+    def fix_current_entries(self):
+        """Compare current files dict with template - any existing entries that don't
+        match the template should be corrected and their files renamed/fetched from
+        their original source."""
+        current = [self.entry_from_factory(entry) for entry in self.current.items()]
+        expected = [self.entry_from_factory({k:v}) for k,v in self.expected.items() if k in self.current]
+        # this could be moved to the Entry class as a property:
+        #  Entry.correct = self in [self.platform_json.entry_from_factory(entry) for entry in self.platform_json.current.items()]
+        # use the custom Entry.__eq__() to compare the lists
+        for entry in current:
+            if not entry.is_correct:
+                print(f"{entry.descriptive_name} entry is {entry.actual.name} but should be {entry.expected.name}")
+                # entry.fix()
+                continue
+            if not entry.expected.exists():
+                print(f"{entry.descriptive_name} is missing - requires fetching")
+                # entry.fetch()
+                continue
+            
+    def fetch_data_missing_from_folder(self,entry:Union[Dict,Entry]=None):
+        if entry:
+            if isinstance(entry, dict):
+                entry = self.entry_from_factory(entry)
+            if not isinstance(entry, list):
+                missing = [entry]
+        else:
+            missing = [self.entry_from_factory(entry) for entry in self.missing.items()]
         # this is currently finding fields that are in the template but missing from the
-        # platform json - implicitly also missing from folder 
-        missing = [self.entry_from_factory(entry) for entry in self.missing.items()]
+        # platform json - implicitly also missing from folder when the platform json is
+        # written based on the session folder contents
         for entry in missing:
-            print(f"\nMissing: {entry.dir_or_file_name}\nFound  : {entry.original}")
+            print(f"\nChecking platform json\nMissing: {entry.expected.name}\nFound  : {entry.origin}")
             entry.copy()
-          
+            if entry.expected.exists():
+                pass
+                # TODO write entry to platform json if copied successully
+        
+        # here we actually check whether data is missing for current entries in the
+        # platform json, or if it's incorrectly named
+        current = [self.entry_from_factory(entry) for entry in self.current.items()]
+        for entry in current:
+            if not entry.exists:
+                if entry.actual.exists():
+                    print(f"\nChecking folder:\n{entry.actual.name} needs renaming to {entry.expected.name}")
+                else:
+                    print(f"\nChecking folder:\nMissing: {entry.expected.name}\nFound  : {entry.origin}")
+                    # entry.copy()
+                    
 def get_created_timestamp_from_file(file:os.PathLike):
     timestamp = pathlib.Path(file).stat().st_ctime
     return datetime.datetime.fromtimestamp(timestamp)
@@ -852,12 +921,15 @@ if __name__ == "__main__":
     j = Files(R"\\w10dtsm18307\c$\ProgramData\AIBS_MPE\neuropixels_data\1204734093_601734_20220901\1204734093_601734_20220901_platformD1.json")
     j = Files(R"\\w10DTSM112719\C\ProgramData\AIBS_MPE\neuropixels_data\1204677304_632487_20220901\1204677304_632487_20220901_platformD1.json")
     j = Files(R"\\w10dtsm18306\neuropixels_data\1208053773_623319_20220907\1208053773_623319_20220907_platformD1.json")
+    j = Files(R"\\allen\programs\mindscope\workgroups\np-exp\1208664393_623319_20220908\1208664393_623319_20220908_platformD1.json")
     j.fetch_data_missing_from_folder()
+    j.fix_current_entries()
+    j.add_missing_entries()
+    j.update() # create valid files dict and write to json
     # TODO update entries in platform json to reflect new additions to the folder
-    # TODO fix entried in platform json that don't match the template (eg not fields
+    # TODO fix entries in platform json that don't match the template (eg not fields
     # aren't missing from 'files', but they have the wrong filename etc)
     
-    j.session.type
     from model import VariabilitySpontaneous
     experiment = VariabilitySpontaneous() 
     x = requests.get(f"http://lims2/ecephys_sessions/{j.session.id}.json?").json()
