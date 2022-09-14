@@ -922,6 +922,7 @@ if __name__ == "__main__":
     j = Files(R"\\w10DTSM112719\C\ProgramData\AIBS_MPE\neuropixels_data\1204677304_632487_20220901\1204677304_632487_20220901_platformD1.json")
     j = Files(R"\\w10dtsm18306\neuropixels_data\1208053773_623319_20220907\1208053773_623319_20220907_platformD1.json")
     j = Files(R"\\allen\programs\mindscope\workgroups\np-exp\1208664393_623319_20220908\1208664393_623319_20220908_platformD1.json")
+    j = Files(R"\\allen\programs\mindscope\workgroups\np-exp\1208035625_636890_20220907\1208035625_636890_20220907_platformD1.json")
     j.fetch_data_missing_from_folder()
     j.fix_current_entries()
     j.add_missing_entries()
