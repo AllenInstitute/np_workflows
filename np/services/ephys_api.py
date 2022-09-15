@@ -66,6 +66,9 @@ class Ephys(ABC):
     def reset_open_ephys():
         pass
     
+    @abstractmethod
+    def is_recording():
+        pass
     
 class EphysRouter(Ephys):
     """ Original ZMQ protobuf implementation - requires ephys_edi_pb2.py output from ephys_edi.proto """ 
@@ -97,6 +100,7 @@ class EphysRouter(Ephys):
 
     @classmethod
     def stop_ecephys_recording(cls):
+        EphysRouter.copy_xml_to_recording_folders()
         return cls.io.write(ephys_messages.recording(command=0))
 
     @classmethod
@@ -135,8 +139,49 @@ class EphysRouter(Ephys):
         time.sleep(3)
         EphysRouter.stop_ecephys_recording()
         time.sleep(.5)
-
-
+    
+    @staticmethod
+    def latest_recording_path() -> pathlib.Path:
+        """Find path on A:/.
+        
+        Hard-coding A: and B: drive letter assumptions for these functions
+        - this API ( EphysRouter ) won't be used
+        once we upgrade to OE v0.6.0 with HTTP server
+        """
+        subfolders = [sub for sub in pathlib.Path(f"//{config.Rig.Acq.host}/A").iterdir() if sub.is_dir() and not any(_ in str(sub) for _ in ["System Volume Information", "$RECYCLE.BIN"])]
+        if subfolders:
+            subfolders.sort(key=os.path.getmtime,reverse=True)            
+            return subfolders[0]
+        
+    @staticmethod
+    def is_recording() -> bool:
+        # check dir on disk is growing 
+        gen = EphysRouter.latest_recording_path().rglob('*.npx2')
+        for sample_numbers in gen:
+            if not sample_numbers:
+                break
+            st_size_0 = sample_numbers.stat().st_size 
+            time.sleep(1.5)
+            if sample_numbers.stat().st_size > st_size_0: # check again, should have increased
+                return True
+            else:
+                continue
+            
+    @staticmethod 
+    def copy_xml_to_recording_folders():
+        try:
+            xml_repo = pathlib.Path(f"//{config.Rig.Acq.host}/c/Users/svc_neuropix/Desktop/open-ephys-neuropix")
+            src = xml_repo / EphysRouter.latest_recording_path().name / "settings.xml"
+            
+            for drive_letter in ["A", "B"]:
+                drive = pathlib.Path(f"//{config.Rig.Acq.host}/{drive_letter}")
+                dest = drive / EphysRouter.latest_recording_path().name
+                
+                shutil.copy2(src, dest)
+        except:
+            print(f"failed to copy {src} to {dest}")
+            pass
+                
 class EphysHTTP(Ephys):
     """ Interface for HTTP server introduced in open ephys v0.6.0 (2022) """
     #TODO wait on return msgs from requests between chaning modes etc
