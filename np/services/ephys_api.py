@@ -1,13 +1,20 @@
 import json
 import logging
+import pathlib
+import os
+import shutil
 import socket
 import sys
 import time
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import Optional
+from typing import List, Optional
+import warnings
+
 
 import requests
+
+sys.path.append("c:/program files/aibs_mpe/workflow_launcher")
 from np.services import config
 
 sys.path.append("..")
@@ -240,6 +247,49 @@ class EphysHTTP(Ephys):
         EphysHTTP.stop_ecephys_recording()
         time.sleep(.5)
 
+    @staticmethod
+    def latest_recording_path() -> pathlib.Path:
+        """For the first record node found, return the folder path it's currently
+        recording to - useful for confirming that a recording is ongoing.
+        
+        Since the path that's set in open ephys is appended by a number (1) if it
+        already exists, we're better off finding the latest folder in the directory """
+        recording = requests.get(EphysHTTP.recording_endpoint).json()
+        record_node_info = recording.get('record_nodes',None)
+        if record_node_info:
+            first_record_node_info = record_node_info[0]
+            
+            # assemble current record folder path
+            record_root = pathlib.Path(f"//{config.Rig.Acq.host}/{first_record_node_info['parent_directory'][0]}")
+            subfolders = [sub for sub in record_root.iterdir() if sub.is_dir() and not any(_ in str(sub) for _ in ["System Volume Information", "$RECYCLE.BIN"])]
+            
+            if subfolders:
+                subfolders.sort(key=os.path.getmtime,reverse=True)            
+                return subfolders[0]
+            
+        return None
+    
+    @staticmethod
+    def is_recording() -> bool:
+        # check mode is RECORD
+        if EphysHTTP.request_open_ephys_status() != EphysHTTP.EphysModes.record.value:
+            return False
+        
+        # check dir on disk is growing 
+        gen = EphysHTTP.latest_recording_path().rglob('*sample_numbers.npy')
+        for sample_numbers in gen:
+            if not sample_numbers:
+                break
+            st_size_0 = sample_numbers.stat().st_size 
+            time.sleep(1.5)
+            if sample_numbers.stat().st_size > st_size_0: # check again, should have increased
+                return True
+            else:
+                continue
+        # mtime_0 = EphysHTTP.latest_recording_path().stat().st_mtime # time last modified
+        # if EphysHTTP.latest_recording_path().stat().st_mtime > mtime_0: # check again, mtime should have increased
+        #     return True
+        return False
         
     """  
     @staticmethod
