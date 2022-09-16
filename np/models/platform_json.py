@@ -424,11 +424,11 @@ class Entry:
     def sources(self) -> List[pathlib.Path]:
         sources = []
         if self.origin:
-            sources += [self.origin]
+            sources.append(self.origin)
         if "neuropixels_data" not in str(self.expected_data):
-            sources += [self.z]
+            sources.append(self.z)
         if NPEXP_PATH not in self.expected_data.parents:
-            sources += [self.npexp]
+            sources.append(self.npexp)
         return sources
 
     @property
@@ -508,8 +508,8 @@ class Entry:
                     for idx, file in enumerate([dest, source]):
                         print(f"Generating checksum for {file} - may take a while.." )
                         with open(file,'rb') as f:
-                            hashes += [hashlib.md5(f.read()).hexdigest()]
-                    
+                            hashes.append(hashlib.md5(f.read()).hexdigest())
+                     
                     if hashes[0] == hashes[1]:
                         print(f"Original data and copy in folder are identical")
                         return
@@ -829,6 +829,11 @@ class Files(PlatformJson):
     
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
+        self.new_entries:List[Entry] = [] # populated by functions below
+        self.fix_data() # deals with missing files 
+        self.fix_dict() # deals with existing incorrect entries 
+        if self.correct_data and self.correct_dict:
+            self.write()
         
     @property
     def template(self) -> dict:
@@ -872,19 +877,19 @@ class Files(PlatformJson):
             if descriptive_name in entry_class.descriptors:
                 return entry_class(entry,self)
         raise ValueError(f"{descriptive_name} is not a recognized platform.json[files] entry-type")
-        
-    @property
-    def entries(self) -> List[Entry]:
-        return [self.entry_from_factory(entry) for entry in self.expected.items()]
     
     @property
-    def paths(self) -> List[Entry]:
-        return [self.path.parent / pathlib.Path(v.dir_or_file_name) for v in self.entries]
+    def new_dict(self) -> dict:
+        return {k:v for e in self.new_entries for k,v in e.__dict__().items()} if self.new_entries else {}
     
     @property
-    def correct_data(self) -> List[bool]:
-        return all([e.correct_data for e in self.entries])
+    def correct_data(self) -> bool:
+        return all([e.correct_data for e in self.new_entries]) if self.new_entries else False
 
+    @property
+    def correct_dict(self) -> bool:
+        return all(e in self.new_dict.keys() for e in self.expected.keys())
+    
     """
         Correcting the platform json and its corresponding session folder of data is a
         multi-step process:
@@ -896,7 +901,7 @@ class Files(PlatformJson):
                 - seek user input to find correct file and copy it with correct name
                 
             * all template entries should now have correct corresponding files 
-                all(entry.correct_data for entry in Files(*.json).entries)
+                all(entry.correct_data for entry in Files(*.json).new_entries)
                 
             
             2. Deal with the platform json 'files' dict:
@@ -925,69 +930,54 @@ class Files(PlatformJson):
                 - seek user input to find correct file and copy it with correct name
                 
             * all template entries should now have correct corresponding files 
-                all(entry.correct_data for entry in Files(*.json).entries)
+                Files.correct_data = all(entry.correct_data for entry in Files(*.json).new_entries)
         """
         expected = [self.entry_from_factory({k:v}) for k,v in self.expected.items()]
         for entry in expected:
             if entry.correct_data:
+                self.new_entries.append(entry)
                 continue
 
             entry.copy()
+            
             if entry.correct_data:
                 print(f"fixed {entry.dir_or_file_name}")
+                self.new_entries.append(entry)
                 continue
             print(f"need help finding {entry.dir_or_file_name}")
         
-        
-            
+    def fix_dict(self):
+        """            
+        2. Deal with the platform json 'files' dict:
+            we could replace the 'files' dict with the template dict, but there may
+            be entries in the files dict that we don't want to lose
+                - find entries not in template 
+                - decide what to do with their data
+                - decide whether or not to delete from the files dict
                 
-    def fix_current_entries(self):
-        """Compare current files dict with template - any existing entries that don't
-        match the template should be corrected and their files renamed/fetched from
-        their original source."""
-        current = [self.entry_from_factory(entry) for entry in self.current.items()]
-        expected = [self.entry_from_factory({k:v}) for k,v in self.expected.items() if k in self.current]
-        # this could be moved to the Entry class as a property:
-        #  Entry.correct = self in [self.platform_json.entry_from_factory(entry) for entry in self.platform_json.current.items()]
-        # use the custom Entry.__eq__() to compare the lists
-        for entry in current:
-            if not entry.correct_dict:
-                print(f"{entry.descriptive_name} entry is {entry.actual_data.name} but should be {entry.expected_data.name}")
-                # entry.fix()
+            there may also be incorrect entries in the files dict that 
+            correspond to incorrect data
+                - find entries that don't match template 
+                - decide whether to delete their data"""
+                
+        extra = [self.entry_from_factory({k:v}) for k,v in self.extra.items()]
+        for entry in extra:
+            if entry.actual_data.exists():
+                self.new_entries.append(entry)
                 continue
-            if not entry.correct_data:
-                print(f"{entry.descriptive_name} is missing - requires fetching")
-                # entry.fetch()
-                continue
-            
-    def fetch_data_missing_from_folder(self,entry:Union[Dict,Entry]=None):
-        if entry:
-            if isinstance(entry, dict):
-                entry = self.entry_from_factory(entry)
-            if not isinstance(entry, list):
-                missing = [entry]
-        else:
-            missing = [self.entry_from_factory(entry) for entry in self.missing.items()]
-        # this is currently finding fields that are in the template but missing from the
-        # platform json - implicitly also missing from folder when the platform json is
-        # written based on the session folder contents
-        for entry in missing:
-            print(f"\nChecking platform json\nMissing: {entry.expected_data.name}\nFound  : {entry.origin}")
-            entry.copy()
-            if entry.correct_data:
-                pass
-                # TODO write entry to platform json if copied successully
+            print(f"{entry.descriptive_name} removed from platform.json: specified data does not exist {entry.dir_or_file_name} ")
+
+    def write(self):
+        # ensure a backup of the original first
+        orig = self.path.with_suffix('.bak')
+        shutil.copy2(self.path, orig) if not orig.exists() else None
         
-        # here we actually check whether data is missing for current entries in the
-        # platform json, or if it's incorrectly named
-        current = [self.entry_from_factory(entry) for entry in self.current.items()]
-        for entry in current:
-            if not entry.correct_data:
-                if entry.actual_data.exists():
-                    print(f"\nChecking folder:\n{entry.actual_data.name} needs renaming to {entry.expected_data.name}")
-                else:
-                    print(f"\nChecking folder:\nMissing: {entry.expected_data.name}\nFound  : {entry.origin}")
-                    # entry.copy()
+        contents = self.contents # must copy contents to avoid breaking class property (Which pulls from .json)
+        contents['files'] = {**self.new_dict}
+        contents['project'] = self.session.project
+        with self.path.open('w') as f:
+            json.dump(dict(contents), f, indent=4)
+        print(f"updated {self.path}")
                     
 def get_created_timestamp_from_file(file:os.PathLike):
     timestamp = pathlib.Path(file).stat().st_ctime
@@ -1015,11 +1005,12 @@ def get_files_created_between(dir: os.PathLike, strsearch, start:datetime.dateti
     return sorted(hits, key=get_created_timestamp_from_file)
 
 if __name__ == "__main__":
-    j = Files(R"\\w10dtsm18307\c$\ProgramData\AIBS_MPE\neuropixels_data\1204734093_601734_20220901\1204734093_601734_20220901_platformD1.json")
-    j = Files(R"\\w10DTSM112719\C\ProgramData\AIBS_MPE\neuropixels_data\1204677304_632487_20220901\1204677304_632487_20220901_platformD1.json")
-    j = Files(R"\\w10dtsm18306\neuropixels_data\1208053773_623319_20220907\1208053773_623319_20220907_platformD1.json")
-    j = Files(R"\\allen\programs\mindscope\workgroups\np-exp\1208664393_623319_20220908\1208664393_623319_20220908_platformD1.json")
-    j = Files(R"\\allen\programs\mindscope\workgroups\np-exp\1208035625_636890_20220907\1208035625_636890_20220907_platformD1.json")
+    # j = Files(R"\\w10dtsm18307\c$\ProgramData\AIBS_MPE\neuropixels_data\1204734093_601734_20220901\1204734093_601734_20220901_platformD1.json")
+    # j = Files(R"\\w10DTSM112719\C\ProgramData\AIBS_MPE\neuropixels_data\1204677304_632487_20220901\1204677304_632487_20220901_platformD1.json")
+    # j = Files(R"\\w10dtsm18306\neuropixels_data\1208053773_623319_20220907\1208053773_623319_20220907_platformD1.json")
+    # j = Files(R"\\allen\programs\mindscope\workgroups\np-exp\1208664393_623319_20220908\1208664393_623319_20220908_platformD1.json")
+    # j = Files(R"\\allen\programs\mindscope\workgroups\np-exp\1208035625_636890_20220907\1208035625_636890_20220907_platformD1.json")
+    j = Files(R"\\allen\programs\mindscope\workgroups\np-exp\1210343162_623786_20220912\1210343162_623786_20220912_platformD1.json")
     
     j.fix_data()
     
