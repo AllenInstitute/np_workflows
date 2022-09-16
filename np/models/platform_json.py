@@ -24,13 +24,13 @@ except ImportError:
 
 WSE_DATETIME_FORMAT = '%Y%m%d%H%M%S' # should match the pattern used throughout the WSE
 
-MVR_RELATIVE_PATH = pathlib.Path("C/ProgramData/AIBS_MPE/mvr/data")
-NEWSCALE_RELATIVE_PATH = pathlib.Path("C/MPM_data")
-CAMVIEWER_RELATIVE_PATH = pathlib.Path("C/Users/svc_neuropix/cv3dImages") # NP.0 only
-CAMSTIM_RELATIVE_PATH = pathlib.Path("C/ProgramData/AIBS_MPE/camstim/data")
-SYNC_RELATIVE_PATH = pathlib.Path("C/ProgramData/AIBS_MPE/sync/data")
+MVR_RELATIVE_PATH = pathlib.Path("c$/ProgramData/AIBS_MPE/mvr/data")
+NEWSCALE_RELATIVE_PATH = pathlib.Path("c$/MPM_data")
+CAMVIEWER_RELATIVE_PATH = pathlib.Path("c$/Users/svc_neuropix/cv3dImages") # NP.0 only
+CAMSTIM_RELATIVE_PATH = pathlib.Path("c$/ProgramData/AIBS_MPE/camstim/data")
+SYNC_RELATIVE_PATH = pathlib.Path("c$/ProgramData/AIBS_MPE/sync$/data")
 
-NEUROPIXELS_DATA_RELATIVE_PATH = pathlib.Path("C/ProgramData/AIBS_MPE/neuropixels_data")
+NEUROPIXELS_DATA_RELATIVE_PATH = pathlib.Path("c$/ProgramData/AIBS_MPE/neuropixels_data")
 NPEXP_PATH = pathlib.Path("//allen/programs/mindscope/workgroups/np-exp")
 
 
@@ -393,30 +393,60 @@ class Entry:
         # we'll need some general info about the experiment:
         self.platform_json: PlatformJson = Files(platform_json.path) if not isinstance(platform_json, Files) else platform_json
         
-        self.actual: pathlib.Path = self.platform_json.path.parent / self.dir_or_file_name
+        self.actual_data: pathlib.Path = self.platform_json.path.parent / self.dir_or_file_name
         # a presumed path to the data in the same folder as the platform json file
-        self.expected: pathlib.Path = self.platform_json.path.parent / self.platform_json.expected[self.descriptive_name][self.dir_or_file_type]
+        self.expected_data: pathlib.Path = self.platform_json.path.parent / self.platform_json.expected[self.descriptive_name][self.dir_or_file_type]
 
     def __eq__(self, other):
         # when comparing entries we want to know whether they have the same
         # descriptive name key and the same file/folder name
         return self.descriptive_name == other.descriptive_name and self.dir_or_file_name == other.dir_or_file_name
+            
+    def __dict__(self):
+        return {self.descriptive_name: {self.dir_or_file_type:self.dir_or_file_name}}
     
     @property
-    def is_correct(self) -> bool:
-        return self.expected.name == self.actual.name
+    def correct(self) -> bool:
+        """Check entry dict matches template and specified file exists"""
+        return self.correct_dict and self.correct_data
+    
+    @property
+    def correct_dict(self) -> bool:
+        return self.__dict__() == self.__dict__()
         # return self in [self.platform_json.entry_from_factory(entry) for entry in self.platform_json.expected.items()]
     
     @property
-    def exists(self) -> bool:
-        # exists only to be overloaded by ephys entry
-        return self.expected.exists()
+    def correct_data(self) -> bool:
+        # exists mainly to be overloaded by ephys entry
+        return self.expected_data.exists()
     
+    @property
+    def sources(self) -> List[pathlib.Path]:
+        sources = []
+        if self.origin:
+            sources += [self.origin]
+        if "neuropixels_data" not in str(self.expected_data):
+            sources += [self.z]
+        if NPEXP_PATH not in self.expected_data.parents:
+            sources += [self.npexp]
+        return sources
+
     @property
     def origin(self) -> pathlib.Path:
         """Path to original file for this entry"""
         raise NotImplementedError # should be implemented by subclasses
-
+    
+    @property
+    def npexp(self) -> pathlib.Path:
+        """Path to possible copy on np-exp"""
+        return NPEXP_PATH / self.platform_json.session.folder / self.dir_or_file_name 
+    
+    @property
+    def z(self) -> pathlib.Path:
+        """Path to possible copy on z-drive/neuropixels_data"""
+        return pathlib.Path(f"//{self.platform_json.sync}/{NEUROPIXELS_DATA_RELATIVE_PATH}") / self.platform_json.session.folder / self.dir_or_file_name 
+    
+    
     def rename():
         """Rename the current data in the same folder as the platform json file"""
         pass
@@ -450,50 +480,55 @@ class Entry:
     def copy(self, dest: os.PathLike=None):
         """Copy original file to a specified destination folder"""
         # TODO add checksum of file/dir to db
-        if not self.origin:
+        if not self.sources:
             print("Copy aborted - no original file found")
             return
         
         if dest is None:
-            dest = self.expected
+            dest = self.expected_data
         dest = pathlib.Path(dest)
         
-        if self.origin.is_dir():
-            pass
-            # TODO add size comparison
-            
-        if self.origin.is_file() and dest.is_file():
-            
-            if dest.stat().st_size == 0:
-                pass
-            elif dest.stat().st_size < self.origin.stat().st_size:
-                pass
-            elif dest.stat().st_size == self.origin.stat().st_size:
-                hashes = []
-                for idx, file in enumerate([dest, self.origin]):
-                    print(f"Generating checksum for {file} - may take a while.." )
-                    with open(file,'rb') as f:
-                        hashes += [hashlib.md5(f.read()).hexdigest()]
-                
-                if hashes[0] == hashes[1]:
-                    print(f"Original data and copy in folder are identical")
-                    return
-            
-            elif dest.stat().st_size > self.origin.stat().st_size:
-                print(f"{self.origin} is smaller than {dest} - copy manually if you really want to overwrite")
-                return
-                    
-        # do the actual copying
-        if self.dir_or_file_type == 'directory_name':
-            shutil.copytree(self.origin,dest)
-            print('Copied directory:', self.origin)
+        for source in self.sources:
         
-        if self.dir_or_file_type == 'filename':
-            shutil.copy2(self.origin,dest)
-            print('Copied file:', self.origin)
+            if not source.exists():
+                continue 
             
-    def __dict__(self):
-        return {self.descriptive_name: {self.dir_or_file_type:self.dir_or_file_name}}
+            if source.is_dir():
+                pass
+                # TODO add size comparison
+                
+            if source.is_file() and dest.is_file():
+                
+                if dest.stat().st_size == 0:
+                    pass
+                elif dest.stat().st_size < source.stat().st_size:
+                    pass
+                elif dest.stat().st_size == source.stat().st_size:
+                    hashes = []
+                    for idx, file in enumerate([dest, source]):
+                        print(f"Generating checksum for {file} - may take a while.." )
+                        with open(file,'rb') as f:
+                            hashes += [hashlib.md5(f.read()).hexdigest()]
+                    
+                    if hashes[0] == hashes[1]:
+                        print(f"Original data and copy in folder are identical")
+                        return
+                
+                elif dest.stat().st_size > source.stat().st_size:
+                    print(f"{source} is smaller than {dest} - copy manually if you really want to overwrite")
+                    return
+                        
+            # do the actual copying
+            if self.dir_or_file_type == 'directory_name':
+                shutil.copytree(source,dest)
+                print('Copied directory:', source)
+            
+            if self.dir_or_file_type == 'filename':
+                shutil.copy2(source,dest)
+                print('Copied file:', source)
+        
+            if self.correct_data:
+                break
     
 # -------------------------------------------------------------------------------------- #
 class EphysRaw(Entry):
@@ -554,17 +589,17 @@ class EphysRaw(Entry):
     
     def copy(self, *args, **kwargs):
         if self.platform_json_on_z_drive:
-            print(f"Copying not implemented for {self.__class__.__name__} to {self.expected}: these data don't live on Z: drive")
+            print(f"Copying not implemented for {self.__class__.__name__} to {self.expected_data}: these data don't live on Z: drive")
         else:
             super().copy(*args, **kwargs)
             
     @property
-    def exists(self) -> bool:
+    def correct_data(self) -> bool:
         # overloaded to return True if the platform json being examined is on the
         # z-drive and data exists at origin
         if self.platform_json_on_z_drive and self.origin:
             return True
-        return super().exists
+        return super().correct_data
     
 # -------------------------------------------------------------------------------------- #
 class Sync(Entry):
@@ -577,7 +612,7 @@ class Sync(Entry):
         
     @property
     def origin(self) -> os.PathLike:
-        glob = f"*{self.expected.suffix}"
+        glob = f"*{self.expected_data.suffix}"
         hits = get_files_created_between(self.source,glob,self.platform_json.exp_start,self.platform_json.exp_end)
         if hits:
             return self.return_single_hit(hits)
@@ -635,7 +670,7 @@ class VideoTracking(Entry):
         
     @property
     def origin(self) -> os.PathLike:
-        glob = f"*{self.cam}*{self.expected.suffix}"
+        glob = f"*{self.cam}*{self.expected_data.suffix}"
         start = self.platform_json.exp_start
         end = self.platform_json.exp_end + datetime.timedelta(seconds=10)
         hits = get_files_created_between(self.source,glob,start,end)
@@ -659,7 +694,7 @@ class VideoInfo(Entry):
     @property
     def origin(self) -> os.PathLike:
         hits = []
-        glob = f"*{self.cam}*{self.expected.suffix}"
+        glob = f"*{self.cam}*{self.expected_data.suffix}"
         start = self.platform_json.exp_start
         end = self.platform_json.exp_end + datetime.timedelta(seconds=10)
         hits = get_files_created_between(self.source,glob,start,end)
@@ -678,6 +713,7 @@ class SurfaceImage(Entry):
     
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
+        assert hasattr(self,'descriptive_name')
         self.source = self.platform_json.src_image
         self.side = self.descriptive_name.split('_')[-1]
     
@@ -690,7 +726,7 @@ class SurfaceImage(Entry):
         if not self.total_imgs_per_exp:
             print(f"Num. total images needs to be assigned")
             return None
-        glob = f"*{self.expected.suffix}"
+        glob = f"*{self.expected_data.suffix}"
         hits = get_files_created_between(self.source,glob,self.platform_json.exp_start,self.platform_json.exp_end)
         
         if len(hits) == 0:
@@ -781,6 +817,11 @@ class Surgery(Entry):
         pass
         #TODO surgery notes 
     
+    def copy(self):
+        super().copy()
+         # create an empty txt file for surgery notes if it doesn't exist
+        if self.descriptive_name == 'surgery_notes':
+            self.expected_data.touch()
 # -------------------------------------------------------------------------------------- #
     
  
@@ -841,9 +882,65 @@ class Files(PlatformJson):
         return [self.path.parent / pathlib.Path(v.dir_or_file_name) for v in self.entries]
     
     @property
-    def exist(self) -> List[Entry]:
-        return [f.exists() for f in self.paths]
+    def correct_data(self) -> List[bool]:
+        return all([e.correct_data for e in self.entries])
 
+    """
+        Correcting the platform json and its corresponding session folder of data is a
+        multi-step process:
+        
+            1. Deal with the data:
+                for each entry in a reference/template platform json, if the expected
+                file/dir doesn't exist in the session folder, copy it from the original
+                source
+                - seek user input to find correct file and copy it with correct name
+                
+            * all template entries should now have correct corresponding files 
+                all(entry.correct_data for entry in Files(*.json).entries)
+                
+            
+            2. Deal with the platform json 'files' dict:
+                we could replace the 'files' dict with the template dict, but there may
+                be entries in the files dict that we don't want to lose
+                    - find entries not in template 
+                    - decide what to do with their data
+                    - decide whether or not to delete from the files dict
+                    
+                there may also be incorrect entries in the files dict that 
+                correspond to incorrect data
+                    - find entries that don't match template 
+                    - decide whether to delete their data
+                    
+            3. Update files dict with template, replacing incorrect existing entries with correct
+               versions and leaving additional entries intact
+            * all template entries should now be in the files dict
+                Files(*.json).missing == {}
+    """
+    def fix_data(self):
+        """
+            1. Deal with the data:
+                for each entry in a reference/template platform json, if the expected
+                file/dir doesn't exist in the session folder, copy it from the original
+                source
+                - seek user input to find correct file and copy it with correct name
+                
+            * all template entries should now have correct corresponding files 
+                all(entry.correct_data for entry in Files(*.json).entries)
+        """
+        expected = [self.entry_from_factory({k:v}) for k,v in self.expected.items()]
+        for entry in expected:
+            if entry.correct_data:
+                continue
+
+            entry.copy()
+            if entry.correct_data:
+                print(f"fixed {entry.dir_or_file_name}")
+                continue
+            print(f"need help finding {entry.dir_or_file_name}")
+        
+        
+            
+                
     def fix_current_entries(self):
         """Compare current files dict with template - any existing entries that don't
         match the template should be corrected and their files renamed/fetched from
@@ -854,11 +951,11 @@ class Files(PlatformJson):
         #  Entry.correct = self in [self.platform_json.entry_from_factory(entry) for entry in self.platform_json.current.items()]
         # use the custom Entry.__eq__() to compare the lists
         for entry in current:
-            if not entry.is_correct:
-                print(f"{entry.descriptive_name} entry is {entry.actual.name} but should be {entry.expected.name}")
+            if not entry.correct_dict:
+                print(f"{entry.descriptive_name} entry is {entry.actual_data.name} but should be {entry.expected_data.name}")
                 # entry.fix()
                 continue
-            if not entry.expected.exists():
+            if not entry.correct_data:
                 print(f"{entry.descriptive_name} is missing - requires fetching")
                 # entry.fetch()
                 continue
@@ -875,9 +972,9 @@ class Files(PlatformJson):
         # platform json - implicitly also missing from folder when the platform json is
         # written based on the session folder contents
         for entry in missing:
-            print(f"\nChecking platform json\nMissing: {entry.expected.name}\nFound  : {entry.origin}")
+            print(f"\nChecking platform json\nMissing: {entry.expected_data.name}\nFound  : {entry.origin}")
             entry.copy()
-            if entry.expected.exists():
+            if entry.correct_data:
                 pass
                 # TODO write entry to platform json if copied successully
         
@@ -885,11 +982,11 @@ class Files(PlatformJson):
         # platform json, or if it's incorrectly named
         current = [self.entry_from_factory(entry) for entry in self.current.items()]
         for entry in current:
-            if not entry.exists:
-                if entry.actual.exists():
-                    print(f"\nChecking folder:\n{entry.actual.name} needs renaming to {entry.expected.name}")
+            if not entry.correct_data:
+                if entry.actual_data.exists():
+                    print(f"\nChecking folder:\n{entry.actual_data.name} needs renaming to {entry.expected_data.name}")
                 else:
-                    print(f"\nChecking folder:\nMissing: {entry.expected.name}\nFound  : {entry.origin}")
+                    print(f"\nChecking folder:\nMissing: {entry.expected_data.name}\nFound  : {entry.origin}")
                     # entry.copy()
                     
 def get_created_timestamp_from_file(file:os.PathLike):
@@ -923,6 +1020,9 @@ if __name__ == "__main__":
     j = Files(R"\\w10dtsm18306\neuropixels_data\1208053773_623319_20220907\1208053773_623319_20220907_platformD1.json")
     j = Files(R"\\allen\programs\mindscope\workgroups\np-exp\1208664393_623319_20220908\1208664393_623319_20220908_platformD1.json")
     j = Files(R"\\allen\programs\mindscope\workgroups\np-exp\1208035625_636890_20220907\1208035625_636890_20220907_platformD1.json")
+    
+    j.fix_data()
+    
     j.fetch_data_missing_from_folder()
     j.fix_current_entries()
     j.add_missing_entries()
