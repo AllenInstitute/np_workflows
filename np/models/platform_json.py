@@ -826,14 +826,48 @@ class Surgery(Entry):
     
  
 class Files(PlatformJson):
-    
+    """
+        Correcting the platform json and its corresponding session folder of data is a
+        multi-step process:
+        
+            1. Deal with the data:
+                for each entry in a reference/template platform json, if the expected
+                file/dir doesn't exist in the session folder, copy it from the original
+                source
+                - seek user input to find correct file and copy it with correct name
+                
+            * all template entries should now have correct corresponding files 
+                all(entry.correct_data for entry in Files(*.json).new_entries)
+                
+            
+            2. Deal with the platform json 'files' dict:
+                we could replace the 'files' dict with the template dict, but there may
+                be entries in the files dict that we don't want to lose
+                    - find entries not in template 
+                    - decide what to do with their data
+                    - decide whether or not to delete from the files dict
+                    
+                there may also be incorrect entries in the files dict that 
+                correspond to incorrect data
+                    - find entries that don't match template 
+                    - decide whether to delete their data
+
+    """
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
-        self.new_entries:List[Entry] = [] # populated by functions below
-        self.fix_data() # deals with missing files 
-        self.fix_dict() # deals with existing incorrect entries 
+        
+        # this will become the list of entries in the updated 'files' dict
+        # (list is populated by the functions that follow)
+        self.new_entries:List[Entry] = [] 
+        
+        # 1. Deal with the missing data/files
+        self.fix_data()
+        # 2. Deal with the platform json 'files' dict
+        self.fix_dict()
         if self.correct_data and self.correct_dict:
+            #3. Update the contents of the files dict in the platform json
             self.write()
+            # (this also appends the project codename ie. OpenScopeIllusion)
         
     @property
     def template(self) -> dict:
@@ -850,7 +884,6 @@ class Files(PlatformJson):
         template_path = template_root / session_type / f"{self.experiment}.json"
         with template_path.open('r') as f:
             return json.load(f)['files']
-        
         
     @property
     def expected(self) -> dict:
@@ -890,37 +923,7 @@ class Files(PlatformJson):
     def correct_dict(self) -> bool:
         return all(e in self.new_dict.keys() for e in self.expected.keys())
     
-    """
-        Correcting the platform json and its corresponding session folder of data is a
-        multi-step process:
-        
-            1. Deal with the data:
-                for each entry in a reference/template platform json, if the expected
-                file/dir doesn't exist in the session folder, copy it from the original
-                source
-                - seek user input to find correct file and copy it with correct name
-                
-            * all template entries should now have correct corresponding files 
-                all(entry.correct_data for entry in Files(*.json).new_entries)
-                
-            
-            2. Deal with the platform json 'files' dict:
-                we could replace the 'files' dict with the template dict, but there may
-                be entries in the files dict that we don't want to lose
-                    - find entries not in template 
-                    - decide what to do with their data
-                    - decide whether or not to delete from the files dict
-                    
-                there may also be incorrect entries in the files dict that 
-                correspond to incorrect data
-                    - find entries that don't match template 
-                    - decide whether to delete their data
-                    
-            3. Update files dict with template, replacing incorrect existing entries with correct
-               versions and leaving additional entries intact
-            * all template entries should now be in the files dict
-                Files(*.json).missing == {}
-    """
+    
     def fix_data(self):
         """
             1. Deal with the data:
@@ -968,6 +971,7 @@ class Files(PlatformJson):
             print(f"{entry.descriptive_name} removed from platform.json: specified data does not exist {entry.dir_or_file_name} ")
 
     def write(self):
+        """Overwrite existing platform json, with a backup of the original preserved"""
         # ensure a backup of the original first
         orig = self.path.with_suffix('.bak')
         shutil.copy2(self.path, orig) if not orig.exists() else None
@@ -1010,20 +1014,20 @@ if __name__ == "__main__":
     # j = Files(R"\\w10dtsm18306\neuropixels_data\1208053773_623319_20220907\1208053773_623319_20220907_platformD1.json")
     # j = Files(R"\\allen\programs\mindscope\workgroups\np-exp\1208664393_623319_20220908\1208664393_623319_20220908_platformD1.json")
     # j = Files(R"\\allen\programs\mindscope\workgroups\np-exp\1208035625_636890_20220907\1208035625_636890_20220907_platformD1.json")
-    j = Files(R"\\allen\programs\mindscope\workgroups\np-exp\1210343162_623786_20220912\1210343162_623786_20220912_platformD1.json")
+    # j = Files(R"\\allen\programs\mindscope\workgroups\np-exp\1210343162_623786_20220912\1210343162_623786_20220912_platformD1.json")
     
-    j.fix_data()
+    # j.fix_data()
     
-    j.fetch_data_missing_from_folder()
-    j.fix_current_entries()
-    j.add_missing_entries()
-    j.update() # create valid files dict and write to json
-    # TODO update entries in platform json to reflect new additions to the folder
-    # TODO fix entries in platform json that don't match the template (eg not fields
-    # aren't missing from 'files', but they have the wrong filename etc)
+    # j.fetch_data_missing_from_folder()
+    # j.fix_current_entries()
+    # j.add_missing_entries()
+    # j.update() # create valid files dict and write to json
+    # # TODO update entries in platform json to reflect new additions to the folder
+    # # TODO fix entries in platform json that don't match the template (eg not fields
+    # # aren't missing from 'files', but they have the wrong filename etc)
     
-    from model import VariabilitySpontaneous
-    experiment = VariabilitySpontaneous() 
-    x = requests.get(f"http://lims2/ecephys_sessions/{j.session.id}.json?").json()
+    # from model import VariabilitySpontaneous
+    # experiment = VariabilitySpontaneous() 
+    # x = requests.get(f"http://lims2/ecephys_sessions/{j.session.id}.json?").json()
 
-    print(experiment.files(session_folder='1204734093_601734_20220901'))
+    # print(experiment.files(session_folder='1204734093_601734_20220901'))
