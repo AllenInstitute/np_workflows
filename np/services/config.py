@@ -132,7 +132,14 @@ class Rig(Enum):
             for comp in Rig.all_comps(idx).values():
                 if comp in path:
                     return rig
-    
+            
+    @staticmethod
+    def rig_str_to_int(rig:str) -> Union[str,None]:
+        # extract RIG_ID from str if possible
+        str_match = re.search(R"NP.[\d]+", rig)
+        if str_match:
+            return int(str_match[0])
+        return None
     
 class ConfigHTTP:
     

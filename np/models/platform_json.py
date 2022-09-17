@@ -7,6 +7,7 @@ import pathlib
 import re
 import shutil
 import sys
+import warnings
 from typing import Dict, List, Tuple, Union
 
 import requests
@@ -22,6 +23,17 @@ try:
 except ImportError:
     pass
 
+# -------------------------------------------------------------------------------------- #
+SIMULATE = True 
+# don't actually copy or modify anything - instead, create a 'virtual' session folder
+# using symlinks to the actual data - ONLY APPLIES TO 'Files' CLASS
+SYMLINK_REPO = pathlib.Path("//allen/programs/mindscope/workgroups/dynamicrouting/ben/staging")
+warnings.warn(f"Simulation mode is ON. No files will be copied or modified.\nA virtual session folder will be created at {SYMLINK_REPO}") if SIMULATE else None
+# -------------------------------------------------------------------------------------- #
+
+
+TEMPLATES_ROOT = pathlib.Path("//allen/programs/mindscope/workgroups/dynamicrouting/ben/npexp_data_manifests")
+
 WSE_DATETIME_FORMAT = '%Y%m%d%H%M%S' # should match the pattern used throughout the WSE
 
 MVR_RELATIVE_PATH = pathlib.Path("c$/ProgramData/AIBS_MPE/mvr/data")
@@ -33,6 +45,7 @@ SYNC_RELATIVE_PATH = pathlib.Path("c$/ProgramData/AIBS_MPE/sync$/data")
 NEUROPIXELS_DATA_RELATIVE_PATH = pathlib.Path("c$/ProgramData/AIBS_MPE/neuropixels_data")
 NPEXP_PATH = pathlib.Path("//allen/programs/mindscope/workgroups/np-exp")
 
+INCOMING_ROOT = pathlib.Path("//allen/programs/braintv/production/incoming/neuralcoding")
 
 class Session:
     """Get session information from any string: filename, path, or foldername"""
@@ -232,7 +245,7 @@ class SessionFile:
             return self.session.NPEXP_ROOT / self.session_relative_path
         else:
             return None
-        
+ 
     # TODO add lims_path property
 
     @property
@@ -277,20 +290,28 @@ class SessionFile:
 
 class PlatformJson(SessionFile):
     
+    class IncompleteInfoFromPlatformJson(Exception):
+        pass
     # files_template: dict
     
-    def __init__(self,path: os.PathLike = None):
+    def __init__(self,path: Union[str, pathlib.Path] = None):
         if path:
             if isinstance(path,str) and path.endswith('.json'):
                 self.path = pathlib.Path(path)
             elif isinstance(path, pathlib.Path) and path.suffix == '.json':
                 self.path = path
             else:
-                raise TypeError(f"{self.__class__} path must be an os.PathLike ending in .json")
+                raise TypeError(f"{self.__class__} path must be a path ending in .json")
         else:
             raise ValueError(f"{self.__class__} requires a path to a json file")
         super().__init__(self.path)
-        
+
+    @property
+    def backup(self) -> pathlib.Path:
+        # probably a good idea to create a backup before modifying anything
+        # but don't overwrite an existing backup
+        return self.path.with_suffix('.bak')
+    
     @property
     def contents(self) -> Dict:
         with self.path.open('r') as f:
@@ -318,11 +339,15 @@ class PlatformJson(SessionFile):
     @property
     def exp_end(self) -> datetime.datetime:
         """End time of experiment - not relevant for D2 files"""
-        fields_to_try = ['ExperimentCompleteTime','workflow_complete_time','json_save_time']
+        # try to get workflow end time from platform json
+        # fields in order of preference for estimating exp end time (for recovering
+        # files created during exp based on timestamp)
+        fields_to_try = ['ExperimentCompleteTime','workflow_complete_time','json_save_time','platform_json_save_time']
         end_time = ''
         while fields_to_try and end_time == '':
             end_time = self.contents.get(fields_to_try.pop(0), '')
-        # workflow end time from platform json
+        if end_time == '':
+            raise self.__class__.IncompleteInfoFromPlatformJson(f"End time of experiment could not be determined from {self.path.as_uri()}")
         return datetime.datetime.strptime(end_time, WSE_DATETIME_FORMAT)
     
     @property
@@ -368,7 +393,13 @@ class PlatformJson(SessionFile):
     @property
     def src_sync(self) -> pathlib.Path:
         return pathlib.Path(fR"\\{self.sync}\{SYNC_RELATIVE_PATH}") 
-     
+    
+    def write_trigger(self):
+        """Write a trigger file to lims incoming/trigger"""
+        with open(INCOMING_ROOT / "trigger" / f"{self.session.id}.ecp", "w") as f:
+            f.writelines(f"sessionid: {self.session.id}\n")
+            f.writelines(f"location: '{INCOMING_ROOT.as_posix()}'")
+    
 # entries ------------------------------------------------------------------------------ #
 
 # depending on the data type of each entry, the method to find the corresponding
@@ -377,7 +408,7 @@ class PlatformJson(SessionFile):
 #   specific subtype, using the factory method below e.g. entry_from_factory(self, entry)
 
 class Entry:
-    
+        
     def __init__(self, entry:Union[Dict,Tuple]=None, platform_json:PlatformJson=None):
         # entry in platform json 'files' has the format:
         #   'ephys_raw_data_probe_A': {
@@ -452,7 +483,7 @@ class Entry:
         pass
         # TODO 
     
-    def return_single_hit(self, hits:List[os.PathLike]) -> os.PathLike:
+    def return_single_hit(self, hits:List[pathlib.Path]) -> pathlib.Path:
         """Return a single hit if possible, or None if no hits.
         
         Processes the output from get_files[or dirs]_created_between() according to some
@@ -477,15 +508,16 @@ class Entry:
             raise NotImplementedError 
             #TODO get logic from oe060 sorting
     
-    def copy(self, dest: os.PathLike=None):
+    def copy(self, dest: Union[str, pathlib.Path]=None):
         """Copy original file to a specified destination folder"""
         # TODO add checksum of file/dir to db
         if not self.sources:
-            print("Copy aborted - no original file found")
+            print("Copy aborted - no files found at origin or backup locations")
             return
         
         if dest is None:
             dest = self.expected_data
+
         dest = pathlib.Path(dest)
         
         for source in self.sources:
@@ -520,12 +552,21 @@ class Entry:
                         
             # do the actual copying
             if self.dir_or_file_type == 'directory_name':
-                shutil.copytree(source,dest)
-                print('Copied directory:', source)
+                print(f"Copying {source} to {dest}")
+                if not SIMULATE:
+                    shutil.copytree(source,dest, dirs_exist_ok=True)
+                else:
+                    for path in source.rglob('*'):
+                        if path.is_dir():
+                            dest.mkdir(parents=True, exist_ok=True)
+                        else:
+                            dest.symlink_to(source)
+                print('Copying complete')
             
             if self.dir_or_file_type == 'filename':
-                shutil.copy2(source,dest)
-                print('Copied file:', source)
+                print(f"Copying {source} to {dest}")
+                shutil.copy2(source,dest) if not SIMULATE else dest.symlink_to(source)
+                print('Copying complete')
         
             if self.correct_data:
                 break
@@ -558,9 +599,9 @@ class EphysRaw(Entry):
         self.source = pathlib.Path(f"//{self.platform_json.acq}/{self.probe_drive_map[self.probe_letter]}")
     
     @property
-    def origin(self) -> os.PathLike:
+    def origin(self) -> pathlib.Path:
         
-        def filter_hits(hits:List[os.PathLike]) -> List[os.PathLike]:
+        def filter_hits(hits:List[pathlib.Path]) -> List[pathlib.Path]:
             return [h for h in hits if not any(f in h.as_posix() for f in ['_temp', '_pretest'])]
         
         glob = f"*{self.platform_json.session.folder}*"
@@ -611,7 +652,7 @@ class Sync(Entry):
         self.source = self.platform_json.src_sync
         
     @property
-    def origin(self) -> os.PathLike:
+    def origin(self) -> pathlib.Path:
         glob = f"*{self.expected_data.suffix}"
         hits = get_files_created_between(self.source,glob,self.platform_json.exp_start,self.platform_json.exp_end)
         if hits:
@@ -629,10 +670,9 @@ class Sync(Entry):
         start = self.platform_json.exp_start
         end = self.platform_json.exp_end + datetime.timedelta(minutes=30)
         hits = get_files_created_between(self.source,glob,start,end)
-        if hits:
-            return self.return_single_hit(hits)
-       
-            print(f"No matching sync file found")
+        if not hits:
+            print(f"No matching sync file found at origin {self.source}")
+        return self.return_single_hit(hits)
         
 # -------------------------------------------------------------------------------------- #
 class Camstim(Entry):
@@ -645,7 +685,7 @@ class Camstim(Entry):
         self.pkl = self.dir_or_file_name.split('.')[-2] 
         
     @property
-    def origin(self) -> os.PathLike:
+    def origin(self) -> pathlib.Path:
         hits = []
         glob = f"*{self.pkl}*.pkl"
         hits += get_files_created_between(self.source,glob,self.platform_json.exp_start,self.platform_json.exp_end)
@@ -669,13 +709,13 @@ class VideoTracking(Entry):
         self.cam = self.dir_or_file_name.split('.')[-2] 
         
     @property
-    def origin(self) -> os.PathLike:
+    def origin(self) -> pathlib.Path:
         glob = f"*{self.cam}*{self.expected_data.suffix}"
         start = self.platform_json.exp_start
         end = self.platform_json.exp_end + datetime.timedelta(seconds=10)
         hits = get_files_created_between(self.source,glob,start,end)
         if not hits:
-            print(f"No matching video file found {self.dir_or_file_name}")
+            print(f"No matching video info json at origin {self.source}")
         return self.return_single_hit(hits)
     
 class VideoInfo(Entry):
@@ -692,14 +732,14 @@ class VideoInfo(Entry):
         self.cam = self.dir_or_file_name.split('.')[-2] 
     
     @property
-    def origin(self) -> os.PathLike:
+    def origin(self) -> pathlib.Path:
         hits = []
         glob = f"*{self.cam}*{self.expected_data.suffix}"
         start = self.platform_json.exp_start
         end = self.platform_json.exp_end + datetime.timedelta(seconds=10)
         hits = get_files_created_between(self.source,glob,start,end)
         if not hits:
-            print(f"No matching video info json found {self.dir_or_file_name}")
+            print(f"No matching video info json at origin {self.source}")
         return self.return_single_hit(hits)
     
 # -------------------------------------------------------------------------------------- #
@@ -722,7 +762,7 @@ class SurfaceImage(Entry):
         return sum('_surface_image_' in descriptive_name for descriptive_name in self.platform_json.template.keys())
     
     @property
-    def origin(self) -> os.PathLike:
+    def origin(self) -> pathlib.Path:
         if not self.total_imgs_per_exp:
             print(f"Num. total images needs to be assigned")
             return None
@@ -730,7 +770,7 @@ class SurfaceImage(Entry):
         hits = get_files_created_between(self.source,glob,self.platform_json.exp_start,self.platform_json.exp_end)
         
         if len(hits) == 0:
-            print(f"No matching surface image found")
+            print(f"No matching surface image found at origin {self.source}")
             return None
         
         right_labels_only = True if all('right' in hit.name for hit in hits) else False
@@ -763,12 +803,12 @@ class NewscaleLog(Entry):
         self.source = self.platform_json.src_motor_locs
         
     @property
-    def origin(self) -> os.PathLike:
+    def origin(self) -> pathlib.Path:
         log = self.source / 'log.csv'
         if log.exists():
             return log
         else:
-            print(f"No matching newscale log found at {log}")
+            print(f"No matching newscale log found at origin {self.source}")
     
     
     # TODO trim the MPM logs or copy only what's needed
@@ -802,7 +842,7 @@ class Notebook(Entry):
         super().__init__(*args, **kwargs)   
     
     @property
-    def origin(self) -> os.PathLike:    
+    def origin(self) -> pathlib.Path:    
         pass
         #TODO notebook entries
         
@@ -813,7 +853,7 @@ class Surgery(Entry):
         super().__init__(*args, **kwargs)   
     
     @property
-    def origin(self) -> os.PathLike:    
+    def origin(self) -> pathlib.Path:    
         pass
         #TODO surgery notes 
     
@@ -827,6 +867,9 @@ class Surgery(Entry):
  
 class Files(PlatformJson):
     """
+        A subclass with more-specific methods for fixing the files manifest part of the
+        platform.json, that run on initialization.
+        
         Correcting the platform json and its corresponding session folder of data is a
         multi-step process:
         
@@ -851,11 +894,40 @@ class Files(PlatformJson):
                 correspond to incorrect data
                     - find entries that don't match template 
                     - decide whether to delete their data
-
+                                 
+            3. Update files dict with template, replacing incorrect existing entries with correct
+               versions and leaving additional entries intact
+            * all template entries should now be in the files dict
+                Files(*.json).missing == {}
     """
+
+    
     def __init__(self,*args,**kwargs):
         super().__init__(*args,**kwargs)
-        
+        if SIMULATE:
+            # in simulation mode, we do all file operations in a 'virtual' session
+            # folder: we'll try to create a complete session folder of correctly named
+            # experiment files, but instead of modifying the session folder the platform
+            # json lives in, we'll copy it to a new folder, and instead of copying data
+            # to the folder (which can take time for ephys, videos..), we'll just create
+            # symlinks to what we identify are the candidate correct files. from there,
+            # further validation can run on the symlinks to check their contents
+            
+            # - create a blank slate to work from:
+            self.simulated_folder.mkdir(parents=True,exist_ok=True)
+            [p.unlink() for p in self.simulated_folder.rglob('*')]
+            
+            # - copy the original platform json to the simulated folder 
+            if self.backup.exists():
+                shutil.copy(self.backup,self.simulated_folder)
+            else:
+                shutil.copy2(self.path, self.simulated_folder)
+                
+            # - now replace the linked file with the new one so that all calls to the
+            #   platform json's path/parent folder will resolve to the new virtual one.
+            #   this will save us from making a lot of 'if SIMULATED:' checks
+            self.path = self.simulated_folder / self.path.name
+            
         # this will become the list of entries in the updated 'files' dict
         # (list is populated by the functions that follow)
         self.new_entries:List[Entry] = [] 
@@ -869,9 +941,18 @@ class Files(PlatformJson):
             self.write()
             # (this also appends the project codename ie. OpenScopeIllusion)
         
+        # optional steps (not triggered automatically):
+        # - checksum data
+        # - copy data to lims incoming
+    
     @property
-    def template(self) -> dict:
-        template_root = pathlib.Path(R"\\allen\programs\mindscope\workgroups\dynamicrouting\ben\npexp_data_manifests")
+    def simulated_folder(self) -> pathlib.Path:
+        """Where symlinks to data are created, instead of modifying original data.
+        Created anew each time we run in Simulation mode."""
+        return SYMLINK_REPO / self.session.folder
+        
+    @property
+    def template(self) -> dict: 
         if (
             any(h in self.contents.get('stimulus_name','') for h in ['hab','habituation'])
         or any(h in self.contents.get('workflow','') for h in ['hab','habituation'])
@@ -881,7 +962,7 @@ class Files(PlatformJson):
             session_type = 'D1'
         elif 'D2' in self.path.stem:
             session_type = 'D2'
-        template_path = template_root / session_type / f"{self.experiment}.json"
+        template_path = TEMPLATES_ROOT / session_type / f"{self.experiment}.json"
         with template_path.open('r') as f:
             return json.load(f)['files']
         
@@ -903,6 +984,10 @@ class Files(PlatformJson):
     @property
     def extra(self) -> dict:
         return {k:v for k,v in self.current.items() if k not in self.expected}
+    
+    @property
+    def incorrect(self) -> dict:
+        return {k:v for k,v in self.current.items() if k in self.expected.keys() and v != self.expected[k]}
     
     def entry_from_factory(self, entry:Dict) -> Entry:
         descriptive_name = Entry(entry,self).descriptive_name
@@ -973,21 +1058,22 @@ class Files(PlatformJson):
     def write(self):
         """Overwrite existing platform json, with a backup of the original preserved"""
         # ensure a backup of the original first
-        orig = self.path.with_suffix('.bak')
-        shutil.copy2(self.path, orig) if not orig.exists() else None
+        shutil.copy2(self.path, self.backup) if not self.backup.exists() else None
         
+        print(f"updating {self.path} with {len(self.missing)} new entries and {len(self.incorrect)} corrected entries")
         contents = self.contents # must copy contents to avoid breaking class property (Which pulls from .json)
         contents['files'] = {**self.new_dict}
         contents['project'] = self.session.project
+            
         with self.path.open('w') as f:
             json.dump(dict(contents), f, indent=4)
-        print(f"updated {self.path}")
+        print(f"updated {self.path.name}")
                     
-def get_created_timestamp_from_file(file:os.PathLike):
+def get_created_timestamp_from_file(file:Union[str, pathlib.Path]):
     timestamp = pathlib.Path(file).stat().st_ctime
     return datetime.datetime.fromtimestamp(timestamp)
 
-def get_dirs_created_between(dir: os.PathLike, strsearch, start:datetime.datetime, end:datetime.datetime) -> List[pathlib.Path]:
+def get_dirs_created_between(dir: Union[str, pathlib.Path], strsearch, start:datetime.datetime, end:datetime.datetime) -> List[pathlib.Path]:
     """"Returns a list of Path objects, sorted by creation time"""
     hits = []
     glob_matches = pathlib.Path(dir).glob(strsearch)
@@ -998,7 +1084,7 @@ def get_dirs_created_between(dir: os.PathLike, strsearch, start:datetime.datetim
                 hits.append(match)
     return sorted(hits, key=get_created_timestamp_from_file)
     
-def get_files_created_between(dir: os.PathLike, strsearch, start:datetime.datetime, end:datetime.datetime) -> List[pathlib.Path]:
+def get_files_created_between(dir: Union[str, pathlib.Path], strsearch, start:datetime.datetime, end:datetime.datetime) -> List[pathlib.Path]:
     """"Returns a list of Path objects, sorted by creation time"""
     hits = []
     glob_matches = pathlib.Path(dir).rglob(strsearch)
@@ -1016,7 +1102,18 @@ if __name__ == "__main__":
     # j = Files(R"\\allen\programs\mindscope\workgroups\np-exp\1208035625_636890_20220907\1208035625_636890_20220907_platformD1.json")
     # j = Files(R"\\allen\programs\mindscope\workgroups\np-exp\1210343162_623786_20220912\1210343162_623786_20220912_platformD1.json")
     
+    # j = PlatformJson(R"\\allen\programs\mindscope\workgroups\np-exp\1210343162_623786_20220912\1210343162_623786_20220912_platformD1.json")
+    j = PlatformJson(R"C:\Users\ben.hardcastle\Desktop\1194643724_615563_20220727\1194643724_615563_20220727_platformD1.json")
+    j = Files(R"C:\Users\ben.hardcastle\Desktop\1194643724_615563_20220727\1194643724_615563_20220727_platformD1.json")
+    # time.sleep(3600*6)
+    # j.write_trigger()
     # j.fix_data()
+    
+    for disk in re.findall("([A-Z](?=:):)",str(os.popen("fsutil fsinfo drives").readlines())):
+        try:
+            print(shutil.disk_usage(disk))
+        except PermissionError:
+            pass
     
     # j.fetch_data_missing_from_folder()
     # j.fix_current_entries()
