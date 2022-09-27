@@ -2911,6 +2911,8 @@ def move_files(state_globals):
             while True:
                 try:
                     state = sync_proxy.get_state()
+                    if isinstance(state,dict) and state.get('message',None) == "'NoneType' object has no attribute 'is_recording'":
+                        state = ("READY",)
                     logging.info(f'SYNC STATE: {state}')
                     time.sleep(1)
                     if state[0] == "READY":
