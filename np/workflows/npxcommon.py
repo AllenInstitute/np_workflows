@@ -2546,46 +2546,58 @@ def run_pretest_override_params(state_globals, camstim, params_path):
         #! TODO: this is a hack to get the pretest to work with camstim 2 override params
         # ben and corbett july 2022
         params_path = R"C:\Users\svc_neuropix\Documents\GitHub\NP_pipeline_validation\pretest_stim_params\dynamic_routing_pretest_stim_params.json"
-    
+
     print(f'Attempting to run pretest stim with override params {params_path}')
     state_globals['external']['pretest_stimulus_name'] = ''
+    
     override_params = False
     try:
-        with open(params_path, 'r') as f:
-            override_params = json.load(f)
-    except Exception as E:
-        message = f'Unable to load override params. Make sure they are present and shared at {params_path}'
-        overrideable_error_state(state_globals, retry_state='configure_hardware_openephys', override_state='pretest',
-                                 message=message)
-    if override_params:
-        try:
+        if override_params:
+            try:
+                with open(params_path, 'r') as f:
+                    override_params = json.load(f)
+            except Exception as E:
+                message = f'Unable to load override params. Make sure they are present and shared at {params_path}'
+                overrideable_error_state(state_globals, retry_state='configure_hardware_openephys', override_state='pretest',
+                                        message=message)
             # mouse_id = state_globals["external"]["mouse_id"]
             mouse_id = override_params["mouse_id"]
             user_id = state_globals["external"]["user_id"]
             print('Starting behavior session')
             camstim.start_session(mouse_id, user_id, override_params=override_params)
-            try:
-                time.sleep(3)
-                stim_status = camstim.status
-                stimulus_name, script_path = get_script_name(stim_status)
-                state_globals['external']['pretest_stimulus_name'] = stimulus_name
-            except Exception as E:
-                message = f'Unable to retrieve the pretest script name: {E}'
-                alert_text(message, state_globals)
-
-        except Exception as E:
-            message = 'Unable to start the session. Please start manually and override, or fix camstim and retry'
-            overrideable_error_state(state_globals, retry_state='configure_hardware_openephys',
-                                     override_state='pretest', message=message)
+        else:
+            pretest_mice = {
+                'NP.0':"603810",
+                'NP.1':"599657",
+                'NP.2':"598796",
+            }
+            mouse_id = pretest_mice[Rig.ID]
+            
+            user_id = state_globals["external"]["user_id"]
+            camstim.start_session(mouse_id, user_id)
+            
         try:
-            if not (camstim_running(state_globals)):
-                message = "The stimulus doesn't seem to be running. \nPlease fix camstim and retry."
-                overrideable_error_state(state_globals, retry_state='configure_hardware_openephys',
-                                         override_state='pretest', message=message)
+            time.sleep(3)
+            stim_status = camstim.status
+            stimulus_name, script_path = get_script_name(stim_status)
+            state_globals['external']['pretest_stimulus_name'] = stimulus_name
         except Exception as E:
-            message = "Unable to check if the sim is running. \nPlease fix camstim and retry."
+            message = f'Unable to retrieve the pretest script name: {E}'
+            alert_text(message, state_globals)
+
+    except Exception as E:
+        message = 'Unable to start the session. Please start manually and override, or fix camstim and retry'
+        overrideable_error_state(state_globals, retry_state='configure_hardware_openephys',
+                                    override_state='pretest', message=message)
+    try:
+        if not (camstim_running(state_globals)):
+            message = "The stimulus doesn't seem to be running. \nPlease fix camstim and retry."
             overrideable_error_state(state_globals, retry_state='configure_hardware_openephys',
-                                     override_state='pretest', message=message)
+                                        override_state='pretest', message=message)
+    except Exception as E:
+        message = "Unable to check if the sim is running. \nPlease fix camstim and retry."
+        overrideable_error_state(state_globals, retry_state='configure_hardware_openephys',
+                                    override_state='pretest', message=message)
 
 
 def pretest_path(state_globals):
