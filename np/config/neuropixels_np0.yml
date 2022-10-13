@@ -80,8 +80,8 @@ MTrainData:
 backup_location: allen\programs\mindscope\workgroups\np-exp
 validation:
   environment: np_pipeline_validation
-  params_directory: C:/users/svc_neuropix/Documents/GitHub/NP_pipeline_validation/rvalidation_params
-  script: C:/users/svc_neuropix/Documents/GitHub/NP_pipeline_validation/run_validation_functions.py
+  params_directory: C:/users/svc_neuropix/Documents/GitHub/np_pipeline_validation/validation_params
+  script: C:/users/svc_neuropix/Documents/GitHub/np_pipeline_validation/run_validation_functions.py
 pretest:
   mode: override_params
   path: C:/users/svc_neuropix/Documents/GitHub/NP_pipeline_validation/pretest_stim_params
