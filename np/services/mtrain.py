@@ -130,11 +130,12 @@ class MTrain:
 
         def warn_and_return():
             warnings.warn("Regimen not changed: invalid input. Provide an identifier for both a regimen and a stage.")
-            return
+        
 
         if not regimen and stage:
             warn_and_return()
-
+            return
+        
         # we're not setting the regimen directly - we just need some info to set a valid state
         regimen_id: int = None
         stage_id: int = None
@@ -156,7 +157,8 @@ class MTrain:
 
         else:
             warn_and_return()
-
+            return
+        
         # get the stages available in the new regimen, without setting anything yet
         # new_regimen = self.get_all("regimens")['id'==regimen_id]
         new_regimen = [s for s in self.get_all("regimens") if s['id'] == regimen_id][0]
@@ -176,11 +178,13 @@ class MTrain:
 
         else:
             warn_and_return()
-
+            return
+        
         # look for corresponding state
         state_match = [s for s in new_regimen["states"] if s['regimen_id'] == regimen_id and s['stage_id'] == stage_id]
         if not state_match or len(state_match) != 1:
             warn_and_return()
+            return
         new_state = state_match[0]
 
         # set directly instead of using state set method (which intentionally blocks setting a state dict with a new regimen)
