@@ -1,3 +1,4 @@
+import datetime
 import json
 import warnings
 from typing import Union
@@ -97,6 +98,27 @@ class MTrain:
     def regimen(self) -> dict:
         """Returns dictionary containing 'id', 'name', 'stages', 'states'"""
         return requests.get(f"{self.server}/api/v1/regimens/{self.state['regimen_id']}").json()
+    
+    @property
+    def all_behavior_sessions(self) -> dict:
+        """Returns dictionary containing details of all behavior sessions for mouse_id"""
+        result = requests.get(f"{self.server}/get_behavior_sessions/", data=json.dumps({"LabTracks_ID": str(self.mouse_id)}))
+        
+        if result:
+            return result.json()['results']
+        return None
+        
+    def last_behavior_session_on(self,query_date:datetime.date) -> dict:
+        all_behavior_sessions = self.all_behavior_sessions
+        matching_sessions = []
+        for session in all_behavior_sessions:
+            session_datetime = datetime.datetime.strptime(session['date'],'%a, %d %b %Y %H:%M:%S %Z')
+            if session_datetime.date() == query_date:
+                matching_sessions.append(session)
+            
+        if matching_sessions:
+            return matching_sessions[-1]
+        return None
 
     @regimen.setter
     def regimen(self):
