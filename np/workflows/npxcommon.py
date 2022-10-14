@@ -93,8 +93,8 @@ try:
         
     # set MVR to record video from all cams except Aux (currently Eye, Face, Behavior)
     mvr_response = mvr_writer.request_camera_ids()[0]
-    mvr_writer.exp_cam_ids = [x['id'] for x in mvr_response['value'] if not re.search('aux', x['label'], re.IGNORECASE)]
-    mvr_writer.exp_cam_labels = [x['label'] for x in mvr_response['value'] if not re.search('aux', x['label'], re.IGNORECASE)]
+    mvr_writer.exp_cam_ids = [x['id'] for x in mvr_response['value'] if not re.search('aux|USB!', x['label'], re.IGNORECASE)]
+    mvr_writer.exp_cam_labels = [x['label'] for x in mvr_response['value'] if not re.search('aux|USB!', x['label'], re.IGNORECASE)]
     mvr_writer.define_hosts(mvr_writer.exp_cam_ids)
     
 except Exception:
