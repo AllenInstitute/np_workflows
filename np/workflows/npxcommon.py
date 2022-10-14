@@ -1180,6 +1180,12 @@ def check_data_stream_size(state_globals, wait_time=10, reestablish_sizes=False,
         location = path_dict[stream]
         key = stream + '_changing size'
         message = f'Unable to verify file size changing, please verify manually at {location}'
+        if key == 'Ephys data':
+            try:
+                if ephys.is_recording():
+                    continue
+            except:
+                pass
         failed[key] = message
         print(message)
     return failed
@@ -1880,8 +1886,7 @@ def stop_videomon(state_globals):
 
 
 def rename_video_files(state_globals):
-    for camera in config['cameras']:
-        label = camera["label"]
+    for label in mvr_writer.exp_cam_labels:
         try:
             if not ('video_filenames' in state_globals['external']):
                 message = f"No video filenames were saved, globbing for them instead"
