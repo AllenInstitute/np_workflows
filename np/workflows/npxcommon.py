@@ -2566,20 +2566,26 @@ def run_pretest_override_params(state_globals, camstim, params_path):
                 overrideable_error_state(state_globals, retry_state='configure_hardware_openephys', override_state='pretest',
                                         message=message)
             # mouse_id = state_globals["external"]["mouse_id"]
-            mouse_id = override_params["mouse_id"]
+            pretest_mouse_id = override_params["mouse_id"]
             user_id = state_globals["external"]["user_id"]
             print('Starting behavior session')
-            camstim.start_session(mouse_id, user_id, override_params=override_params)
+            camstim.start_session(pretest_mouse_id, user_id, override_params=override_params)
         else:
             pretest_mice = {
                 'NP.0':"603810",
                 'NP.1':"599657",
                 'NP.2':"598796",
             }
-            mouse_id = pretest_mice[Rig.ID]
+            pretest_mouse_id = pretest_mice[Rig.ID]
             
             user_id = state_globals["external"]["user_id"]
-            camstim.start_session(mouse_id, user_id)
+            # set pretest mouse to latest pretest regimen/stage
+            pretest_regimens = [r for r in MTrain.get_all("regimens") if r['name'].starts_with('Pretest_v')]
+            pretest_regimens.sort(key=lambda r: r['name'])
+            # x.regimen = x.get_all("regimens")[4]
+            MTrain(pretest_mouse_id).set_regimen_and_stage(pretest_regimens[-1], pretest_regimens[-1]['stages'][-1])
+            print(f"pretest mouse {pretest_mouse_id}: regimen {MTrain(pretest_mouse_id).regimen}, stage {MTrain(pretest_mouse_id).stage}")
+            camstim.start_session(pretest_mouse_id, user_id)
             
         try:
             time.sleep(3)
