@@ -287,7 +287,7 @@ def start_pretest_input(state_globals):
     os.makedirs(state_globals["external"]["local_lims_location"], exist_ok=True)
     state_globals["external"]["mapped_lims_location"] = state_globals["external"]["local_lims_location"]
     state_globals["external"]["pretest_start_time"] = dt.now()
-    npxc.set_open_ephys_name(state_globals, add_prefix='pretest')
+    npxc.set_open_ephys_name(state_globals, add_prefix='') # uses session_name, which already includes pretest
     logging.info('starting monitoring with video prefix = pretest')
     npxc.start_common_experiment_monitoring(state_globals, video_prefix='pretest')
 
