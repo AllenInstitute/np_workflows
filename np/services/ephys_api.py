@@ -94,6 +94,7 @@ class EphysRouter(Ephys):
 
     @classmethod
     def start_ecephys_recording(cls):
+        EphysRouter.copy_xml_to_recording_folders()
         return cls.io.write(ephys_messages.recording(command=1))
 
     @classmethod
