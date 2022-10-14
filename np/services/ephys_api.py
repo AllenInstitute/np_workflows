@@ -1,16 +1,14 @@
 import json
 import logging
-import pathlib
 import os
+import pathlib
 import shutil
 import socket
 import sys
 import time
 from abc import ABC, abstractmethod
 from enum import Enum
-from typing import List, Optional
-import warnings
-
+from typing import Optional
 
 import requests
 
@@ -157,12 +155,12 @@ class EphysRouter(Ephys):
     def is_recording() -> bool:
         # check dir on disk is growing 
         gen = EphysRouter.latest_recording_path().rglob('*.npx2')
-        for sample_numbers in gen:
-            if not sample_numbers:
+        for npx2_file in gen:
+            if not npx2_file:
                 break
-            st_size_0 = sample_numbers.stat().st_size 
-            time.sleep(1.5)
-            if sample_numbers.stat().st_size > st_size_0: # check again, should have increased
+            st_size_0 = npx2_file.stat().st_size 
+            time.sleep(0.1)
+            if npx2_file.stat().st_size > st_size_0: # check again, should have increased
                 return True
             else:
                 continue
@@ -170,7 +168,7 @@ class EphysRouter(Ephys):
     @staticmethod 
     def copy_xml_to_recording_folders():
         try:
-            xml_repo = pathlib.Path(f"//{config.Rig.Acq.host}/c/Users/svc_neuropix/Desktop/open-ephys-neuropix")
+            xml_repo = pathlib.Path(f"//{config.Rig.Acq.host}/c$/Users/svc_neuropix/Desktop/open-ephys-neuropix")
             src = xml_repo / EphysRouter.latest_recording_path().name / "settings.xml"
             
             for drive_letter in ["A", "B"]:
@@ -184,7 +182,7 @@ class EphysRouter(Ephys):
                 
 class EphysHTTP(Ephys):
     """ Interface for HTTP server introduced in open ephys v0.6.0 (2022) """
-    #TODO wait on return msgs from requests between chaning modes etc
+    #TODO wait on return msgs from requests between changing modes etc
     # we don't want to send multiple put requests so quickly that the server can't respond
     
     #? is it necessary to transition idle>acquire>record (and reverse)? is idle>record possible?
@@ -316,6 +314,7 @@ class EphysHTTP(Ephys):
     
     @staticmethod
     def is_recording() -> bool:
+        "Tests wheter Open Ephys is currently recording and confirms files are being written to disk"
         # check mode is RECORD
         if EphysHTTP.request_open_ephys_status() != EphysHTTP.EphysModes.record.value:
             return False
@@ -326,7 +325,7 @@ class EphysHTTP(Ephys):
             if not sample_numbers:
                 break
             st_size_0 = sample_numbers.stat().st_size 
-            time.sleep(1.5)
+            time.sleep(0.1)
             if sample_numbers.stat().st_size > st_size_0: # check again, should have increased
                 return True
             else:
