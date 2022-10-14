@@ -1059,9 +1059,9 @@ def establish_data_stream_size(state_globals):
             key = stream + '_found'
             logging.info(f'Could not get size of file at {location}')
             failed[key] = f'Could not get size of file at {location}'
-            if not(already_alerted) and ('Ephys data' in key):
-                alert_text('It looks like you may need to click restart connection in open ephys', state_globals)
-                already_alerted = True
+            # if not(already_alerted) and ('Ephys data' in key):
+            #     alert_text('It looks like you may need to click restart connection in open ephys', state_globals)
+            #     already_alerted = True
     return failed
 
 
@@ -1126,9 +1126,9 @@ def check_data_stream_size(state_globals, wait_time=10, reestablish_sizes=False,
             key = stream + '_found'
             message = f'Could not get size of file at {location}'
             failed[key] = message
-            if not(already_alerted) and ('Ephys data' in key):
-                alert_text('It looks like you may need to click restart connection in open ephys', state_globals)
-                already_alerted = True
+            # if not(already_alerted) and ('Ephys data' in key):
+                # alert_text('It looks like you may need to click restart connection in open ephys', state_globals)
+                # already_alerted = True
         try:
             freespace = psutil.disk_usage(os.path.splitdrive(location)[0]).free
             if freespace < min_space_dict[stream] * (10 ** 9):
@@ -2552,12 +2552,12 @@ def run_pretest_override_params(state_globals, camstim, params_path):
         # ben and corbett july 2022
         params_path = R"C:\Users\svc_neuropix\Documents\GitHub\NP_pipeline_validation\pretest_stim_params\dynamic_routing_pretest_stim_params.json"
 
-    print(f'Attempting to run pretest stim with override params {params_path}')
     state_globals['external']['pretest_stimulus_name'] = ''
     
     override_params = False
     try:
         if override_params:
+            print(f'Attempting to run pretest stim with override params {params_path}')
             try:
                 with open(params_path, 'r') as f:
                     override_params = json.load(f)
@@ -2597,9 +2597,10 @@ def run_pretest_override_params(state_globals, camstim, params_path):
             alert_text(message, state_globals)
 
     except Exception as E:
-        message = 'Unable to start the session. Please start manually and override, or fix camstim and retry'
-        overrideable_error_state(state_globals, retry_state='configure_hardware_openephys',
-                                    override_state='pretest', message=message)
+        if not camstim_running(state_globals):
+            message = 'Unable to start the session. Please start manually and override, or fix camstim and retry'
+            overrideable_error_state(state_globals, retry_state='configure_hardware_openephys',
+                                        override_state='pretest', message=message)
     try:
         if not (camstim_running(state_globals)):
             message = "The stimulus doesn't seem to be running. \nPlease fix camstim and retry."
