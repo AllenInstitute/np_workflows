@@ -2584,7 +2584,7 @@ def run_pretest_override_params(state_globals, camstim, params_path):
             pretest_regimens.sort(key=lambda r: r['name'])
             # x.regimen = x.get_all("regimens")[4]
             MTrain(pretest_mouse_id).set_regimen_and_stage(pretest_regimens[-1], pretest_regimens[-1]['stages'][-1])
-            print(f"pretest mouse {pretest_mouse_id}: regimen {MTrain(pretest_mouse_id).regimen}, stage {MTrain(pretest_mouse_id).stage}")
+            print(f"pretest mouse {pretest_mouse_id}: regimen {MTrain(pretest_mouse_id).regimen['name']}, stage {MTrain(pretest_mouse_id).stage['name']}")
             camstim.start_session(pretest_mouse_id, user_id)
             
         try:
