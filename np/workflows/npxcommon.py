@@ -68,11 +68,13 @@ def get_config() -> dict:
         local_config = "neuropixels_np1"
     elif Rig.ID == 'NP.2':
         local_config = "neuropixels_np2"
-        
+    
     with open(f"np/config/{local_config}.yml") as f:   
         yaml_config = yaml.safe_load(f)
     config.update(yaml_config)  
     
+    pretest_mouse_id = pretest_mice[Rig.ID]
+
     return config
         # # pdb.set_trace()
         # def jsonrep(o):
@@ -81,6 +83,12 @@ def get_config() -> dict:
             
         # with open('np/config/dump.json','w') as f:
         #     json.dump(config, f, default=jsonrep, indent = 4)
+pretest_mice = {
+    'NP.0':"603810",
+    'NP.1':"599657",
+    'NP.2':"598796",
+}
+
             
     
 global mvr_writer
@@ -2571,11 +2579,7 @@ def run_pretest_override_params(state_globals, camstim, params_path):
             print('Starting behavior session')
             camstim.start_session(pretest_mouse_id, user_id, override_params=override_params)
         else:
-            pretest_mice = {
-                'NP.0':"603810",
-                'NP.1':"599657",
-                'NP.2':"598796",
-            }
+
             pretest_mouse_id = pretest_mice[Rig.ID]
             
             user_id = state_globals["external"]["user_id"]
