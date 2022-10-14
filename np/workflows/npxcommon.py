@@ -1900,7 +1900,7 @@ def rename_video_files(state_globals):
                     if not ('pkl' in filename):
                         extension = os.path.splitext(old_filepath)[1]
                         new_filepath = os.path.join(state_globals["external"]["mapped_lims_location"],
-                                                    state_globals["external"]['session_name'] + '.' + label + extension)
+                                                    state_globals["external"]['session_name'] + '.' + label.lower() + extension)
                         os.rename(old_filepath, new_filepath)
             else:
                 assocatied_files = state_globals['external']['video_filenames']
