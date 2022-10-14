@@ -2580,7 +2580,7 @@ def run_pretest_override_params(state_globals, camstim, params_path):
             
             user_id = state_globals["external"]["user_id"]
             # set pretest mouse to latest pretest regimen/stage
-            pretest_regimens = [r for r in MTrain.get_all("regimens") if r['name'].starts_with('Pretest_v')]
+            pretest_regimens = [r for r in MTrain.get_all("regimens") if r['name'].startswith('Pretest_v')]
             pretest_regimens.sort(key=lambda r: r['name'])
             # x.regimen = x.get_all("regimens")[4]
             MTrain(pretest_mouse_id).set_regimen_and_stage(pretest_regimens[-1], pretest_regimens[-1]['stages'][-1])
