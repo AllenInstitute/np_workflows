@@ -1886,7 +1886,7 @@ def stop_videomon(state_globals):
 
 
 def rename_video_files(state_globals):
-    for label in mvr_writer.exp_cam_labels.lower():
+    for label in mvr_writer.exp_cam_labels:
         try:
             if not ('video_filenames' in state_globals['external']):
                 message = f"No video filenames were saved, globbing for them instead"
@@ -1909,7 +1909,7 @@ def rename_video_files(state_globals):
                         extension = os.path.splitext(file_name)[1]
                         old_filepath = os.path.join(state_globals["external"]["mapped_lims_location"], file_name)
                         new_filepath = os.path.join(state_globals["external"]["mapped_lims_location"],
-                                                    state_globals["external"]['session_name'] + '.' + label + extension)
+                                                    state_globals["external"]['session_name'] + '.' + label.lower() + extension)
                         if os.path.exists(new_filepath):
                             print(f"Not renaming {label}, it already exists")
                         else:
