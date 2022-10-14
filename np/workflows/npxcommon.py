@@ -1886,7 +1886,7 @@ def stop_videomon(state_globals):
 
 
 def rename_video_files(state_globals):
-    for label in mvr_writer.exp_cam_labels:
+    for label in mvr_writer.exp_cam_labels.lower():
         try:
             if not ('video_filenames' in state_globals['external']):
                 message = f"No video filenames were saved, globbing for them instead"
