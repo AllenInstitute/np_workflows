@@ -294,7 +294,7 @@ def start_pretest_input(state_globals):
     npxc.start_pretest_stim(state_globals)
 
     foraging_id, stimulus_name, script_path = npxc.get_stim_status(camstim, state_globals)
-    npxc.verify_script_name(state_globals, stimulus_name)
+    # npxc.verify_script_name(state_globals, stimulus_name)
 
     failed = npxc.establish_data_stream_size(state_globals)
     #state_globals['external']['failure_messages'] = failed or {}

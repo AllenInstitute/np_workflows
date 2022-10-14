@@ -2142,7 +2142,7 @@ def retrieve_stim_status(camstim_proxy, state_globals):
         print('foraging ID:' + state_globals['external']['foraging_id'])
         print('stimulus_name:' + state_globals['external']['stimulus_name'])
         print('script_name:' + state_globals['external']['script_name'])
-        verify_script_name(state_globals, stimulus_name)
+        # verify_script_name(state_globals, stimulus_name)
         # if not(bool(state_globals['external']['foraging_id'])):
         # alert_text('The foraging ID is empty', state_globals)
     except Exception as E:
