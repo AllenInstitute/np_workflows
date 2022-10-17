@@ -3466,6 +3466,7 @@ def water_mouse_exit(state_globals):
     move_files(state_globals)
     save_notes(state_globals)
     save_platform_json(state_globals, manifest=False)
+    backup_move_files(state_globals)
 
 
 def foraging_ID_error_input(state_globals):
@@ -3542,7 +3543,18 @@ def load_mouse_behavior(state_globals):
                 message = 'Unable to verify mouse weight is reasonable'
                 alert_text(message, state_globals)
 
-
+def backup_move_files(state_globals): 
+    # Backup copy/move operation
+    if Rig.ID == "NP.2":
+        python_path_for_data_validation = R"C:\ProgramData\Anaconda3\envs\dv\python.exe"
+    elif Rig.ID in ["NP.0", "NP.1"]:
+        python_path_for_data_validation = R"C:\mcpython3\envs\dv\python.exe"
+    command = f"{python_path_for_data_validation} C:/Users/svc_neuropix/documents/github/np_data_validation/session_dir_fix.py {state_globals['external']['session_name']}"
+    try:
+        subprocess.Popen(command, shell=True)
+    except:
+        print("Failed to run backup copy/move operation via subprocess")
+    
 def pretest_wrapup(state_globals):
     # wrap thing sup in the same order as the experiment without validating pkls
     session_type = 'pretest'
@@ -3563,7 +3575,7 @@ def pretest_wrapup(state_globals):
     videomon_copy_wrapup(state_globals)
 
     move_files(state_globals)
-
+    backup_move_files(state_globals)
     run_validation(state_globals, 'pretest')
     failed.update(get_validation_results(state_globals, 'pretest'))
 
