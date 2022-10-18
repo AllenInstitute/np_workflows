@@ -7,7 +7,6 @@ import pathlib
 import pickle
 import re
 import shutil
-import socket
 import subprocess
 import time
 import traceback
@@ -23,6 +22,9 @@ import numpy
 import psutil
 import yaml
 import zmq
+from PIL import Image
+from wfltk import middleware_messages_pb2 as wfltk_msgs
+
 from np.models.model import \
     Model  # this is the type for concrete experiment models below
 from np.models.model import (  # these are the currently supported exps
@@ -35,8 +37,6 @@ from np.services.config import Rig
 from np.services.ephys_api import EphysHTTP, EphysRouter
 from np.services.mtrain import MTrain
 from np.services.mvr import MVRConnector
-from PIL import Image
-from wfltk import middleware_messages_pb2 as wfltk_msgs
 
 messages = wfltk_msgs
 from mpetk import limstk, mpeconfig, zro
@@ -1107,12 +1107,12 @@ def check_data_stream_size(state_globals, wait_time=10, reestablish_sizes=False,
             probeDir, computer = get_probeDir(state_globals, slot, drive)
             key = 'Ephys data ' + state_globals['external']['probes_in_slot'][slot]
             path_dict[key] = probeDir
-            try:
-                settings_location = glob.glob(get_settings_path(state_globals))[0]
-                data_c.append(settings_location)
-            except Exception as E:
-                data_c.append(os.path.join(computer, 'C'))
-                alert_text('Failed to find open ephys settings dir, C stability is likely to fail.', state_globals)
+            # try:
+            #     settings_location = glob.glob(get_settings_path(state_globals))[0]
+            #     data_c.append(settings_location)
+            # except Exception as E:
+            #     data_c.append(os.path.join(computer, 'C'))
+            #     alert_text('Failed to find open ephys settings dir, C stability is likely to fail.', state_globals)
             if key in min_space_dict:
                 min_space_dict[key] = min_space_dict[key] + 500 * exp_ratio
             else:
