@@ -1462,7 +1462,8 @@ open_report_process = None
 
 def check_files2(state_globals, session_type, checkpoint):
     # TODO This should only open sync report and handle the check with a speread call in .._workflow.py
-    missing_files = check_files_input(state_globals, session_type, checkpoint)
+    # missing_files = check_files_input(state_globals, session_type, checkpoint)
+    missing_files = {}
     network_path = get_backup_location(state_globals['external']['session_type'])
     backup = check_availability(network_path, state_globals)
     stop = not (backup and not (missing_files))
