@@ -72,7 +72,8 @@ def get_config() -> dict:
     with open(f"np/config/{local_config}.yml") as f:   
         yaml_config = yaml.safe_load(f)
     config.update(yaml_config)  
-    
+   
+    global pretest_mouse_id 
     pretest_mouse_id = pretest_mice[Rig.ID]
 
     return config
