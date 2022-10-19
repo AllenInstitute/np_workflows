@@ -1108,7 +1108,7 @@ def check_data_stream_size(state_globals, wait_time=10, reestablish_sizes=False,
             a_probe = state_globals['external']['reverse_mapping'][slot]
             probeDir, computer = get_probeDir(state_globals, slot, drive)
             key = 'Ephys data ' + state_globals['external']['probes_in_slot'][slot]
-            path_dict[key] = probeDir
+            # path_dict[key] = probeDir
             # try:
             #     settings_location = glob.glob(get_settings_path(state_globals))[0]
             #     data_c.append(settings_location)
@@ -1129,9 +1129,13 @@ def check_data_stream_size(state_globals, wait_time=10, reestablish_sizes=False,
                 print_str = 'stream:' + str(stream) + str(file_size_dict[stream])
                 print(print_str)
             else:
-                file_size_dict[stream] = get_current_size(location)
-                print_str = 'stream:' + str(stream) + str(file_size_dict[stream])
-                print(print_str)
+                if 'Ephys data' in stream:
+                    if not ephys.is_recording():
+                        raise Exception
+                else:
+                    file_size_dict[stream] = get_current_size(location)
+                    print_str = 'stream:' + str(stream) + str(file_size_dict[stream])
+                    print(print_str)
         except Exception as E:
             key = stream + '_found'
             message = f'Could not get size of file at {location}'
@@ -1166,11 +1170,16 @@ def check_data_stream_size(state_globals, wait_time=10, reestablish_sizes=False,
         for stream in not_changed:
             location = path_dict[stream]
             try:
-                current_size = get_current_size(location)
-                print_str = 'stream:' + str(stream) + str(current_size)
-                print(print_str)
-                if not (file_size_dict[stream] == current_size):
+                if 'Ephys data' in stream:
+                    if not ephys.is_recording():
+                        raise Exception
                     not_changed.remove(stream)
+                else:
+                    current_size = get_current_size(location)
+                    print_str = 'stream:' + str(stream) + str(current_size)
+                    print(print_str)
+                    if not (file_size_dict[stream] == current_size):
+                        not_changed.remove(stream)
             except Exception as E:
                 key = stream + '_found'
                 message = f'Could not get size of file at {location}'
