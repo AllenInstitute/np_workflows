@@ -282,9 +282,9 @@ def mtrain_change_regimen_2_input(state):
 @npxc.state_transition
 def start_pretest_input(state_globals):
     # get a unique pretest session folder
-    pretest_num = int('0'*10)
+    pretest_num = 0
     while pretest_num < 1000:
-        state_globals['external']['session_name'] = str(pretest_num) + '_' + npxc.pretest_mouse_id +'_'+ dt.now().strftime("%Y%m%d")
+        state_globals['external']['session_name'] = f'{pretest_num:010}_{npxc.pretest_mouse_id}_{dt.now().strftime("%Y%m%d")}'
         state_globals["external"]["local_lims_location"] = os.path.join(
             state_globals["external"]["local_lims_head"],
             state_globals['external']['session_name']
