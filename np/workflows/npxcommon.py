@@ -34,7 +34,7 @@ from np.services import \
     ephys_edi_pb2 as \
     ephys_messages  # ! TODO remove this - communicate through API instead
 from np.services.config import Rig
-from np.services.ephys_api import EphysHTTP, EphysRouter
+from np.services.ephys_api import EphysHTTP
 from np.services.mtrain import MTrain
 from np.services.mvr import MVRConnector
 
@@ -398,9 +398,10 @@ def initialize_enter(state_globals):
     #     config['components'][key] = {'desc': key, 'host': 'localhost', 'port': 1234, 'version': '0.1.0'}
     global ephys 
     if Rig.ID == "NP.0":
-        ephys = EphysRouter
-        # add proxy for EphysRouter - not used in EphysHTTP
-        ephys.setup_proxy(state_globals['resources']['io'])
+        ephys = EphysHTTP
+        # ephys = EphysRouter
+        ## add proxy for EphysRouter - not used in EphysHTTP
+        # ephys.setup_proxy(state_globals['resources']['io'])
     else:
         ephys = EphysHTTP
 
