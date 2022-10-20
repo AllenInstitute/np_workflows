@@ -3563,9 +3563,9 @@ def backup_move_files(state_globals):
         python_path_for_data_validation = R"C:\mcpython3\envs\dv\python.exe"
     command = f"{python_path_for_data_validation} C:/Users/svc_neuropix/documents/github/np_data_validation/session_dir_fix.py {state_globals['external']['session_name']}"
     try:
-        subprocess.Popen(command, shell=True)
+        subprocess.Popen(command, shell=True).wait(timeout=300)
     except:
-        print("Failed to run backup copy/move operation via subprocess")
+        print("Failed to run or finish backup copy/move operation via subprocess")
     
 def pretest_wrapup(state_globals):
     # wrap thing sup in the same order as the experiment without validating pkls
