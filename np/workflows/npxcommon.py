@@ -1211,28 +1211,37 @@ def check_data_stream_size(state_globals, wait_time=10, reestablish_sizes=False,
 
 
 def get_current_size(data_path):
-
-    if os.path.isdir(data_path):
-        for f in os.listdir(data_path):
-            # print(f'data path {data_path}')
-            file_path = os.path.join(data_path, f)  # .replace('\\', '\\\\')
-            # print(command_str)
-            # command_str = f'wmic datafile where Name="{file_path}"'
-            # subprocess.call(command_str , shell=True)#('dir '+file_path , shell=True)
-            try:
-                with open(file_path, 'r') as f:
-                    print('opened')
-            except Exception as E:
-                print(f'failed to open {file_path}')
-                logging.debug(E, exc_info=True)
-        for i in range(10):
-            size = sum(os.path.getsize(os.path.join(data_path, f)) for f in os.listdir(data_path))
-            # print(size)
-        # size = sum(os.path.getsize(f) for f in os.listdir(data_path) if os.path.isfile(f))
-    else:
-        # subprocess.call('dir '+data_path , shell=True)
-        size = os.path.getsize(data_path)
-        # size = os.path.getsize(data_path)
+    size = 0
+    try:
+        if os.path.isdir(data_path):
+            size += sum(
+                f.stat().st_size
+                for f in pathlib.Path(data_path).rglob("*")
+                if pathlib.Path(f).is_file()
+            )
+            # for f in os.listdir(data_path):
+            #     # print(f'data path {data_path}')
+            #     file_path = os.path.join(data_path, f)  # .replace('\\', '\\\\')
+            #     # print(command_str)
+            #     # command_str = f'wmic datafile where Name="{file_path}"'
+            #     # subprocess.call(command_str , shell=True)#('dir '+file_path , shell=True)
+            #     try:
+            #         with open(file_path, 'r') as f:
+            #             print('opened')
+            #     except Exception as E:
+            #         print(f'failed to open {file_path}')
+            #         logging.debug(E, exc_info=True)
+            # for i in range(10):
+            #     size = sum(os.path.getsize(os.path.join(data_path, f)) for f in os.listdir(data_path))
+            #     # print(size)
+            # # size = sum(os.path.getsize(f) for f in os.listdir(data_path) if os.path.isfile(f))
+        else:
+            # subprocess.call('dir '+data_path , shell=True)
+            size = os.path.getsize(data_path)
+            # size = os.path.getsize(data_path)
+    except Exception as E:
+        print(f'failed to get size of {data_path}')
+        logging.debug(E, exc_info=True)
     return size
 
 
