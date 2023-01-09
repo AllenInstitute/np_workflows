@@ -49,11 +49,17 @@ class Rig(Enum):
     sync = Sync = SYNC = "Sync"
     mvr = Mvr = MVR = "Mon"
     mon = Mon = MON = vidmon = Vidmon = VIDMON = "Mon"
+    cam3d = Cam3d = CAM3D = "Mon"
+    camviewer = CamViewer = camViewer = CAMVIEWER = "Mon"
+    cam3d = Cam3d = CAM3D = "Mon"
+    camstim = Camstim = CamStim = CAMSTIM = "Stim"
     stim = Stim = STIM = "Stim"
-    camstim = Camstim = CAMSTIM = "Stim"
-    acq = Acq = ACQ = "Acq" # TODO add btvtest.1-Acq http://mpe-computers/
-    ephys = Ephys = EPHYS = "Acq"
-    oephys = Oephys = OEphys = OEPHYS = "Acq"
+    ephys = Ephys = EPhys = EPHYS = "Acq"
+    oephys = Oephys = oEphys = OEphys = OEPHYS = "Acq"
+    openephys = openEphys = OpenEphys = OPENEPHYS = "Acq"
+    ephys = Ephys = EPhys = EPHYS = "Acq"
+    oephys = Oephys = oEphys = OEphys = OEPHYS = "Acq"
+    openephys = openEphys = OpenEphys = OPENEPHYS = "Acq"
     
     def __new__(cls,suffix):
         RIG_ID = None           
