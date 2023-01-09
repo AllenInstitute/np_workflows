@@ -45,18 +45,16 @@ print(f"Running from {COMP_ID}, connected to {RIG_ID}")
     
 class Rig(Enum):
     
-    wse = "Sync"
+    wse = wse2 = "Sync"
     sync = Sync = SYNC = "Sync"
     mvr = Mvr = MVR = "Mon"
     mon = Mon = MON = vidmon = Vidmon = VIDMON = "Mon"
     cam3d = Cam3d = CAM3D = "Mon"
     camviewer = CamViewer = camViewer = CAMVIEWER = "Mon"
-    cam3d = Cam3d = CAM3D = "Mon"
+    mousedirector = Mousedirector = mouseDirector = MouseDirector = MOUSEDIRECTOR = "Mon"
     camstim = Camstim = CamStim = CAMSTIM = "Stim"
     stim = Stim = STIM = "Stim"
-    ephys = Ephys = EPhys = EPHYS = "Acq"
-    oephys = Oephys = oEphys = OEphys = OEPHYS = "Acq"
-    openephys = openEphys = OpenEphys = OPENEPHYS = "Acq"
+    acq = Acq = ACQ = "Acq" # TODO add btvtest.1-Acq http://mpe-computers/
     ephys = Ephys = EPhys = EPHYS = "Acq"
     oephys = Oephys = oEphys = OEphys = OEPHYS = "Acq"
     openephys = openEphys = OpenEphys = OPENEPHYS = "Acq"
