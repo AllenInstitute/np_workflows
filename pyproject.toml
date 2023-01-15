@@ -12,7 +12,7 @@ requests = "*"
 np_config = "*"
 np_session = "*"
 np_logging = "*"
-pip-tools = "*"
+pip-tools = {version = "*", optional = true}
 isort = {version = "*", optional = true}
 mypy = {version = "*", optional = true}
 black = {version = "*", optional = true}
