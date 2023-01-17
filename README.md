@@ -36,5 +36,5 @@ launch `C:\Program Files\AIBS_MPE\workflow_launcher\workflow_launcher.exe`
 
 - TextValue error displayed in WSE GUI cmay indicate an accidental capitalization, ie `type: Note` should be `type: note`
 
-- [test] Christopher Mochizuki
-
+# services
+![Services](./services.drawio.svg)
