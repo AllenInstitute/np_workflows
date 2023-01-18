@@ -12,6 +12,7 @@ requests = "*"
 np_config = "*"
 np_session = "*"
 np_logging = "*"
+pyzmq = "^19.0"
 pip-tools = {version = "*", optional = true}
 isort = {version = "*", optional = true}
 mypy = {version = "*", optional = true}
