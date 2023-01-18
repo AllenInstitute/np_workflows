@@ -74,7 +74,7 @@ class Shutdownable(Protocol):
     
 PreExperimentProtocols = Union[Initializable, Testable, Pretestable, Primeable, Startable]
 PostExperimentProtocols = Union[Stoppable, Finalizable, Validatable, Shutdownable]
-
+Service = Union[PreExperimentProtocols, PostExperimentProtocols]
 
 # special methods - should be the only :
 

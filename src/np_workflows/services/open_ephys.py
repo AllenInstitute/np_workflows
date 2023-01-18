@@ -12,26 +12,31 @@ import enum
 from typing import Any, Optional, Sequence
 
 import requests
+import np_logging
 
-import config
-import utils
-    
-exc: BaseException = Exception()  
+from . import protocols
+from . import config
+from . import utils
+
+logger = np_logging.getLogger(__name__)
+
+exc: Optional[BaseException] | None
     
 host: str
 port: str | int = 37497 # 1-800-EPHYS
 latest_start: float
 
 # device records:
-gb_per_hr: int | float
-min_rec_hr: int | float
-pretest_duration_sec: int | float
+gb_per_hr: int | float = 250 # per drive
+min_rec_hr: int | float = 2
+pretest_duration_sec: int | float = 5
 
 # for resulting data:
-folder: str
+folder: str #! required
 "The string that will be sent to Open Ephys to name the recording: typically `0123456789_366122_20220618`"
+data_files: Sequence[pathlib.Path] = []
+"Storage for recording paths collected over the experiment."
 data_root: Optional[pathlib.Path] = None
-data_files: Optional[Sequence[pathlib.Path]] = None
 
 class State(enum.Enum):
     idle = "IDLE"
@@ -44,31 +49,59 @@ class Endpoint(enum.Enum):
     processors = "processors"
     message = "message"
 
+@utils.stop_on_error
+@utils.debug_logging
+def pretest() -> None:
+    initialize()
+    test()
+    start()
+    time.sleep(pretest)
+    verify()
+    stop()
+    finalize()
+    validate()
+
 def url(endpoint: Endpoint):
     return f"http://{host}:{port}/api/{endpoint.value}"
 
 def get_state() -> requests.Response:
-    return requests.get(url(Endpoint.status)).json().get('mode')
+    mode = requests.get(url := url(Endpoint.status)).json().get('mode')
+    logger.debug('%s -> get mode: %s', url, mode)
+    return mode
 
 def set_state(state: State) -> requests.Response:
     msg = {"mode": state.value}
-    return requests.put(url(Endpoint.status), json.dumps(msg))
+    mode = requests.put(url := url(Endpoint.status), json.dumps(msg))
+    logger.debug('%s <- set mode: %s', url, state.value)
+    return mode
 
 def is_connected() -> bool:
+
     global exc
+
     if not utils.is_online(host):
-        exc = ConnectionError(f"Ephys | No response from {host}: may be offline or unreachable")
+        exc = ConnectionError(f"OpenEphys | No response from {host}: may be offline or unreachable")
         return False
+
     try:
         state = get_state()
     except requests.RequestException as exc:
         return False
     else:
         if not any(_.value == state for _ in State):
-            exc = ValueError(f"Ephys | Unexpected state: {state}")
+            exc = ValueError(f"OpenEphys | Unexpected state: {state}")
             return False
+
     return True
-        
+
+def initialize() -> None:
+    data_files = []
+    set_folder(folder)
+
+def test() -> None:
+    if not is_connected():
+        raise protocols.TestFailure() from exc
+
 def is_started() -> bool:
     if get_state() == State.record.value:
         return True
@@ -81,7 +114,7 @@ def is_ready_to_start() -> bool:
 
 def start() -> None:
     if is_started():
-        logging.warning("Open Ephys is already started")
+        logger.warning("OpenEphys is already started")
         return
     if not is_ready_to_start():
         set_state(State.acquire)
@@ -91,37 +124,47 @@ def start() -> None:
     
 def stop() -> None:
     set_state(State.acquire)
-    
-def set_open_ephys_name(path: Optional[str] = "_",  prepend_text: Optional[str] = "", append_text: Optional[str] = ""):
-    
+
+def finalize() -> None:
+    data_files.extend(get_latest_data_dirs())
+    unlock_previous_recording()
+
+def set_folder(name: str,  prepend_text: Optional[str] = "", append_text: Optional[str] = ""):
+    """Recording folder string"""
     recording = requests.get(url(Endpoint.recording)).json()
     
-    if path == "":
-        path = "_" # filename cannot be zero length
-    path.replace(".","_")
-    print(f"setting open ephys directory name - cannot contain periods -> replaced with underscores: {path}")
-    recording['base_text'] = path
+    if name == "":
+        name = "_" # filename cannot be zero length
+    name.replace(".","_")
+    logger.warning("OpenEphys | Recording directory cannot contain periods, replaced with underscores: %s" , name)
+    recording['base_text'] = name
     recording['prepend_text'] = prepend_text
     recording['append_text'] = append_text
-    return requests.put(url(Endpoint.recording), json.dumps(recording))
+    response = requests.put(url(Endpoint.recording), json.dumps(recording))
+    if (actual := response.get('base_text')) != name:
+        raise TestFailure(f'OpenEphys | Set folder to {name}, but software shows: {actual}')
 
-def clear_open_ephys_name():
-    return set_open_ephys_name(path="_temp_", prepend_text="", append_text="")
+def get_folder() -> str | None:
+    return requests.get(url(Endpoint.recording)).json().get('base_text')
+
+def clear_open_ephys_name() -> None:
+    set_folder(path="_temp_", prepend_text="", append_text="")
 
 def set_idle():
     "Should be called before sending any configuration to Open Ephys"
-    set_state(State.idle)
-    
-def reset_open_ephys():
     if is_started():
         stop()
     time.sleep(.5)
+    set_state(State.idle)
+    
+def unlock_previous_recording():
+    "stop rec/acquiring | set name to _temp_ | record briefly | acquire"
     set_idle()
     time.sleep(.5)
     clear_open_ephys_name()
     time.sleep(.5)
     start()
-    time.sleep(1)
+    time.sleep(.5)
     stop()
     time.sleep(.5)
 
@@ -141,7 +184,7 @@ def get_latest_data_dirs() -> list[pathlib.Path]:
             dirs.append(subfolders[-1])
     return dirs
             
-def verify():
+def verify() -> None:
     # check dir on disk is growing at all recording locations
     for data_dir in get_latest_data_dirs():
         for npy in data_dir.rglob('*sample_numbers.npy'): # some file that should always be present 
@@ -150,7 +193,10 @@ def verify():
         else:
             return False
     return True
-    
+
+def validate() -> None:
+    logger.warning('OpenEphys | Validate not implemented')
+
 if __name__ == "__main__":
     # testing on np.0
     host = 'W10DT713842'
@@ -196,10 +242,10 @@ if __name__ == "__main__":
     r = requests.get(Endpoint.recording)
     print((r.json()['current_directory_name'], r.json()['prepend_text'], r.json()['append_text']))
         
-    r = EphysHTTP.set_open_ephys_name(path = "mouseID_", prepend_text="sessionID", append_text="_date")
+    r = EphysHTTP.set_folder(path = "mouseID_", prepend_text="sessionID", append_text="_date")
     print((r.json()['current_directory_name'], r.json()['prepend_text'], r.json()['append_text']))
     
-    r = EphysHTTP.set_open_ephys_name(path = "mouse", prepend_text="session", append_text="date")
+    r = EphysHTTP.set_folder(path = "mouse", prepend_text="session", append_text="date")
     print((r.json()['current_directory_name'], r.json()['prepend_text'], r.json()['append_text']))
     
     print((r.json()['base_text'])) # fails as of 06/23 https://github.com/open-ephys/plugin-GUI/pull/514

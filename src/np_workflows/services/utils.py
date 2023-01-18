@@ -53,7 +53,7 @@ def debug_logging() -> Generator[None, None, None]:
         logger.setLevel(level_0)
 
 @contextlib.contextmanager
-def stop_on_exit_or_error(obj: Stoppable):
+def stop_on_error(obj: Stoppable):
     if not isinstance(obj, Stoppable):
         raise TypeError(f"{obj} does not support stop()")
     try:
@@ -61,10 +61,9 @@ def stop_on_exit_or_error(obj: Stoppable):
     except Exception as exc:
         with contextlib.suppress(Exception):
             obj.exc = exc
-            logging.getLogger().error("%s interrupted as a result of error", obj.__name__ if isinstance(obj, type) else obj.__class__.__name__, exc_info=exc)
+            logging.getLogger().info("%s interrupted by error", obj.__name__ if not isinstance(obj, type) else obj.__class__.__name__, exc_info=exc)
+            obj.stop()
         raise
-    finally:
-        obj.stop()
 
 @contextlib.contextmanager
 def suppress(*exceptions: Type[BaseException]):
