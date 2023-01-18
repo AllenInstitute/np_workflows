@@ -1,0 +1,63 @@
+required screens: 
+  - ephys: 
+    (manually check config: probe letters, 2 record nodes writing to A/B drives, 50/50 channels de-selected, tip-ref)
+  - mvr
+  - camstim (no screen)
+  - sync (no sync)
+  - newscale
+  - smartmotor
+
+pretest start, stop, check data:
+  - ephys 
+  - mvr
+  - camstim, visual confirmation of laser on #! how to specify params when called via camstim agent
+  - sync
+
+# fetch mouse, implant/well prep
+# retract probes from tergazyme, remove well etc
+
+exp wfl:
+
+input userID, mouseID:
+
+# get experiment-type from mouseID/lims project name, confirm experiment
+
+# check components reqd for experiment are on: Cameras, Ephys, Stim, Sync/DAQ,
+# Servers, Filesystem space
+
+# optional resume previous unfinished workflow
+
+# reminders + manual checks (open ephys config, flush water lines, lick spout)
+
+# position probes in dye, capture photodoc, await timer
+
+#* everything pre- mouse loading should be done by here
+# load mouse onto stage, 
+# stabilization screw
+# quickcast off, agarose/silicon oil
+# tail cone down 
+# continuity/resistance test 
+
+# capture brain surface photodoc  #! don't miss before moving probes in!
+
+# position probes at surface, any insertion notes (probes skipped)
+# capture pre-insertion photodoc (primarily for targetting)
+
+trial loop:
+  # insert ~250microns, retract 30microns, await settle timer (10-15mins)
+  # capture post-insertion photodoc
+  # initiate data streams but not stimulus, verify recording
+  #* exp start 
+  # start stimulus, monitor data streams
+  #* exp end
+  # capture post-experiment photodoc
+  # option to break out of trial loop
+
+# remove probes
+# capture post-removal photodoc
+# stage up
+
+# remove agarose/silicon oil, add quickcast
+# remove mouse while 
+# files are processed/moved/backed-up
+# kick-off addtl pipelines

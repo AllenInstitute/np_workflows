@@ -2,12 +2,18 @@ import os
 import platform
 import re
 from enum import Enum
+import socket
 from typing import List, Union
 
+import np_config
 import requests
 
+server = "http://mpe-computers/v2.0"
+ALL_RIGS = requests.get(server).json()
+ALL_COMPS = requests.get(server+"/aibs_comp_id").json()
+
 # get AIBS IDs, if set
-COMP_ID: str = os.environ.get("AIBS_COMP_ID", os.environ["COMPUTERNAME"]).upper()
+COMP_ID: str = os.environ.get("AIBS_COMP_ID", socket.gethostname()).upper()
 RIG_ID: str = os.environ.get("AIBS_RIG_ID",None)
 
 while not RIG_ID:
@@ -32,6 +38,7 @@ while not RIG_ID:
 print(f"Running from {COMP_ID}, connected to {RIG_ID}")
 
 
+CONFIG = np_config.from_zk(f"/rigs/{RIG_ID}")
 
 # class Rig(Enum):
 #     SYNC = f"{RIG_ID}-Sync"
@@ -42,7 +49,7 @@ print(f"Running from {COMP_ID}, connected to {RIG_ID}")
 #     CAMSTIM = f"{RIG_ID}-Stim"
 #     ACQ = f"{RIG_ID}-Acq" # TODO add btvtest.1-Acq http://mpe-computers/
 #     EPHYS = f"{RIG_ID}-Acq"
-    
+       
 class Rig(Enum):
     
     wse = wse2 = "Sync"
@@ -64,11 +71,9 @@ class Rig(Enum):
         while not RIG_ID:
             
             # extract RIG_ID from COMP_ID if possible
-            if "NP." in COMP_ID:
-                str_match = re.search(R"NP.[\d]+", COMP_ID)
-                if str_match:
-                    RIG_ID = str_match[0]
-                    break
+            RIG_ID = cls.rig_str_with_digit(COMP_ID)
+            if RIG_ID:
+                break
             
             # use BTVTest.1 if allowed
             # set with environ var:
@@ -93,9 +98,10 @@ class Rig(Enum):
         if "BTVTest.1-Acq" == self.value: 
             # not in mpe-computers
             return ""
-        
-        return requests.get(f"http://mpe-computers/v2.0/aibs_comp_id/{self.value}").json()['hostname'].upper()                      
-
+        try:
+            return ALL_COMPS.get[self.value]['hostname'].upper()                      
+        except KeyError:
+            return 
 
     @property
     def path(self):
@@ -104,7 +110,7 @@ class Rig(Enum):
             return None
 
         if platform.system() == "Windows":
-            return RF'\\{self.host}'
+            return RF'//{self.host}'
         else:
             return RF'/{self.host}'
 
@@ -129,14 +135,29 @@ class Rig(Enum):
         """All computers on all np rigs, or those specified"""
         return ConfigHTTP.get_np_computers(rigs)
     
-    
     @staticmethod
     def rig_from_path(path):
         for idx, rig in enumerate(["NP.0", "NP.1", "NP.2"]):
             for comp in Rig.all_comps(idx).values():
                 if comp in path:
                     return rig
-    
+        return None
+        
+    @staticmethod
+    def rig_str_to_int(rig:str) -> Union[int,None]:
+        # extract RIG_ID from str if possible
+        str_match = re.search(R"(?<=NP\.)(\d)", rig.upper())
+        if str_match:
+            return str_match[0]
+        return None
+    @staticmethod
+    def rig_str_with_digit(rig:str) -> Union[str,None]:
+        # extract RIG_ID from str if possible
+        str_match = re.search(R"NP.\d", rig.upper())
+        if str_match:
+            return str_match[0]
+        return None
+        
     
 class ConfigHTTP:
     
@@ -148,7 +169,7 @@ class ConfigHTTP:
         if "BTVTest.1-Acq" in comp: # not in mpe-computers
             return None
         else:
-            return requests.get(f"{ConfigHTTP.server}/aibs_comp_id/{comp}").json()['hostname'].upper()                      
+            return ALL_COMPS[comp]['hostname'].upper()                      
     
     @staticmethod
     def get_np_computers(rigs: Union[List[int], int]=None, comp: Union[List[str], str]=None):
@@ -168,9 +189,8 @@ class ConfigHTTP:
 
         np_idx = ["NP." + str(idx) for idx in rigs]
 
-        all_pc = requests.get(ConfigHTTP.server).json()
         a = {}
-        for k, v in all_pc['comp_ids'].items():
+        for k, v in ALL_RIGS['comp_ids'].items():
             if any([sub in k for sub in np_idx]) and any([s in k.lower() for s in comp]):
                 a[k] = v['hostname'].upper()
         return a

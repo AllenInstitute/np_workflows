@@ -1,0 +1,30 @@
+# input userID, mouseID
+    
+# get experiment-type from mouseID/lims project name, confirm experiment
+    
+# check components reqd for experiment are on: Cameras, Ephys, Stim, Sync/DAQ,
+# Servers, Filesystem space
+    
+# optional resume previous unfinished workflow
+
+# reminders + manual checks (open ephys config, flush water lines, lick spout)
+
+# position probes in dye, capture photodoc, await timer
+
+# load mouse onto stage
+
+# capture brain surface photodoc
+
+# position probes at surface, notes, capture pre-insertion photodoc
+
+# insert, capture post-insertion photodoc, await settle timer 
+
+# extend lickspout, initiate behavior experiment (data streams but not stimulus)
+
+# start stimulus, monitor data streams
+
+# capture post-experiment photodoc
+
+# remove probes, capture post-removal photodoc
+
+# remove mouse while files are processed/moved/backed-up, kick-off addtl pipelines  
