@@ -1,22 +1,23 @@
-required screens: 
+services to be running: 
   - ephys: 
     (manually check config: probe letters, 2 record nodes writing to A/B drives, 50/50 channels de-selected, tip-ref)
   - mvr
   - camstim (no screen)
-  - sync (no sync)
+  - sync (no screen)
   - newscale
   - smartmotor
 
-pretest start, stop, check data:
+pretest workflow - start, stop, check data:
   - ephys 
   - mvr
   - camstim, visual confirmation of laser on #! how to specify params when called via camstim agent
   - sync
 
+exp workflow:
 # fetch mouse, implant/well prep
 # retract probes from tergazyme, remove well etc
 
-exp wfl:
+wse screens:
 
 # input userID, mouseID
 
