@@ -240,7 +240,7 @@ class CamstimSyncShared(Proxy):
         with utils.debug_logging():
             logging.debug('Starting %s pretest', cls.__name__)
             cls.initialize() # calls test()
-            with utils.stop_on_exit_or_error(cls):
+            with utils.stop_on_error(cls):
                 cls.start()
                 time.sleep(1)
                 cls.verify()
@@ -824,7 +824,7 @@ if __name__ == '__main__':
         NewScaleCoordinateRecorder.pretest()
         # VideoMVR.initialize()
         # VideoMVR.test()
-        # with utils.stop_on_exit_or_error(VideoMVR):
+        # with utils.stop_on_error(VideoMVR):
         #     VideoMVR.start()
         #     time.sleep(VideoMVR.pretest_duration_sec)
         #     VideoMVR.verify()
