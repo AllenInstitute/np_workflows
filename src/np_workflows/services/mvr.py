@@ -1,11 +1,14 @@
 import argparse
 import json
 import logging
-from mpetk import mpeconfig
 import sys
 from pprint import pprint, pformat
 from socket import *
 import os
+
+import np_logging 
+
+logger = np_logging.getLogger(__name__)
 
 R = {'mvr_request': ''}
 encoding = 'utf-8'
@@ -36,7 +39,7 @@ class ResponseBuffer:
 
                     messages.append(json.loads(''.join(self.read_buffer[i - count + 1: i + 1])))
                 except TypeError:
-                    logging.warning(f'Error parsing MVR message:{self.read_buffer}')
+                    logger.warning('%s | Error parsing message: %s', __class__.__name__, self.read_buffer)
                 count = 0
 
         # strip prior json messages off the buffer
@@ -63,9 +66,8 @@ class MVRConnector:
         self.output_dir = "c$/ProgramData/AIBS_MPE/MVR/data/"
         try:
             self.connect_to_mvr()
-            logging.info("Connected to mvr")
         except Exception as err:
-            logging.error(f'failed to connect to mvr:{err}')
+            logger.error(f'failed to connect to mvr:{err}')
             exit()
 
     def _recv(self):
@@ -76,8 +78,7 @@ class MVRConnector:
         try:
             ret_val = self._mvr_sock.recv(1024)
         except ConnectionResetError as e:
-            # logging.error('Error receiving response from MVR.  An attempt to connect will be made on the next write.')
-            logging.info('MVR Connection Reset Error')
+            logger.warning('%s | Connection reset error', __class__.__name__)
             self._mvr_connected = False
             return []
         except:
@@ -94,9 +95,8 @@ class MVRConnector:
         _send creates json from the dictionary and sends it as a byte object
         """
         msg = json.dumps(msg).encode()
-        logging.info(f'Sending: {pformat(msg)}')
+        logger.debug('%s | Sending: %s', __class__.__name__, pformat(msg))
         if not self._mvr_connected:
-            logging.info("Connecting to MVR")
             self.connect_to_mvr()
         if not self._mvr_connected:
             return
@@ -110,19 +110,19 @@ class MVRConnector:
         Creates a STREAM Socket connection to the MultiVideoRecorder
         """
         self._mvr_sock = socket(AF_INET, SOCK_STREAM)
-        self._mvr_sock.settimeout(20.0)
+        self._mvr_sock.settimeout(10.0)
         if self._errors_since_last_success == 0:
-            logging.info(f'Connecting to MVR on {self._args["host"]}:{self._args["port"]}', extra={'weblog': True})
+            logger.debug('%s | Connecting on %s:%s', __class__.__name__, self._args["host"], self._args["port"])
         try:
             self._mvr_sock.connect((self._args['host'], self._args['port']))
             self._mvr_connected = True
         except OSError:
             if self._errors_since_last_success == 0:
-                logging.error('Failed to connect to MVR.  An attempt to connect will be made on the next write.')
+                logger.debug('%s | Connection failed, will be re-attempted on the next write.', __class__.__name__)
             self._errors_since_last_success += 1
         else:
             self._errors_since_last_success = 0
-            logging.info(self.read())
+            logger.debug('%s | Connection success: %s', __class__.__name__, self.read())
 
     def get_version(self):
         msg = {'mvr_request': 'get_version'}
@@ -150,7 +150,7 @@ class MVRConnector:
         print(f'start single record on {host}')
         if host not in self._host_to_camera_map:
             comp = self.host_to_comp['host']
-            logging.warning(f'Start Single Record: Can not find host {host} ({comp}) associated with a camera.')
+            logger.warning(f'Start Single Record: Can not find host {host} ({comp}) associated with a camera.')
             return
 
         self._send({"mvr_request": "start_record",
@@ -178,7 +178,7 @@ class MVRConnector:
     def stop_single_record(self, host):
         if host not in self._host_to_camera_map:
             comp = self.host_to_comp['host']
-            logging.warning(f'Stop Single Record: Can not find host {host} ({comp}) associated with a camera.')
+            logger.warning(f'Stop Single Record: Can not find host {host} ({comp}) associated with a camera.')
             return
 
         cam_id = self._host_to_camera_map[host]
@@ -233,31 +233,3 @@ class MVRConnector:
         return '0.1.0'
 
 
-# Need this for icons
-def resource_path(relative_path):
-    """ Get absolute path to resource, works for dev and for PyInstaller """
-    try:
-        # PyInstaller creates a temp folder and stores path in _MEIPASS
-        base_path = sys._MEIPASS
-    except Exception:
-        base_path = os.path.abspath(".")
-
-    return os.path.join(base_path, relative_path)
-
-
-def main():
-    config = mpeconfig.source_configuration('vmon_shim', version='0.3.3')
-    parser = argparse.ArgumentParser(
-        description="Stand in proxy to connect to MVR from WSE workflows.",
-        formatter_class=argparse.ArgumentDefaultsHelpFormatter,
-    )
-    parser.add_argument("--host", type=str, default=config['mvr_host'], help='Hostname to connect to MVR on')
-    parser.add_argument("--port", '-p', type=int, default=config['mvr_port'],
-                        help="The port to expect MVR to connect on.")
-    parser.add_argument('-v', '--version', action='version', version='0.1.0')
-    parser.add_argument("--shim_port", '-s', type=int, default=config['shim_port'], help="The port to run the shim on")
-    args = parser.parse_args(sys.argv[1:])
-
-
-if __name__ == '__main__':
-    main()

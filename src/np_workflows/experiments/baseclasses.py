@@ -1,4 +1,5 @@
 from __future__ import annotations
+import functools
 
 from typing import Any, Optional, Protocol, Union, Sequence, ClassVar, Type
 
@@ -21,7 +22,7 @@ class WithLims(Experiment):
     def __init__(self,
         labtracks_mouse_id: int | str,
         lims_user_id: str,
-        lims_session_id: int = None,
+        lims_session_id: Optional[int] = None,
     ):
         self.mouse = labtracks_mouse_id
         self.operator = lims_user_id
@@ -39,7 +40,7 @@ class WithLims(Experiment):
     @property
     def session(self) -> np_session.lims.SessionInfo:
         if not hasattr(self, '_session'):
-            generate_ecephys_session(self.mouse, self)
+            self.generate_ecephys_session(str(self.mouse), str(self.operator))
         return self._session
 
     @session.setter
@@ -82,4 +83,4 @@ class WithLims(Experiment):
     @functools.cached_property
     def files(self) -> dict[str, dict[str, str]]:
         "Expected manifest of files from experiment"
-        np_session.files_manifest(str(self.project), str())
+        return np_session.files_manifest(str(self.project), self.folder, 'D1')

@@ -11,40 +11,31 @@ import os
 import shutil
 import subprocess
 import sys
-from typing import Any, Generator, Literal, Mapping, Optional, Sequence
+from typing import Any, Generator, Literal, Mapping, Optional, Sequence, Type
 
-import mpetk.mpeconfig
-from config import Rig
+import np_config
+import np_logging 
 
-from protocols import *
+from .config import Rig, RIG_ID
+from .protocols import Stoppable
+
+logger = np_logging.getLogger(__name__)
 
 def config_from_zk(rig: Optional[Literal[0, 1, 2]]=None) -> Mapping[str, Any]:
-    config = mpetk.mpeconfig.source_configuration(
-            'np_workflows', 
-            hosts='eng-mindscope.corp.alleninstitute.org', 
-            fetch_logging_config=False,
-            send_start_log=False,
-            rig_id=rig
-        )
-    # params common across rigs are returned from mpeconfig['proxies], such as `port` 
-    # - we need to add rig-specific cfg, such as `host`, confusingly found in the `shared` section of the mpeconfig
-    for k, v in config['proxies'].items():
-        if rig_config := config['shared'].get('proxies', {}).get(k, {}):
-            v.update(**rig_config)
-        if 'host' not in v:
-            try:
-                v['host'] = Rig[k].host
-            except KeyError:
-                logging.warning("No host found in config for %s - will need adding manually, e.g. `%s.host = 'W10DTSM18307'`", k, k)
-            
-    return config['proxies']
+    " Common `services` config plus rig-specific `services`"
+    common_config = np_config.from_zk('/projects/np_workflows/defaults/configuration')['services']
+    
+    if rig:
+        rig_config = np_config.from_zk(f'/rigs/NP.{rig}')['services']
+    else:
+        rig_config = np_config.from_zk(f'/rigs/{RIG_ID}')['services']
 
-CONFIG = config_from_zk()
-
+    for k, v in rig_config.items():
+        common_config[k] = common_config.get(k, {}) | v
+    return common_config
 
 @contextlib.contextmanager
 def debug_logging() -> Generator[None, None, None]:
-    logger = logging.getLogger()
     level_0 = logger.level
     logger.setLevel(logging.DEBUG)
     try:
@@ -53,7 +44,7 @@ def debug_logging() -> Generator[None, None, None]:
         logger.setLevel(level_0)
 
 @contextlib.contextmanager
-def stop_on_error(obj: Stoppable):
+def stop_on_error(obj: Stoppable, reraise=True):
     if not isinstance(obj, Stoppable):
         raise TypeError(f"{obj} does not support stop()")
     try:
@@ -61,9 +52,10 @@ def stop_on_error(obj: Stoppable):
     except Exception as exc:
         with contextlib.suppress(Exception):
             obj.exc = exc
-            logging.getLogger().info("%s interrupted by error", obj.__name__ if not isinstance(obj, type) else obj.__class__.__name__, exc_info=exc)
+            logger.info("%s interrupted by error:", obj.__name__, exc_info=exc)
             obj.stop()
-        raise
+        if reraise:
+            raise exc
 
 @contextlib.contextmanager
 def suppress(*exceptions: Type[BaseException]):
@@ -71,7 +63,7 @@ def suppress(*exceptions: Type[BaseException]):
         yield
     except exceptions or Exception as exc:
         with contextlib.suppress(Exception):        
-            logging.getLogger().error("Error suppressed: continuing despite raised exception", exc_info=exc)
+            logger.error("Error suppressed: continuing despite raised exception", exc_info=exc)
     finally:
         return
     
@@ -105,8 +97,8 @@ def free_gb(path: str|bytes|os.PathLike) -> float:
 def get_files_created_between(
     path: str | bytes | os.PathLike, 
     glob: str = '*',
-    start: int | datetime.datetime = 0, 
-    end: int | datetime.datetime = None,
+    start: float | datetime.datetime = 0, 
+    end: float | datetime.datetime = None,
 ) -> list[pathlib.Path]:
     path = pathlib.Path(path)
     if not path.is_dir():
@@ -124,7 +116,10 @@ def is_file_growing(path: str|bytes|os.PathLike) -> bool:
     path = pathlib.Path(path)
     size_0 = path.stat().st_size
     # for sync: file is appended periodically in chunks that scale non-linearly with size
-    time.sleep(2 * math.log10(size_0)) 
+    if '.sync' == path.suffix:
+        time.sleep(2 * math.log10(size_0))
+    else:
+        time.sleep(.5 * math.log10(size_0))
     if path.stat().st_size == size_0:
         return False
     return True

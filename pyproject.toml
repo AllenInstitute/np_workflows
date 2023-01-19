@@ -1,24 +1,30 @@
 [tool.poetry]
 name = "np-workflows"
-version = "0.0.1a0"
+version = "0.0.1a1"
 description = "Ecephys and behavior workflows for the Mindscope Neuropixels team."
 authors = ["Ben Hardcastle <ben.hardcastle@alleninstitute.org>"]
 readme = "README.md"
 packages = [{include = "np_workflows", from = "src"}]
 
 [tool.poetry.dependencies]
-python = "3.9.5"
+python = "^3.9"
 requests = "*"
 np_config = "*"
 np_session = "*"
 np_logging = "*"
+backoff = "*"
 pyzmq = "^19.0"
+fabric = "^2.7.1"
 pip-tools = {version = "*", optional = true}
 isort = {version = "*", optional = true}
 mypy = {version = "*", optional = true}
 black = {version = "*", optional = true}
 pytest = {version = "*", optional = true}
 poetry = {version = "*", optional = true}
+zope-event = "4.5.0"
+zope-interface = "5.3.0"
+greenlet = "1.1.2"
+gevent = "21.1.2"
 
 [tool.poetry.extras]
 dev = [

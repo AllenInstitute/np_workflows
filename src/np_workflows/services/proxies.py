@@ -16,21 +16,21 @@ import re
 import time
 from typing import Any, ClassVar, Literal, Mapping, Optional, Sequence
 
-import mpetk.mpeconfig
-import mpetk.zro
-import mvr
-import utils
-from utils import CONFIG
-from protocols import *
+import np_logging
+import np_config
+import fabric 
+
+from .config import Rig
+from . import zro
+from . import mvr
+from . import utils
+from .protocols import *
 
 # TODO start proxies remotely if not connected
 
-# TODO use np_config
-# with contextlib.suppress(ImportError, AttributeError):
-#     from config import CONFIG  # ZK config fetched for current rig with np_config 
+logger = np_logging.getLogger(__name__)
 
-# TODO use np_logging
-logging.basicConfig()
+CONFIG = utils.config_from_zk()
 
 ProxyState = tuple[Literal['', 'READY', 'BUSY'], str]
 
@@ -61,12 +61,8 @@ class Proxy(abc.ABC):
         Is called in `get_proxy()` so any time we need the proxy, we have a
         correct config, without remembering to run `initialize()` or some such.
         """
-        if CONFIG.get('proxies', {}):
-            config = CONFIG['proxies'].get(__class__.__name__, {})
-            config.update(**CONFIG['proxies'].get(cls.__name__, {}))
-        else:
-            config = CONFIG.get(__class__.__name__, {}) # class where this function is defined 
-            config.update(**CONFIG.get(cls.__name__, {})) # the calling class, if different
+        config = CONFIG.get(__class__.__name__, {}) # class where this function is defined 
+        config.update(**CONFIG.get(cls.__name__, {})) # the calling class, if different
 
         # for proxy (reqd):
         if not hasattr(cls, 'host'):
@@ -95,7 +91,7 @@ class Proxy(abc.ABC):
                     _ = root.exists()
                 except OSError as exc:
                     cls.exc = exc
-                    logging.exception("Error accessing %s data path: %s", cls.__name__, root)
+                    logger.exception("Error accessing %s data path: %s", cls.__name__, root)
                     raise FileNotFoundError(f"{cls.__name__} data path is not accessible: {root}") from exc
                 else:
                     cls.data_root = root
@@ -112,33 +108,33 @@ class Proxy(abc.ABC):
             if isinstance(cls, Finalizable):
                 cls.finalize()
             if not cls.is_ready_to_start():
-                logging.warning("%s not ready to start: %s", cls.__name__, cls.get_state())
+                logger.warning("%s not ready to start: %s", cls.__name__, cls.get_state())
                 return
         if cls.data_root:
             cls.data_files = []
         cls.initialization = time.time()
-        logging.info("%s initialized: ready for use", cls.__name__)
+        logger.info("%s initialized: ready for use", cls.__name__)
 
     @classmethod                      
     def test(cls) -> None:
         "Quickly verify service is working and ready for use, or raise `TestFailure`."
-        logging.debug('Testing %s proxy', cls.__name__)
+        logger.debug('Testing %s proxy', cls.__name__)
         if not cls.is_connected():
             raise TestFailure(f"{cls.__name__} not connected to {cls.host}:{cls.port}") from cls.exc
-        logging.debug('%s proxy connection to %s:%s confirmed', cls.__name__, cls.host, cls.port)
+        logger.debug('%s proxy connection to %s:%s confirmed', cls.__name__, cls.host, cls.port)
         gb = cls.get_required_disk_gb()
         if not cls.is_disk_space_ok():
             raise TestFailure(f"{cls.__name__} free disk space on {cls.data_root.drive} doesn't meet minimum of {gb} GB") from cls.exc
-        logging.debug('%s tested successfully', cls.__name__)     
+        logger.debug('%s tested successfully', cls.__name__)     
     
     @classmethod
-    def get_proxy(cls) -> mpetk.zro.DeviceProxy:
+    def get_proxy(cls) -> zro.DeviceProxy:
         "Return a proxy to the service without re-creating unnecessarily."
         with contextlib.suppress(AttributeError):
             return cls.proxy
         cls.ensure_config()
-        logging.debug('Creating %s proxy to %s:%s', cls.__name__, cls.host, cls.port)
-        cls.proxy = mpetk.zro.DeviceProxy(cls.host, cls.port, cls.timeout, cls.serialization)
+        logger.debug('Creating %s proxy to %s:%s', cls.__name__, cls.host, cls.port)
+        cls.proxy = zro.DeviceProxy(cls.host, cls.port, cls.timeout, cls.serialization)
         return cls.get_proxy()
                
     @classmethod
@@ -176,10 +172,10 @@ class Proxy(abc.ABC):
             free = utils.free_gb(cls.data_root)
         except FileNotFoundError as exc:
             cls.exc = exc
-            logging.exception(f"{cls.__name__} data path not accessible: {cls.data_root}")
+            logger.exception(f"{cls.__name__} data path not accessible: {cls.data_root}")
             return False
         else:
-            logging.debug('%s free disk space on %s: %s GB', cls.__name__, cls.data_root.drive, free)
+            logger.debug('%s free disk space on %s: %s GB', cls.__name__, cls.data_root.drive, free)
             return free > required
             
     @classmethod
@@ -189,15 +185,15 @@ class Proxy(abc.ABC):
             return False
         try:
             _ = cls.get_proxy().uptime
-        except mpetk.zro.proxy.zmq.ZMQError as exc:
+        except zro.ZroError as exc:
             cls.exc = exc
-            logging.exception(f"{cls.__name__} proxy connection to {cls.host}:{cls.port} failed")
+            logger.exception(f"{cls.__name__} proxy connection to {cls.host}:{cls.port} failed")
             return False
         try:
             _ = cls.get_state()
-        except mpetk.zro.proxy.zmq.ZMQError as exc:
+        except zro.ZroError as exc:
             cls.exc = exc
-            logging.exception(f"{cls.__name__} proxy connection to {cls.host}:{cls.port} failed")
+            logger.exception(f"{cls.__name__} proxy connection to {cls.host}:{cls.port} failed")
             return False
         return True
 
@@ -223,13 +219,13 @@ class CamstimSyncShared(Proxy):
         
     @classmethod
     def start(cls) -> None:
-        logging.debug("Starting %s", cls.__name__)
+        logger.debug("Starting %s", cls.__name__)
         if cls.is_started():
-            logging.warning("%s already started - should be stopped manually", cls.__name__)
+            logger.warning("%s already started - should be stopped manually", cls.__name__)
             return
             # otherwise, Sync - for example - would stop current recording and start another
         if not cls.is_ready_to_start():
-            logging.error("%s not ready to start: %s", cls.__name__, cls.get_state())
+            logger.error("%s not ready to start: %s", cls.__name__, cls.get_state())
             raise AssertionError(f"{cls.__name__} not ready to start: {cls.get_state()}")
         cls.latest_start = time.time()
         cls.get_proxy().start()
@@ -238,7 +234,7 @@ class CamstimSyncShared(Proxy):
     def pretest(cls) -> None:
         "Test all critical functions"
         with utils.debug_logging():
-            logging.debug('Starting %s pretest', cls.__name__)
+            logger.debug('Starting %s pretest', cls.__name__)
             cls.initialize() # calls test()
             with utils.stop_on_error(cls):
                 cls.start()
@@ -248,52 +244,96 @@ class CamstimSyncShared(Proxy):
                 # stop() called by context manager at exit, regardless
             cls.finalize()
             cls.validate()
-        logging.info("%s pretest complete", cls.__name__)
+        logger.info("%s pretest complete", cls.__name__)
                        
     @classmethod
     def verify(cls) -> None:
         "Assert latest data file is currently increasing in size, or raise AssertionError."
         if not cls.is_started():
-            logging.warning("Cannot verify %s if not started: %s", cls.__name__, cls.get_state())
+            logger.warning("Cannot verify %s if not started: %s", cls.__name__, cls.get_state())
             return
         if cls.data_root and not utils.is_file_growing(cls.get_latest_data()[-1]):
             raise AssertionError(f"{cls.__name__} latest data file is not increasing in size: {cls.get_latest_data()[-1]}")
-        logging.debug("%s latest data file is increasing in size", cls.__name__)
+        logger.debug("%s latest data file is increasing in size", cls.__name__)
     
     @classmethod
     def stop(cls) -> None:
-        logging.debug("Stopping %s", cls.__name__)
+        logger.debug("Stopping %s", cls.__name__)
         cls.get_proxy().stop()
     
     # --- End of possible Camstim/Sync shared methods ---
  
     # --- Sync-specific methods ---
 class Sync(CamstimSyncShared):
-    
+    host = Rig.Sync.host
     started_state = ("BUSY", "RECORDING")
     raw_suffix: ClassVar[int | float] = '.sync'
- 
+     
+    @classmethod
+    def ensure_config(cls) -> None:
+        """Updates any missing parameters for class proxy. 
+        
+        Is called in `get_proxy()` so any time we need the proxy, we have a
+        correct config, without remembering to run `initialize()` or some such.
+        """
+        config = CONFIG.get(__class__.__name__, {}) # class where this function is defined 
+        config.update(**CONFIG.get(cls.__name__, {})) # the calling class, if different
+
+        # for proxy (reqd):
+        if not hasattr(cls, 'host'):
+            cls.host = config['host']
+        if not hasattr(cls,'port'):
+            cls.port = int(config['port'])
+        if not hasattr(cls, 'timeout'):
+            cls.timeout = float(config.get('timeout', 10.0))
+        if not hasattr(cls, 'serialization'):    
+            cls.serialization = config.get('serialization', 'json')
+        
+        # for pretest (reqd, not used if device doesn't record)
+        if not hasattr(cls, 'pretest_duration_sec'):
+            cls.pretest_duration_sec = config.get('pretest_duration_sec', 5)
+        if not hasattr(cls, 'gb_per_hr'):
+            cls.gb_per_hr = config.get('gb_per_hr', 2.0)
+        if not hasattr(cls, 'min_rec_hr'):
+            cls.min_rec_hr = config.get('min_rec_hr', 3.0)
+            
+        # for resulting data (optional):
+        if not cls.data_root or cls.host not in cls.data_root.parts:
+            relative_path = config.get('data', None)
+            if relative_path:
+                root = pathlib.Path(f"//{cls.host}/{relative_path}")
+                try:
+                    _ = root.exists()
+                except OSError as exc:
+                    cls.exc = exc
+                    logger.exception("Error accessing %s data path: %s", cls.__name__, root)
+                    raise FileNotFoundError(f"{cls.__name__} data path is not accessible: {root}") from exc
+                else:
+                    cls.data_root = root
+        if hasattr(cls, 'data_root'):
+            cls.data_root.mkdir(parents=True, exist_ok=True)
+    
     @classmethod
     def finalize(cls) -> None:
-        logging.debug('Finalizing %s', cls.__name__)
+        logger.debug('Finalizing %s', cls.__name__)
         if cls.is_started():
             cls.stop()
         while not cls.is_ready_to_start():
-            logging.debug("Waiting for %s to finish processing", cls.__name__)
+            logger.debug("Waiting for %s to finish processing", cls.__name__)
             time.sleep(1) # TODO add backoff module
         if not hasattr(cls,'data_files'):
             cls.data_files = []
         cls.data_files.extend(new := cls.get_latest_data('*.h5'))
-        logging.debug("%s processing finished: %s", cls.__name__, [_.name for _ in new])
+        logger.debug("%s processing finished: %s", cls.__name__, [_.name for _ in new])
         
     @classmethod
     def shutdown(cls) -> None:
-        logging.debug("Shutting down %s", cls.__name__)
+        logger.debug("Shutting down %s", cls.__name__)
         cls.stop()
         try:
             del cls.proxy
         except Exception as exc:
-            logging.debug("Failed to delete %s proxy: %s", cls.__name__, exc)
+            logger.debug("Failed to delete %s proxy: %s", cls.__name__, exc)
             cls.exc = exc        
             
     @classmethod
@@ -307,19 +347,19 @@ class Sync(CamstimSyncShared):
     @classmethod
     def validate(cls, data: Optional[pathlib.Path] = None) -> None:
         "Check that data file is valid, or raise AssertionError."
-        logging.debug('Validating %s data', cls.__name__)
+        logger.debug('Validating %s data', cls.__name__)
         if not data and bool(files := cls.get_latest_data('*.h5')):
             data = files[-1]
-            logging.debug('No data file provided: validating most-recent data in %s: %s', cls.data_root, data.name)
+            logger.debug('No data file provided: validating most-recent data in %s: %s', cls.data_root, data.name)
             if cls.is_started():
-                logging.warning(f"Attempted to validate current data file while recording")
+                logger.warning(f"Attempted to validate current data file while recording")
                 return
             elif not cls.is_ready_to_start():
                 cls.finalize()
         try:
             import h5py
         except ImportError:
-            logging.warning('h5py not installed: cannot open Sync data')
+            logger.warning('h5py not installed: cannot open Sync data')
             cls.min_validation(data)
         else:
             cls.full_validation(data)
@@ -336,30 +376,151 @@ class Sync(CamstimSyncShared):
             raise AssertionError(f"Empty file: {data}")
         if data.suffix != '.h5':
             raise FileNotFoundError(f"Expected .sync to be converted to .h5 immediately after recording stopped: {data}")
-        logging.debug('%s minimal validation passed for %s', cls.__name__, data.name)
+        logger.debug('%s minimal validation passed for %s', cls.__name__, data.name)
 
     
 class Camstim(CamstimSyncShared):
     
+    host = Rig.Stim.host
     started_state = ("BUSY", "Script in progress.")
     
+    @classmethod
     def get_config(cls) -> dict[str, Any]:
         return cls.get_proxy().config
+    
+    @classmethod
+    def ensure_config(cls) -> None:
+        """Updates any missing parameters for class proxy. 
+        
+        Is called in `get_proxy()` so any time we need the proxy, we have a
+        correct config, without remembering to run `initialize()` or some such.
+        """
+        config = CONFIG.get(__class__.__name__, {}) # class where this function is defined 
+        config.update(**CONFIG.get(cls.__name__, {})) # the calling class, if different
 
+        # for proxy (reqd):
+        if not hasattr(cls, 'host'):
+            cls.host = config['host']
+        if not hasattr(cls,'port'):
+            cls.port = int(config['port'])
+        if not hasattr(cls, 'timeout'):
+            cls.timeout = float(config.get('timeout', 10.0))
+        if not hasattr(cls, 'serialization'):    
+            cls.serialization = config.get('serialization', 'json')
+        
+        # for pretest (reqd, not used if device doesn't record)
+        if not hasattr(cls, 'pretest_duration_sec'):
+            cls.pretest_duration_sec = config.get('pretest_duration_sec', 5)
+        if not hasattr(cls, 'gb_per_hr'):
+            cls.gb_per_hr = config.get('gb_per_hr', 2.0)
+        if not hasattr(cls, 'min_rec_hr'):
+            cls.min_rec_hr = config.get('min_rec_hr', 3.0)
+            
+        # for resulting data (optional):
+        if not cls.data_root or cls.host not in cls.data_root.parts:
+            relative_path = config.get('data', None)
+            if relative_path:
+                root = pathlib.Path(f"//{cls.host}/{relative_path}")
+                try:
+                    _ = root.exists()
+                except OSError as exc:
+                    cls.exc = exc
+                    logger.exception("Error accessing %s data path: %s", cls.__name__, root)
+                    raise FileNotFoundError(f"{cls.__name__} data path is not accessible: {root}") from exc
+                else:
+                    cls.data_root = root
+        if hasattr(cls, 'data_root'):
+            cls.data_root.mkdir(parents=True, exist_ok=True)
+    
+class ScriptCamstim(Camstim):
+    script: ClassVar[str]
+    "path to script on Stim computer"
+    params: ClassVar[dict[str, Any]] = {}
+    
+    @classmethod
+    def start(cls):
+        cls.get_proxy().start_script_from_path(cls.script)#, cls.params)
+        
+class SessionCamstim(Camstim):
+    lims_user_id: ClassVar[str]
+    labtracks_mouse_id: ClassVar[int]
+    @classmethod
+    def start(cls):
+        cls.get_proxy().start_session(cls.labtracks_mouse_id, cls.lims_user_id)#, cls.params)
+    
+class NoCamstim(Camstim):
+    "Run remote files (.bat) without sending directly to Camstim Agent"
+    
+    remote_file: ClassVar[str | pathlib.Path]
+    ssh: ClassVar[fabric.Connection]
+    user: ClassVar[str] = 'svc_neuropix'
+    password: ClassVar[str]
+    
+    @classmethod
+    def get_ssh(cls) -> fabric.Connection:
+        with contextlib.suppress(AttributeError):
+            return cls.ssh
+        cls.initialize()
+        return cls.ssh  
+
+    @classmethod
+    def initialize(cls) -> None:
+        if not hasattr(cls, 'password'):
+            cls.password = input(f"{cls.__name__} | Enter password for {cls.host}: ")
+        cls.remote_file = utils.unc_to_local(pathlib.Path(cls.remote_file))
+        cls.ssh = fabric.Connection(cls.host, cls.user, connect_kwargs=dict(password=cls.password))
+        super().initialize()
+        cls.test()
+        
+    @classmethod
+    def test(cls) -> None:
+        super().test()
+        logger.debug(f"{cls.__name__} | Testing")
+        try:
+            result = cls.get_ssh().run('hostname', hide=True)
+        except Exception as exc:
+            raise TestFailure(f"{cls.__name__} Error connecting to {cls.host} via ssh: {exc!r}. Is this password correct? {cls.password}")
+        else:
+            if result.exited != 0:
+                raise TestFailure(f"{cls.__name__} Error connecting to {cls.host} via ssh: {result}")
+            logger.debug(f"{cls.__name__} | Connected to {cls.host} via ssh")
+        
+        try:
+            result = cls.get_ssh().run(f'type {cls.remote_file}', hide=True)
+        except Exception as exc:
+            extra = f" | '{exc.result.command}': {exc.result.stderr.strip()!r}" if hasattr(exc, 'result') else ""
+            raise TestFailure(f"{cls.__name__} | Error calling ssh-executed command{extra}")
+        else:
+            if result.exited != 0:
+                raise TestFailure(f"{cls.__name__} Error accessing {cls.remote_file} on {cls.host} - is filepath correct? {result}")
+            logger.debug(f"{cls.__name__} | {cls.remote_file} is accessible via ssh on {cls.host}")
+            
+    @classmethod
+    def start(cls):
+        if cls.is_started():
+            logger.warning(f"{cls.__name__} already started")
+            return 
+        logger.debug(f"{cls.__name__} | Starting {cls.remote_file} on {cls.host}")
+        cls.get_ssh().run(f'call {cls.remote_file}')
+    
 class MouseDirector(CamstimSyncShared):
+    host = Rig.Mon.host
     gb_per_hr = 0
     serialization = "json"
     
 class Cam3d(CamstimSyncShared):
+    host = Rig.Mon.host
     serialization = 'json'
     started_state = ("READY", "CAMERAS_OPEN,CAMERAS_ACQUIRING")
+    
+    @classmethod
     def initialize(cls) -> None:
-        Cam3d.get_proxy().enable_cameras()
+        cls.get_proxy().enable_cameras()
 
 
 class MVR(CamstimSyncShared):
     # req proxy config - hardcode or overload ensure_config() 
-    host: ClassVar[str]
+    host: ClassVar[str] = Rig.Mon.host
     port: ClassVar[int]
     
     re_aux: re.Pattern = re.compile('aux|USB!', re.IGNORECASE)
@@ -394,12 +555,12 @@ class MVR(CamstimSyncShared):
             if isinstance(cls, Finalizable):
                 cls.finalize()
             if not cls.is_ready_to_start():
-                logging.warning("%s not ready to start: %s", cls.__name__, cls.get_state())
+                logger.warning("%s not ready to start: %s", cls.__name__, cls.get_state())
                 return
         if cls.data_root:
             cls.data_files = []
         cls.initialization = time.time()
-        logging.info("%s initialized: ready for use", cls.__name__)
+        logger.info("%s initialized: ready for use", cls.__name__)
         
     @classmethod
     def shutdown(cls) -> None:
@@ -411,7 +572,7 @@ class MVR(CamstimSyncShared):
         with contextlib.suppress(AttributeError):
             return cls.proxy
         cls.ensure_config()
-        logging.debug('Creating %s proxy to %s:%s', cls.__name__, cls.host, cls.port)
+        logger.debug('Creating %s proxy to %s:%s', cls.__name__, cls.host, cls.port)
         cls.proxy = mvr.MVRConnector({'host':cls.host, 'port':cls.port})
         cls.proxy._mvr_sock.settimeout(cls.timeout)
         return cls.get_proxy()
@@ -431,7 +592,7 @@ class MVR(CamstimSyncShared):
             if msg.get('mvr_response', '') == 'get_camera_status' and (cams := msg.get('value', [])):
                 break
         else:
-            logging.error("Could not get camera status from %s", cls.host)
+            logger.error("Could not get camera status from %s", cls.host)
             raise ConnectionError(f"Could not get camera status from {cls.host}")
         return [_ for _ in cams if any(_['camera_id'] == __['id'] for __ in cls.get_cameras())]
     
@@ -482,7 +643,7 @@ class ImageMVR(MVR):
     def start(cls):
         if not cls.is_ready_to_start():
             # TODO display state, wait on user input to continue
-            logging.error("%s not ready to start: %s", cls.__name__, cls.get_state())
+            logger.error("%s not ready to start: %s", cls.__name__, cls.get_state())
             raise AssertionError(f"{cls.__name__} not ready to start: {cls.get_state()}")
         cls.latest_start = time.time()
         cls.get_proxy().take_snapshot()
@@ -499,29 +660,29 @@ class ImageMVR(MVR):
     # TODO
     @classmethod
     def verify(cls) -> None:
-        logging.warning('%s.verify() not implemented', cls.__name__)
+        logger.warning('%s.verify() not implemented', cls.__name__)
     @classmethod
     def stop(cls) -> None:
-        logging.warning('%s.stop() not implemented', cls.__name__)
+        logger.warning('%s.stop() not implemented', cls.__name__)
     @classmethod
     def validate(cls) -> None: 
-        logging.warning('%s.validate() not implemented', cls.__name__)
+        logger.warning('%s.validate() not implemented', cls.__name__)
     
     @classmethod
     def finalize(cls) -> None:
-        logging.debug('Finalizing %s', cls.__name__)
+        logger.debug('Finalizing %s', cls.__name__)
         t0 = time.time()
         timedout = lambda: time.time() > t0 + 5
         while cls.is_started() and not timedout():
-            logging.debug("Waiting for %s to finish processing", cls.__name__)
+            logger.debug("Waiting for %s to finish processing", cls.__name__)
             time.sleep(1) # TODO add backoff module
         if timedout:
-            logging.warning("Timed out waiting for %s to finish processing", cls.__name__)
+            logger.warning("Timed out waiting for %s to finish processing", cls.__name__)
             return
         if not hasattr(cls, 'data_files'):
             cls.data_files = []
         cls.data_files.extend(new := cls.get_latest_data('*'))
-        logging.debug("%s processing finished: %s", cls.__name__, [_.name for _ in new])
+        logger.debug("%s processing finished: %s", cls.__name__, [_.name for _ in new])
             
 class VideoMVR(MVR):
     pretest_duration_sec: ClassVar[int | float]
@@ -551,13 +712,13 @@ class VideoMVR(MVR):
         # files grow infrequently while MVR's recording - checking their size
         # is unreliable
         if not cls.is_started():
-            logging.warning("Cannot verify %s if not started: %s", cls.__name__, cls.get_state())
+            logger.warning("Cannot verify %s if not started: %s", cls.__name__, cls.get_state())
             return
         if datetime.datetime.fromtimestamp(cls.latest_start) < datetime.datetime.now() - datetime.timedelta(seconds=cls.pretest_duration_sec):
             time.sleep(cls.pretest_duration_sec)
         if not (files := cls.get_latest_data()) or len(files) < len(cls.get_cameras_recording()):
             raise AssertionError(f"{cls.__name__} files do not match the number of cameras: {files}")
-        logging.debug("%s verified: %s cameras recording to disk", cls.__name__, len(files))
+        logger.debug("%s verified: %s cameras recording to disk", cls.__name__, len(files))
     
     @classmethod
     def stop(cls) -> None:
@@ -571,25 +732,25 @@ class VideoMVR(MVR):
     
     @classmethod
     def finalize(cls) -> None:
-        logging.debug('Finalizing %s', cls.__name__)
+        logger.debug('Finalizing %s', cls.__name__)
         if cls.is_started():
             cls.stop()
         t0 = time.time()
         timedout = lambda: time.time() > t0 + 30
         while not cls.is_ready_to_start() and not timedout():
-            logging.debug("Waiting for %s to finish processing", cls.__name__)
+            logger.debug("Waiting for %s to finish processing", cls.__name__)
             time.sleep(1) # TODO add backoff module
         if timedout:
-            logging.warning("Timed out waiting for %s to finish processing", cls.__name__)
+            logger.warning("Timed out waiting for %s to finish processing", cls.__name__)
             return
         if not hasattr(cls, 'data_files'):
             cls.data_files = []
         cls.data_files.extend(new := (cls.get_latest_data('*.mp4') + cls.get_latest_data('*.json')))
-        logging.debug("%s processing finished: %s", cls.__name__, [_.name for _ in new])
+        logger.debug("%s processing finished: %s", cls.__name__, [_.name for _ in new])
         
     @classmethod
     def validate(cls) -> None:
-        logging.warning('%s.validate() not implemented', cls.__name__)
+        logger.warning('%s.validate() not implemented', cls.__name__)
 
 class JsonRecorder:
     "Just needs a `start` method that calls `write()`."
@@ -606,12 +767,8 @@ class JsonRecorder:
     @classmethod
     def ensure_config(cls)  -> None:
                 
-        if CONFIG.get('proxies', {}):
-            config = CONFIG['proxies'].get(__class__.__name__, {})
-            config.update(**CONFIG['proxies'].get(cls.__name__, {}))
-        else:
-            config = CONFIG.get(__class__.__name__, {}) # class where this function is defined 
-            config.update(**CONFIG.get(cls.__name__, {})) # the calling class, if different
+        config = CONFIG.get(__class__.__name__, {}) # class where this function is defined 
+        config.update(**CONFIG.get(cls.__name__, {})) # the calling class, if different
 
         if not hasattr(cls, 'log_name'):
             cls.log_name = config.get('log_name', '{}_.json')
@@ -623,7 +780,7 @@ class JsonRecorder:
                
     @classmethod
     def initialize(cls) -> None:
-        logging.debug('%s initializing', __class__.__name__)
+        logger.debug('%s initializing', __class__.__name__)
         cls.ensure_config()
         cls.initialization = time.time()
         log = (cls.log_root / cls.log_name).with_suffix('.json')
@@ -634,7 +791,7 @@ class JsonRecorder:
         
     @classmethod
     def test(cls) -> None:
-        logging.debug('%s testing', __class__.__name__)
+        logger.debug('%s testing', __class__.__name__)
         try:
             _ = cls.get_current_log().open('w')
         except OSError as exc:
@@ -655,7 +812,7 @@ class JsonRecorder:
                 raise
             data = {} # file was empty
         else:
-            logging.debug('%s read from %s', __class__.__name__, cls.get_current_log())
+            logger.debug('%s read from %s', __class__.__name__, cls.get_current_log())
         return data
     
     @classmethod
@@ -671,20 +828,20 @@ class JsonRecorder:
             file = cls.get_current_log()
         data.update(new)
         file.write_text(json.dumps(data, indent=4, sort_keys=False, default=str))
-        logging.debug('%s wrote to %s', __class__.__name__, file)
+        logger.debug('%s wrote to %s', __class__.__name__, file)
      
     @classmethod
     def validate(cls) -> None:
         if not (log := cls.read()):
             cls.exc = TestFailure(f'{cls.__name__} failed to validate because log is empty: {cls.get_current_log()}')
-            logging.error('%s failed to validate: log is empty %s', cls.__name__, cls.get_current_log(), exc_info=cls.exc)
-        logging.debug('%s validated', __class__.__name__)
+            logger.error('%s failed to validate: log is empty %s', cls.__name__, cls.get_current_log(), exc_info=cls.exc)
+        logger.debug('%s validated', __class__.__name__)
         
 class YamlRecorder(JsonRecorder):
     
     @classmethod
     def test(cls) -> None:
-        logging.debug('%s testing', __class__.__name__)
+        logger.debug('%s testing', __class__.__name__)
         super().test()
         try:
             import yaml
@@ -693,7 +850,7 @@ class YamlRecorder(JsonRecorder):
         
     @classmethod
     def finalize(cls) -> None:
-        logging.debug('Finalizing %s', __class__.__name__)
+        logger.debug('Finalizing %s', __class__.__name__)
         log = json.load(cls.get_current_log().read_bytes())
         with utils.suppress(AttributeError, OSError): # if this fails we still have the json file
             yaml.dump(log, cls.get_current_log().with_suffix('.yaml').read_bytes())
@@ -701,7 +858,7 @@ class YamlRecorder(JsonRecorder):
 class NewScaleCoordinateRecorder(JsonRecorder):
     "Gets current manipulator coordinates and stores them in a file with a timestamp."
     
-    host: ClassVar[str]
+    host: ClassVar[str] = Rig.Mon.host
     data_root: ClassVar[pathlib.Path]
     data_name: ClassVar[str] = 'log.csv'
     data_fieldnames: ClassVar[Sequence[str]] = ('last_moved', 'manipulator', 'x', 'y', 'z', 'x_virtual', 'y_virtual', 'z_virtual')
@@ -736,7 +893,7 @@ class NewScaleCoordinateRecorder(JsonRecorder):
                         v = float(v)
                     coords[m].update({k: v})
                 
-        logging.debug('%s retrieved coordinates: %s', cls.__name__, coords)
+        logger.debug('%s retrieved coordinates: %s', cls.__name__, coords)
         return coords
     
     @classmethod
@@ -746,7 +903,7 @@ class NewScaleCoordinateRecorder(JsonRecorder):
     @classmethod
     def test(cls) -> None:
         super().test()
-        logging.debug('%s testing', __class__.__name__)
+        logger.debug('%s testing', __class__.__name__)
         try:
             _ = cls.get_current_data().open('r')
         except OSError as exc:
@@ -756,16 +913,16 @@ class NewScaleCoordinateRecorder(JsonRecorder):
         except Exception as exc:
             raise TestFailure(f'{cls.__name__} failed to get coordinates') from exc
         else:
-            logging.info('%s test passed', cls.__name__)
+            logger.info('%s test passed', cls.__name__)
 
     @classmethod
     def ensure_config(cls)  -> None:
         
         super().ensure_config()
         
-        if CONFIG.get('proxies', {}):
-            config = CONFIG['proxies'].get(__class__.__name__, {})
-            config.update(**CONFIG['proxies'].get(cls.__name__, {}))
+        if CONFIG.get('services', {}):
+            config = CONFIG['services'].get(__class__.__name__, {})
+            config.update(**CONFIG['services'].get(cls.__name__, {}))
         else:
             config = CONFIG.get(__class__.__name__, {}) # class where this function is defined 
             config.update(**CONFIG.get(cls.__name__, {})) # the calling class, if different
@@ -782,7 +939,7 @@ class NewScaleCoordinateRecorder(JsonRecorder):
                     _ = root.exists()
                 except OSError as exc:
                     cls.exc = exc
-                    logging.exception("Error accessing %s data path: %s", cls.__name__, root)
+                    logger.exception("Error accessing %s data path: %s", cls.__name__, root)
                     raise FileNotFoundError(f"{cls.__name__} data path is not accessible: {root}") from exc
                 else:
                     cls.data_root = root
@@ -792,46 +949,3 @@ class NewScaleCoordinateRecorder(JsonRecorder):
         if not hasattr(cls, 'data_fieldnames'):
             cls.data_fieldnames = config['data_fieldnames']
         
-class OpenEphys: ...
-        
-if __name__ == '__main__':
-    
-    with utils.debug_logging():
-        
-        #test np.0
-        Cam3d.host = 'w10dtsm112722'
-        
-        # testing on np.2
-        # Sync.host = 'w10dtsm18307'
-        # Camstim.host = 'w10dtsm118295'
-        # MouseDirector.host = 'w10dtsm18280'
-        # ImageMVR.host = VideoMVR.host = NewScaleCoordinateRecorder.host = 'w10dtsm18280'
-        
-        # testing on np.1
-        Sync.host = 'w10dtsm18306'
-        Camstim.host = 'W10DTSM118294'
-        MouseDirector.host = 'W10DTSM18278'
-        ImageMVR.host = VideoMVR.host = NewScaleCoordinateRecorder.host = 'W10DTSM18278'
-        
-        Sync.pretest()    
-        quit()
-        ImageMVR.host = VideoMVR.host = NewScaleCoordinateRecorder.host = 'w10dtsm18280'
-        NewScaleCoordinateRecorder.initialize()
-        NewScaleCoordinateRecorder.start()
-        NewScaleCoordinateRecorder.start()
-        ImageMVR.pretest()
-        VideoMVR.pretest()
-        NewScaleCoordinateRecorder.pretest()
-        # VideoMVR.initialize()
-        # VideoMVR.test()
-        # with utils.stop_on_error(VideoMVR):
-        #     VideoMVR.start()
-        #     time.sleep(VideoMVR.pretest_duration_sec)
-        #     VideoMVR.verify()
-        # VideoMVR.finalize()
-        
-        
-        Camstim.get_proxy().session_output_path
-        Camstim.get_proxy().start_script(script)
-        Camstim.get_proxy().start_session(mouse_id, user_id)
-        Camstim.get_proxy().status['running']

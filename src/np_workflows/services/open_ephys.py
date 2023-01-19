@@ -18,25 +18,30 @@ from . import protocols
 from . import config
 from . import utils
 
+# global vars -------------------------------------------------------------------------- #
 logger = np_logging.getLogger(__name__)
 
 exc: Optional[BaseException] | None
-    
-host: str
+initialized: float = 0
+"`time.time()` when the service was initialized."
+
+host: str = config.Rig.Acq.host
 port: str | int = 37497 # 1-800-EPHYS
-latest_start: float
+latest_start: float = 0
+"`time.time()` when the service was last started via `start()`."
 
 # device records:
 gb_per_hr: int | float = 250 # per drive
 min_rec_hr: int | float = 2
-pretest_duration_sec: int | float = 5
+pretest_duration_sec: int | float = .5
 
 # for resulting data:
 folder: str #! required
 "The string that will be sent to Open Ephys to name the recording: typically `0123456789_366122_20220618`"
 data_files: Sequence[pathlib.Path] = []
-"Storage for recording paths collected over the experiment."
+"Storage for paths collected over the experiment."
 data_root: Optional[pathlib.Path] = None
+# -------------------------------------------------------------------------------------- #
 
 class State(enum.Enum):
     idle = "IDLE"
@@ -49,13 +54,11 @@ class Endpoint(enum.Enum):
     processors = "processors"
     message = "message"
 
-@utils.stop_on_error
-@utils.debug_logging
 def pretest() -> None:
     initialize()
     test()
     start()
-    time.sleep(pretest)
+    time.sleep(pretest_duration_sec)
     verify()
     stop()
     finalize()
@@ -65,14 +68,14 @@ def url(endpoint: Endpoint):
     return f"http://{host}:{port}/api/{endpoint.value}"
 
 def get_state() -> requests.Response:
-    mode = requests.get(url := url(Endpoint.status)).json().get('mode')
-    logger.debug('%s -> get mode: %s', url, mode)
+    mode = requests.get(u := url(Endpoint.status)).json().get('mode')
+    logger.debug('%s -> get mode: %s', u, mode)
     return mode
 
 def set_state(state: State) -> requests.Response:
     msg = {"mode": state.value}
-    mode = requests.put(url := url(Endpoint.status), json.dumps(msg))
-    logger.debug('%s <- set mode: %s', url, state.value)
+    mode = requests.put(u := url(Endpoint.status), json.dumps(msg))
+    logger.debug('%s <- set mode: %s', u, state.value)
     return mode
 
 def is_connected() -> bool:
@@ -80,27 +83,34 @@ def is_connected() -> bool:
     global exc
 
     if not utils.is_online(host):
-        exc = ConnectionError(f"OpenEphys | No response from {host}: may be offline or unreachable")
+        exc = protocols.TestFailure(f"OpenEphys | No response from {host}: may be offline or unreachable")
         return False
 
     try:
         state = get_state()
-    except requests.RequestException as exc:
+    except requests.RequestException:
+        exc = protocols.TestFailure(f"OpenEphys | No response from Open Ephys http server: is the software started?")
         return False
     else:
         if not any(_.value == state for _ in State):
-            exc = ValueError(f"OpenEphys | Unexpected state: {state}")
+            exc = protocols.TestFailure(f"OpenEphys | Unexpected state: {state}")
             return False
 
     return True
 
 def initialize() -> None:
+    logger.info("OpenEphys | Initializing")
+    global data_files
     data_files = []
+    global initialized
+    initialized = time.time()
+    test()
     set_folder(folder)
 
 def test() -> None:
+    logger.info("OpenEphys | Testing")
     if not is_connected():
-        raise protocols.TestFailure() from exc
+        raise exc
 
 def is_started() -> bool:
     if get_state() == State.record.value:
@@ -113,42 +123,50 @@ def is_ready_to_start() -> bool:
     return False
 
 def start() -> None:
+    logger.info('OpenEphys | Starting recording')
     if is_started():
         logger.warning("OpenEphys is already started")
         return
     if not is_ready_to_start():
         set_state(State.acquire)
         time.sleep(.5)
+    global latest_start
     latest_start = time.time()
     set_state(State.record)
     
 def stop() -> None:
+    logger.info('OpenEphys | Stopping recording')
     set_state(State.acquire)
 
 def finalize() -> None:
+    logger.info('OpenEphys | Finalizing')
     data_files.extend(get_latest_data_dirs())
     unlock_previous_recording()
 
-def set_folder(name: str,  prepend_text: Optional[str] = "", append_text: Optional[str] = ""):
+def set_folder(name: str,  prepend_text: Optional[str] = "", append_text: Optional[str] = "") -> None:
     """Recording folder string"""
     recording = requests.get(url(Endpoint.recording)).json()
     
     if name == "":
-        name = "_" # filename cannot be zero length
-    name.replace(".","_")
-    logger.warning("OpenEphys | Recording directory cannot contain periods, replaced with underscores: %s" , name)
+        name = "_" 
+        logger.warning("OpenEphys | Recording directory cannot be empty, replaced with underscore: %s" , name)
+    if "." in name:
+        name.replace(".","_")
+        logger.warning("OpenEphys | Recording directory cannot contain periods, replaced with underscores: %s" , name)
+    
     recording['base_text'] = name
     recording['prepend_text'] = prepend_text
     recording['append_text'] = append_text
+    
     response = requests.put(url(Endpoint.recording), json.dumps(recording))
-    if (actual := response.get('base_text')) != name:
-        raise TestFailure(f'OpenEphys | Set folder to {name}, but software shows: {actual}')
+    if (actual := response.json().get('base_text')) != name:
+        raise protocols.TestFailure(f'OpenEphys | Set folder to {name}, but software shows: {actual}')
 
 def get_folder() -> str | None:
     return requests.get(url(Endpoint.recording)).json().get('base_text')
 
 def clear_open_ephys_name() -> None:
-    set_folder(path="_temp_", prepend_text="", append_text="")
+    set_folder("_temp_")
 
 def set_idle():
     "Should be called before sending any configuration to Open Ephys"
@@ -160,16 +178,16 @@ def set_idle():
 def unlock_previous_recording():
     "stop rec/acquiring | set name to _temp_ | record briefly | acquire"
     set_idle()
-    time.sleep(.5)
+    time.sleep(.1)
     clear_open_ephys_name()
-    time.sleep(.5)
+    time.sleep(.1)
     start()
-    time.sleep(.5)
+    time.sleep(.1)
     stop()
-    time.sleep(.5)
+    time.sleep(.1)
 
 def get_record_nodes() -> list[dict[str, Any]]:
-    """Returns a list of record node info dicts, incl keys `node_id, `parent_directory`"""
+    """Returns a list of record node info dicts, incl keys `node_id`, `parent_directory`"""
     return requests.get(url(Endpoint.recording)).json().get('record_nodes', None) or []
 
 def get_data_roots() -> list[pathlib.Path]:
@@ -185,17 +203,16 @@ def get_latest_data_dirs() -> list[pathlib.Path]:
     return dirs
             
 def verify() -> None:
-    # check dir on disk is growing at all recording locations
+    logger.info('OpenEphys | Verifying')
     for data_dir in get_latest_data_dirs():
-        for npy in data_dir.rglob('*sample_numbers.npy'): # some file that should always be present 
-            if utils.is_file_growing(npy):
+        for file in reversed(utils.get_files_created_between(data_dir, '*/*/*/continuous/*/sample_numbers.npy', latest_start)):
+            if utils.is_file_growing(file):
                 break
         else:
-            return False
-    return True
+            raise protocols.TestFailure(f"OpenEphys | Data file(s) not increasing in size in {data_dir}")
 
 def validate() -> None:
-    logger.warning('OpenEphys | Validate not implemented')
+    logger.warning('OpenEphys | validate() not implemented')
 
 if __name__ == "__main__":
     # testing on np.0
@@ -223,7 +240,7 @@ def set_ref(ext_tip="TIP"):
     port = 1 #! Test
     dock = 1 # TODO may be 1 or 2 with firmware upgrade 
     tip_ref_msg = {"text": f"NP REFERENCE {slot} {port} {dock} {ext_tip}"}
-    #logging.info(f"sending ...
+    #logger.info(f"sending ...
     # return 
     requests.put('http://localhost:37497/api/processors/100/config', json.dumps(tip_ref_msg))
     time.sleep(3)

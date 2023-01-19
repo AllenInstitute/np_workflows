@@ -5,8 +5,11 @@ from enum import Enum
 import socket
 from typing import List, Union
 
-import np_config
 import requests
+import np_config
+import np_logging 
+
+logger = np_logging.getLogger(__name__)
 
 server = "http://mpe-computers/v2.0"
 ALL_RIGS = requests.get(server).json()
@@ -14,7 +17,7 @@ ALL_COMPS = requests.get(server+"/aibs_comp_id").json()
 
 # get AIBS IDs, if set
 COMP_ID: str = os.environ.get("AIBS_COMP_ID", socket.gethostname()).upper()
-RIG_ID: str = os.environ.get("AIBS_RIG_ID",None)
+RIG_ID: str = os.environ.get("AIBS_RIG_ID", None)
 
 while not RIG_ID:
     
@@ -67,28 +70,28 @@ class Rig(Enum):
     openephys = openEphys = OpenEphys = OPENEPHYS = "Acq"
     
     def __new__(cls,suffix):
-        RIG_ID = None           
+        ID = None
         while not RIG_ID:
             
             # extract RIG_ID from COMP_ID if possible
-            RIG_ID = cls.rig_str_with_digit(COMP_ID)
-            if RIG_ID:
+            ID = cls.rig_str_with_digit(COMP_ID)
+            if ID:
                 break
             
             # use BTVTest.1 if allowed
             # set with environ var:
             USE_TEST_RIG = os.environ.get("USE_TEST_RIG", True)
             if USE_TEST_RIG:
-                RIG_ID = "BTVTest.1"
+                ID = "BTVTest.1"
                 break
             
-            RIG_ID = "none"
-        if not RIG_ID:
+            ID = "none"
+        if not (RIG_ID or ID):
             print("Not running from an NP rig: connections to services won't be made\nTry setting env var USE_TEST_RIG=1")
-        cls.ID = RIG_ID
+        cls.ID = RIG_ID or ID
         obj = object.__new__(cls)
         obj._value_ = cls.ID + "-" + suffix
-        obj.AIBS_ID = f"{RIG_ID}-{suffix}"
+        obj.AIBS_ID = f"{cls.ID}-{suffix}"
         return obj
         # cls(self.name).value = cls.ID + suffix
         
@@ -99,7 +102,7 @@ class Rig(Enum):
             # not in mpe-computers
             return ""
         try:
-            return ALL_COMPS.get[self.value]['hostname'].upper()                      
+            return ALL_COMPS.get(self.value, {}).get('hostname','').upper()                      
         except KeyError:
             return 
 

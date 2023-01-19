@@ -6,17 +6,15 @@ proxy.py
 
 Proxy device and manager for ZRO devices.
 
-`DeviceProxy` is a remote object proxy designed to interact with objects
+`Proxy` is a remote object proxy designed to interact with objects
 extending `BasePubRepDevice` (from device.py).
 
 """
-import time
-import datetime
-
 import zmq
 
-class ZroError(Exception):
-    pass
+import np_logging 
+
+logger = np_logging.getLogger(__name__)
 
 def get_address(ip="", port=None):
     """
@@ -77,7 +75,7 @@ class DeviceProxy(object):
                  serialization='pickle',
                  ):
 
-        super(DeviceProxy, self).__init__()
+        super().__init__()
         self.__dict__['ip'] = ip
         self.__dict__['rep_port'] = port
         self.__dict__['timeout'] = timeout
@@ -97,7 +95,7 @@ class DeviceProxy(object):
         if response == "0":
             return None
         else:
-            raise ZroError(str(response))
+            raise ZroError(message=str(response))
 
     def __getattr__(self, name):
         """
@@ -108,7 +106,7 @@ class DeviceProxy(object):
         self._send_packet(packet)
         response = self.__dict__['recv']()
         if isinstance(response, ZroError):
-            raise ZroError(str(response))
+            raise ZroError(message=str(response))
         elif response in ('callable', "__callable__"):
             self.__dict__['to_call'] = name  # HOLD ON TO YOUR BUTTS
             return self._call
@@ -172,7 +170,7 @@ class DeviceProxy(object):
         if isinstance(response, dict) and response.get('ZroError', False):
             response = ZroError.from_dict(response)
         if isinstance(response, ZroError):
-            raise ZroError(str(response))
+            raise ZroError(message=str(response))
         return response
 
     def __del__(self):
@@ -181,6 +179,123 @@ class DeviceProxy(object):
         """
         self.__dict__['req_socket'].close()
 
+Proxy = DeviceProxy
 
-if __name__ == '__main__':
-    pass
+class ZroError(Exception):
+    """ Base class for zro errors. """
+
+    error_codes = {
+        1: "{} -> HAS_NO_ATTRIBUTE -> {}",
+        2: "{} -> HAS_NO_CALLABLE -> {}",
+        3: "{} -> ATTRIBUTE_NOT_CALLABLE -> {}",
+        4: "{} -> CALLABLE_FAILED -> {}",
+        5: "{} -> ARGUMENTS_INVALID -> {}",
+        6: "{} -> UNHANDLED_ERROR -> {}",
+        7: "{} -> ASYNC_RESULT_INVALID_HANDLE -> {}",
+        8: "{} -> ASYNC_RESULT_UNFINISHED -> {}",
+        9: "{} -> ASYNC_CALLBACK_FAILED -> {}",
+    }
+
+    HAS_NO_ATTRIBUTE = 1
+    HAS_NO_CALLABLE = 2
+    ATTRIBUTE_NOT_CALLABLE = 3
+    CALLABLE_FAILED = 4
+    ARGUMENTS_INVALID = 5
+    UNHANDLED_ERROR = 6
+    ASYNC_RESULT_INVALID_HANDLE = 7
+    ASYNC_RESULT_UNFINISHED = 8
+    ASYNC_CALLBACK_FAILED = 9
+
+    def __init__(self, obj=None, target=None, error_code=6, message=""):
+        if not message:
+            message = self.error_codes[error_code].format(obj, target)
+        self.message = message
+        self.error_code = error_code
+        super(ZroError, self).__init__(message)
+
+    def to_JSON(self):
+        return {
+            'ZroError': str(type(self.get_specific_error())), # this key lets zro convert this on the receive side
+            'error_code': self.error_code,
+            'message': str(self.message)
+        }
+
+    @staticmethod
+    def from_dict(d):
+        return ZroError(error_code=d['error_code'], message=d['message']).get_specific_error()
+
+    def get_specific_error(self, to_raise=False):
+        """ Get the appropriate ZroError for the error type. """
+        err = _SPECIFIC_ERRORS[self.error_code](message=self.message)
+        if to_raise:
+            raise err
+        return err
+
+
+class ZroNoAttributeError(ZroError):
+    """ Error for HAS_NO_ATTRIBUTE. """
+    def __init__(self, obj=None, target=None, message=""):
+        super(ZroNoAttributeError, self).__init__(
+            obj, target, ZroError.HAS_NO_ATTRIBUTE, message)
+
+
+class ZroNoCallableError(ZroError):
+    """ Error for HAS_NO_CALLABLE. """
+    def __init__(self, obj=None, target=None, message=""):
+        super(ZroNoCallableError, self).__init__(
+            obj, target, ZroError.HAS_NO_CALLABLE, message)
+
+
+class ZroAttrNotCallableError(ZroError):
+    """ Error for ATTRIBUTE_NOT_CALLABLE. """
+    def __init__(self, obj=None, target=None, message=""):
+        super(ZroAttrNotCallableError, self).__init__(
+            obj, target, ZroError.ATTRIBUTE_NOT_CALLABLE, message)
+
+
+class ZroCallableFailedError(ZroError):
+    """ Error for CALLABLE_FAILED. """
+    def __init__(self, obj=None, target=None, message=""):
+        super(ZroCallableFailedError, self).__init__(
+            obj, target, ZroError.CALLABLE_FAILED, message)
+
+
+class ZroArgumentsInvalidError(ZroError):
+    """ Error for ARGUMENTS_INVALID. """
+    def __init__(self, obj=None, target=None, message=""):
+        super(ZroArgumentsInvalidError, self).__init__(
+            obj, target, ZroError.ARGUMENTS_INVALID, message)
+
+
+class ZroAsyncHandleInvalidError(ZroError):
+    """ Error for ASYNC_RESULT_INVALID_HANDLE. """
+    def __init__(self, obj=None, target=None, message=""):
+        super(ZroAsyncHandleInvalidError, self).__init__(
+            obj, target, ZroError.ASYNC_RESULT_INVALID_HANDLE, message)
+
+
+class ZroResultUnfinishedError(ZroError):
+    """ Error for ASYNC_RESULT_UNFINISHED. """
+    def __init__(self, obj=None, target=None, message=""):
+        super(ZroResultUnfinishedError, self).__init__(
+            obj, target, ZroError.ASYNC_RESULT_UNFINISHED, message)
+
+
+class ZroCallbackFailedError(ZroError):
+    """ Error for ASYNC_CALLBACK_FAILED. """
+    def __init__(self, obj=None, target=None, message=""):
+        super(ZroCallbackFailedError, self).__init__(
+            obj, target, ZroError.ASYNC_CALLBACK_FAILED, message)
+
+
+_SPECIFIC_ERRORS = {
+    1: ZroNoAttributeError,
+    2: ZroNoCallableError,
+    3: ZroAttrNotCallableError,
+    4: ZroCallableFailedError,
+    5: ZroArgumentsInvalidError,
+    6: ZroError,
+    7: ZroAsyncHandleInvalidError,
+    8: ZroResultUnfinishedError,
+    9: ZroCallbackFailedError,
+}
