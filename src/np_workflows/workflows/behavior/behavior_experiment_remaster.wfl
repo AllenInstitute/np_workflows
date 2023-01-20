@@ -15,15 +15,14 @@ states:
       - field: user_id
         type: pulldown_menu
         desc: Select User
-        options_field: users 
+        options_field: users
     inputs:
       - state: load_prior_state
-
 
   load_prior_state:
     description: Load Prior State
     display:
-      - field: load_prior_state  # This is apparently unused
+      - field: load_prior_state # This is apparently unused
         type: branch_radio_button
         desc: Do you want to load a previously found state
         options:
@@ -37,8 +36,8 @@ states:
       - field: prior_state_selected
         type: pulldown_menu
         desc: Select previous state
-        options_field: prior_states # this needs a default, but the widget doesn't have one 
-    inputs: 
+        options_field: prior_states # this needs a default, but the widget doesn't have one
+    inputs:
       - state: scan_mouse_id
     revert:
       options:
@@ -100,7 +99,7 @@ states:
       options:
         - desc: Revert to initialize
           state: initialize
-          
+
   LIMS_request:
     description: get data from LIMS
     display:
