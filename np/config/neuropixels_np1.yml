@@ -119,7 +119,7 @@ components:
     version: 0.1.0
   Stim: # old: should be unused once all old worflow code is updated
     desc: Stim # camstim
-    host: W10DTSM118294
+    host: W10DT713942
     port: 5000
     version: 0.2.4
   Sync: # old location: should be unused once all old worflow code is updated
