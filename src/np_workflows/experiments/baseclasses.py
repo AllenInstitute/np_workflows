@@ -3,7 +3,7 @@ import functools
 
 from typing import Any, Optional, Protocol, Union, Sequence, ClassVar, Type
 
-import np_config
+# import np_config
 import np_session
 
 from ..services.protocols import Service

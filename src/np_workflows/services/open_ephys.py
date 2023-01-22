@@ -21,7 +21,7 @@ from . import utils
 # global vars -------------------------------------------------------------------------- #
 logger = np_logging.getLogger(__name__)
 
-exc: Optional[BaseException] | None
+exc: Optional[BaseException] = None
 initialized: float = 0
 "`time.time()` when the service was initialized."
 
@@ -76,6 +76,7 @@ def set_state(state: State) -> requests.Response:
     msg = {"mode": state.value}
     mode = requests.put(u := url(Endpoint.status), json.dumps(msg))
     logger.debug('%s <- set mode: %s', u, state.value)
+    time.sleep(.1)
     return mode
 
 def is_connected() -> bool:
@@ -110,7 +111,8 @@ def initialize() -> None:
 def test() -> None:
     logger.info("OpenEphys | Testing")
     if not is_connected():
-        raise exc
+        if exc:
+            raise exc
 
 def is_started() -> bool:
     if get_state() == State.record.value:
@@ -159,6 +161,7 @@ def set_folder(name: str,  prepend_text: Optional[str] = "", append_text: Option
     recording['append_text'] = append_text
     
     response = requests.put(url(Endpoint.recording), json.dumps(recording))
+    time.sleep(.1)
     if (actual := response.json().get('base_text')) != name:
         raise protocols.TestFailure(f'OpenEphys | Set folder to {name}, but software shows: {actual}')
 

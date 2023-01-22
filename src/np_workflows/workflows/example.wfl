@@ -1,0 +1,46 @@
+wfl_version: 1.0
+
+import: np_workflows.workflows.example # py file relative to C:\Program Files\AIBS_MPE\workflow_launcher, without .py suffix
+entry_state: initialize
+
+states:
+  initialize: # corresponding functions in .py file use this name plus 
+  # a suffix from [_enter, _input, _exit]
+    description: # mandatory key, but value can be missing (has no effect anyway)
+    display: # display widgets in GUI
+      - type: note # must correspond to file in C:\Program Files\AIBS_MPE\workflow_launcher\wfltk\resources\{type}.ui
+        desc: Initializing workflow # `desc` seems to be for entering text to display on-screen
+    inputs:
+      - state: msg
+        
+  msg:
+    description:
+    display:
+      # - type: radio_button
+      #   desc: 
+      #   field: True
+      #   default: True
+    inputs:
+      - state: warn
+        
+  warn:
+    description:
+    display:
+        # field: warning_alert
+      #   desc: <warning_alert> # use variable in display
+        # must be assigned to state_globals['external'][<var>] in <state>_enter
+      - type: note
+        # desc: _
+      # - type: check_box
+      #   desc: _
+      #   field: True
+      # - type: external
+      #   transition_result: True
+    inputs:
+      - state: shutdown
+
+  shutdown:
+    description:
+    display:
+      - type: workflow_complete
+    inputs: None

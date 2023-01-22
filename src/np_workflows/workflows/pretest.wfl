@@ -1,34 +1,62 @@
 wfl_version: 1.0
 
 import: np_workflows.workflows.pretest # py file relative to C:\Program Files\AIBS_MPE\workflow_launcher, without .py suffix
-entry_state: initialize
-
+entry_state: select_mouse_and_operator
 states:
-  initialize: # corresponding functions in .py file use this name plus 
-  # a suffix from [_enter, _input, _exit]
+  select_mouse_and_operator: # corresponding functions in .py file use this name plus
+    # a suffix from [_enter, _input, _exit]
     description: # mandatory key, but value can be missing (has no effect anyway)
     display: # display widgets in GUI
-      - type: note # must correspond to file in C:\Program Files\AIBS_MPE\workflow_launcher\wfltk\resources\{type}.ui
-        desc: Initializing workflow # `desc` seems to be for entering text to display on-screen
+      # - type: note # must correspond to file in C:\Program Files\AIBS_MPE\workflow_launcher\wfltk\resources\{type}.ui
+      #   desc: Initializing # `desc` seems to be for entering text to display on-screen
+      - type: text_entry
+        desc: Mouse ID
+        field: mouse
+      - type: pulldown_menu
+        desc: User ID
+        field: operator
+        options_field: operators
     inputs:
-      - state: msg
-        
-  msg:
+      - state: select_experiment
+
+  select_experiment:
     description:
     display:
+      - type: note
+        desc: "Operator: <operator>"
+      - type: note
+        desc: "Mouse: <mouse>"
+      - type: note
+        desc: "Assigned project: <project>"
+      - type: pulldown_menu
+        desc: "Experiment:"
+        field: experiment
+        options_field: experiments
+    inputs:
+      - state: msg
+    revert:
+      options:
+        - state: select_mouse_and_operator
+
+  msg:
+    description:
+    revert:
+      options:
+        - state: select_experiment
+    display:
       # - type: radio_button
-      #   desc: 
+      #   desc:
       #   field: True
       #   default: True
     inputs:
       - state: warn
-        
+
   warn:
     description:
     display:
-        # field: warning_alert
+      # field: warning_alert
       #   desc: <warning_alert> # use variable in display
-        # must be assigned to state_globals['external'][<var>] in <state>_enter
+      # must be assigned to state_globals['external'][<var>] in <state>_enter
       - type: note
         # desc: _
       # - type: check_box
