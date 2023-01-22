@@ -96,11 +96,10 @@ class ConfigMixin(Experiment):
             if config := self.config.get(service.__name__):
                 for key, value in config.items():
                     setattr(service, key, value)
-                    logger.debug(f"{self.__name__} | Set {service.__name__}.{key} = {service.key}")
+                    logger.debug(f"{self.__name__} | Set {service.__name__}.{key} = {getattr(service, key)}")
         for service in self.services:
-            if isinstance(service, object):
-                for base in service.__bases__:
-                    apply_config(base)
+            for base in service.__class__.__bases__:
+                apply_config(base)
             apply_config(service)
 
             
