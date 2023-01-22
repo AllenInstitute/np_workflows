@@ -3,18 +3,21 @@ import functools
 
 from typing import Any, Optional, Protocol, Union, Sequence, ClassVar, Type
 
-# import np_config
-import np_session
-
 from ..services.protocols import Service
 
+# import np_config
+import np_session
+import np_logging
+
+logger = np_logging.getLogger(__name__)
+
 class Experiment(Protocol):
-    session: str
-    "Unique id for the session, e.g. lims ecephys session id, datetime"
+    # session: str
+    # "Unique id for the session, e.g. lims ecephys session id, datetime. Used for folder name."
     services: Sequence[Service]
     "Devices, databases etc."
-    config: dict[str, Any]
-    "For rig, session, experiment, etc."
+    config: dict[str, dict[str, Any]]
+    "Top-level keys are names of Services. Each Service then has config specific to rig, session, experiment, etc."
 
 class WithLims(Experiment):
     "Provides lims info properties"
@@ -84,3 +87,20 @@ class WithLims(Experiment):
     def files(self) -> dict[str, dict[str, str]]:
         "Expected manifest of files from experiment"
         return np_session.files_manifest(str(self.project), self.folder, 'D1')
+
+class ConfigMixin(Experiment):
+    
+    def apply_config_to_services(self) -> None:
+        """For each service, apply every key in self.config['service'] as an attribute."""
+        def apply_config(service):
+            if config := self.config.get(service.__name__):
+                for key, value in config.items():
+                    setattr(service, key, value)
+                    logger.debug(f"{self.__name__} | Set {service.__name__}.{key} = {service.key}")
+        for service in self.services:
+            if isinstance(service, object):
+                for base in service.__bases__:
+                    apply_config(base)
+            apply_config(service)
+
+            
