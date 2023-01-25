@@ -14,7 +14,7 @@ PROGRAM_DATA = pathlib.Path('C:/ProgramData/AIBS_MPE/wfltk/workflows')
 # wfls to program data (WSE looks here by default)
 for wfl in PROGRAM_DATA.glob('*.wfl'):
     wfl.unlink()
-for wfl in (LOCAL).rglob('pretest.wfl'):
+for wfl in (LOCAL).rglob('*.wfl'):
     src = wfl
     dest = PROGRAM_DATA / wfl.name
     print(f'{src} to {dest}')

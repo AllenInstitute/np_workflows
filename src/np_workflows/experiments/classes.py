@@ -13,7 +13,7 @@ from np_workflows.services import config
 from np_workflows.services.protocols import Service
 from np_workflows.services.proxies import ImageMVR, VideoMVR, Sync, NoCamstim, ScriptCamstim, SessionCamstim, JsonRecorder, NewScaleCoordinateRecorder
 from np_workflows.services import open_ephys as OpenEphys
-from np_workflows.experiments.baseclasses import WithLims
+from np_workflows.experiments.baseclasses import Experiment, WithLims
 
 import np_config
 # import np_session
@@ -21,12 +21,11 @@ import np_logging
 
 logger = np_logging.getLogger(__name__)
 
-class Pretest(WithLims):
-    
-    rig_idx: ClassVar[int] = config.Rig.idx
-    
+
+class NpUltra(Experiment):
+        
     services: tuple[Service, ...] = (
-        Sync, OpenEphys, ImageMVR, VideoMVR, NewScaleCoordinateRecorder, ScriptCamstim,
+        Sync, OpenEphys, ImageMVR, VideoMVR, NewScaleCoordinateRecorder, NoCamstim,
     )
     "All services used in the experiment that support Service protocols."
     
@@ -35,11 +34,34 @@ class Pretest(WithLims):
     )
     "Services called during photodoc capture."
     
-    photodoc_labels: tuple[str, ...] = (
-        'pretest',
+    def __init__(self, labtracks_mouse_id) -> None:    
+        #TODO deepmerge config dicts 
+        self.config : dict[str, dict[str, Any]]  = (
+            np_config.from_zk('/projects/np_workflows/defaults/configuration')
+            | np_config.from_zk(f'/projects/np_workflows/{self.__class__.__name__}/configuration')
+            | np_config.from_zk(f'/rigs/NP.{self.rig_idx}')
+        )
+        self.session = f"{labtracks_mouse_id}_{datetime.datetime.now().strftime('%Y%m%d')}"
+        OpenEphys.folder = self.session
+        NoCamstim.remote_file = pathlib.Path('C:/Users/svc_neuropix/Desktop/run_blue_opto.bat')
+    
+class Pretest(WithLims):
+        
+    services: tuple[Service, ...] = (
+        Sync, OpenEphys, ImageMVR, VideoMVR, NewScaleCoordinateRecorder, ScriptCamstim,
+    )
+    "All services used in the experiment that support Service protocols."
+    
+    stim_services: tuple[Service, ...] = (
+        NoCamstim,
     )
     
-    recorder: tuple[Service, ...] = (
+    photodoc_services: tuple[Service, ...] = (
+        ImageMVR, NewScaleCoordinateRecorder,
+    )
+    "Services called during photodoc capture."
+    
+    recorder_services: tuple[Service, ...] = (
         # JsonRecorder, #! update with platform json recorder when available
     )
     
@@ -53,6 +75,7 @@ class Pretest(WithLims):
         
         logger.debug(f"Initializing {__class__.__name__}({labtracks_mouse_id}, {lims_user_id})")
         
+        #TODO deepmerge config dicts 
         self.config : dict[str, dict[str, Any]]  = (
             np_config.from_zk('/projects/np_workflows/defaults/configuration') 
             | np_config.from_zk(f'/rigs/NP.{self.rig_idx}')

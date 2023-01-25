@@ -34,7 +34,7 @@ with utils.debug_logging():
             proxies.Sync.pretest()    
     
     if False:
-        proxies.NoCamstim.password = 'ti8*DYne' # careful not to commit this to github!
+        # proxies.NoCamstim.password  # careful not to commit this to github!
         proxies.NoCamstim.data_root = pathlib.Path('C:/ProgramData/camstim/output')
         proxies.NoCamstim.remote_file = pathlib.Path('C:/Users/svc_neuropix/Desktop/run_blue_opto.bat')
         proxies.NoCamstim.initialize() # will prompt for password if not entered

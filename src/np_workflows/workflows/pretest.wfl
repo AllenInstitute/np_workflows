@@ -20,10 +20,7 @@ capture_photodoc: &capture_photodoc
       desc: Switch on light
     - type: note
       desc: Focus image
-    - type: pulldown_menu
-      desc: "Select photodoc label:"
-      options_field: photodoc_labels
-      field: photodoc_label
+    - <<: *null_display
     - type: warning_alert
       desc: Image will be captured
   inputs:
@@ -37,18 +34,17 @@ review_photodoc: &review_photodoc
   - type: note
     desc: <current_image>
   - type: note
-    desc: Check the image is correctly exposed and focussed
+    desc: Check image is correctly exposed and focused
   - type: branch_radio_button
     field: null
     options:
       - field: null
-        desc: Revert state to re-capture image
+        desc: Continue accept image or revert state to re-capture
         default: True
   inputs:
     - state: capture_photodoc
       
 # ------------------------------------------------------------------------------------- 
-wfl_version: 1.0
 
 import: np_workflows.workflows.pretest # py file relative to C:\Program Files\AIBS_MPE\workflow_launcher, without .py suffix
 
@@ -139,10 +135,12 @@ states:
             next: run_pretest
     inputs:
       - state: shutdown
-      - state: run_pretest
+      # - state: run_pretest
           
   shutdown:
     description:
     display:
       - type: workflow_complete
     inputs: None
+
+wfl_version: 1.0

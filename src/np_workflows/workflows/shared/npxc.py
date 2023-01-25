@@ -43,6 +43,7 @@ def current_state() -> tuple[str, str]:
 
 experiments: tuple[Type[Experiment], ...] = (
     classes.Pretest,
+    classes.NpUltra,
     ) # TODO plug-in experiments
 
 # TODO get userlist from np_config on per-rig basis
@@ -63,7 +64,7 @@ def get_operators() -> list[str]:
     return list(lims_user_ids)
     
 def get_experiments(with_lims: bool = True) -> list[str]:
-    return [cls.__name__ for cls in experiments if with_lims == issubclass(cls, baseclasses.WithLims)]
+    return [cls.__name__ for cls in experiments if with_lims or not issubclass(cls, baseclasses.WithLims)]
 
 def set(state_globals, **kwargs) -> None:
     "Update `state_globals['external'][key]` with kwargs"

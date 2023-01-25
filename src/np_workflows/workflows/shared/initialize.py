@@ -31,7 +31,7 @@ logger = np_logging.getLogger(__name__)
 def select_mouse_and_operator_enter(state_globals) -> None:
     npxc.set(state_globals, operators=[""] + npxc.get_operators())
     state_globals["external"]["mouse"] = '366122' #! defaults for testing
-    state_globals["external"]["operator"] = 'ben.hardcastle' #! defaults for testing
+    # state_globals["external"]["operator"] = 'ben.hardcastle' #! defaults for testing
     
     # import pdb; pdb.set_trace()
     # state_globals['resources']['workflow']['states'].keys()
@@ -51,7 +51,7 @@ def select_mouse_and_operator_input(state_globals) -> None:
     except (AttributeError, KeyError):
         project = "NA"
         if npxc.is_mouse_in_lims is None:
-            logger.warning("LIMS | Mouse %r could not be fetched from database: %r", mouse_input, exc)
+            logger.warning("LIMS | Mouse %r could not be fetched from database: %r", mouse_input)
         npxc.mouse = mouse_input
         npxc.is_mouse_in_lims = False
     else:  
@@ -91,7 +91,9 @@ def select_experiment_input(state_globals) -> None:
             *npxc.get(state_globals, 'mouse', 'operator'),
             lims_session_id = int(npxc.session) if npxc.session else None,
             )
-    
+    else:
+        npxc.experiment = experiment_class(npxc.mouse)
+        
     if not isinstance(npxc.experiment, Experiment):
         raise ValueError(f"Experiment {npxc.experiment!r} was not converted to a valid Experiment class")
         

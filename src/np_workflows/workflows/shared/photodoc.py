@@ -27,16 +27,11 @@ except Exception as exc:
 
 logger = np_logging.getLogger(__name__)
 
-def capture_photodoc_enter(state_globals) -> None:
-    if not npxc.get(state_globals, "photodoc_labels"):
-        npxc.set(state_globals, photodoc_labels=[""] + list(npxc.experiment.photodoc_labels))
-    if (selected_label := npxc.get(state_globals, "photodoc_label")) not in (dropdown_labels := npxc.get(state_globals, "photodoc_labels")):
-        npxc.set(state_globals, photodoc_labels=[selected_label] + dropdown_labels)
-    # if (
-    #     npxc.get(state_globals, 'next_state') == 'capture_photodoc' 
-    #     and current_label and current_label not in (photodocs := npxc.get(state_globals, 'photodocs'))
-    # ): # we're in a re-capture loop but popped the label
-    #     npxc.set(state_globals, photodocs=[current_label] + photodocs)
+# def capture_photodoc_enter(state_globals) -> None:
+#     if not npxc.get(state_globals, "photodoc_labels"):
+#         npxc.set(state_globals, photodoc_labels=[""] + list(npxc.experiment.photodoc_labels))
+#     if (selected_label := npxc.get(state_globals, "photodoc_label")) and selected_label not in (dropdown_labels := npxc.get(state_globals, "photodoc_labels")):
+#         npxc.set(state_globals, photodoc_labels=[selected_label] + dropdown_labels)
         
 def capture_photodoc_input(state_globals) -> None:
     current_label = npxc.get(state_globals, "photodoc_label")
@@ -52,7 +47,6 @@ def capture_photodoc_input(state_globals) -> None:
 def review_photodoc_enter(state_globals) -> None:
     # default to re-taking the photodoc
 
-    # npxc.set(state_globals, next_state='capture_photodoc')
     for service in npxc.experiment.photodoc_services:
         img = None
         with contextlib.suppress(AttributeError, IndexError):
@@ -66,10 +60,3 @@ def review_photodoc_enter(state_globals) -> None:
         import pdb; pdb.set_trace()
         raise ValueError(f"No photodoc image found from services {[_.__name__ for _ in npxc.experiment.photodoc_services]}")
     
-def review_photodoc_input(state_globals) -> None:
-    import pdb; pdb.set_trace()
-    print(npxc.get(state_globals, 'next_state'))
-    print(npxc.get(state_globals, 'capture_photodoc'))
-    import pdb; pdb.set_trace()
-    if 'capture_photodoc' not in npxc.get(state_globals, 'next_state'):
-        npxc.set(state_globals, photodocs=npxc.get(state_globals, 'photodocs').pop(current_label))

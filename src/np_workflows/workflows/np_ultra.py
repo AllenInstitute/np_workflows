@@ -1,3 +1,6 @@
+from typing import Hashable
+
+
 try:
     #! the wse allows import errors to pass silently!
     #* put all imports in this try block so that we can see the error before exiting
@@ -7,6 +10,7 @@ try:
     import pdb
     from typing import Type
 
+    from np_workflows.services import open_ephys as OpenEphys
     from np_workflows.workflows.shared.npxc import experiment
     from np_workflows.workflows.shared import npxc
     from np_workflows.workflows.shared.initialize import (
@@ -28,10 +32,17 @@ except Exception as exc:
     import pdb; pdb.set_trace()
     exit()
 
+
+
 # name each photodoc state `capture_photodoc_<state>`, `review_photodoc_<state>`
 photodoc_states_to_labels = {
-    0: 'pretest',
+    0: 'brain_surface',
+    1: 'pre_experiment', # once per experiment loop
+    2: 'post_experiment', # once, after all experiment loops
     }
+
+# def generate_photodoc_states(photodoc_states_to_labels: dict[Hashable, str]):
+#* can we put this in shared.photodoc module (/in a function) and import them automatically?
 for state, label in photodoc_states_to_labels.items():
     exec(
         f"""def capture_photodoc_{state}_enter(state_globals):
@@ -48,10 +59,17 @@ for state, label in photodoc_states_to_labels.items():
             review_photodoc_enter(state_globals)
         """
     )
+
+def start_experiment_loop_enter(state_globals) -> None:
+    if (trial_idx := npxc.get(state_globals, 'trial_idx')) is None:
+        npxc.set(state_globals, trial_idx=0)
+    else:
+        npxc.set(state_globals, trial_idx=trial_idx+1)
+    OpenEphys.folder = f'{trial_idx}_{npxc.experiment.session}'
+        
+def settle_timer_enter(state_globals):
+    # TODO move time to experiment.config
+    npxc.set(state_globals, settle_time_total_sec=10*60)
+    npxc.set(state_globals, settle_time_remaining_sec=10*60)
     
-if False:
-    def msg_enter(state_globals) -> None: 
-        state_globals["external"]["transition_result"] = False # T/F just sets text at bottom green/red - switches to T in next state
-        state_globals["external"]["status_message"] = 'status_message at bottom'
-        state_globals["external"]["msg_text"] = 'msg_text in main widget'
-        state_globals['external']['alert'] = True # T adds warning icon 
+    

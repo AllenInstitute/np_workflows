@@ -18,6 +18,7 @@ from np_workflows.services.protocols import (
     Validatable,
     Shutdownable,
 )
+from np_workflows.services import config
 
 import np_session
 import np_logging
@@ -25,6 +26,8 @@ import np_logging
 logger = np_logging.getLogger(__name__)
 
 class Experiment(abc.ABC):
+    
+    rig_idx: ClassVar[int] = config.Rig.idx
     # session: str
     # "Unique id for the session, e.g. lims ecephys session id, datetime. Used for folder name."
     services: tuple[Service, ...]

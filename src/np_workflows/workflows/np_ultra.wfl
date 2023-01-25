@@ -1,0 +1,263 @@
+# shared states ------------------------------------------------------------------------
+
+display: &null_display 
+  # enables next arrow without input
+  display:
+  - type: branch_radio_button
+    field: null
+    options:
+      - field: null
+        desc: 
+        default: True
+# usage
+#   display:
+#     - <<: *null_display
+
+capture_photodoc: &capture_photodoc
+  description:
+  display:
+    - type: note
+      desc: Switch on light
+    - type: note
+      desc: Focus image
+    - <<: *null_display
+    - type: warning_alert
+      desc: "'<photodoc_label>' image will be captured"
+  inputs:
+    - state: review_photodoc
+      
+review_photodoc: &review_photodoc
+  description:
+  display:      
+  - type: image
+    field: current_image
+  - type: note
+    desc: <current_image>
+  - type: note
+    desc: Check image is correctly exposed and focused
+  - type: branch_radio_button
+    field: null
+    options:
+      - field: null
+        desc: Continue accept image or revert state to re-capture
+        default: True
+  inputs:
+    - state: capture_photodoc
+      
+# ------------------------------------------------------------------------------------- 
+
+import: np_workflows.workflows.np_ultra 
+
+entry_state: select_mouse_and_operator
+states:
+  
+  select_mouse_and_operator:
+    description: # mandatory key, but value can be missing (has no effect anyway)
+    display: 
+      - type: text_entry
+        desc: Mouse ID
+        field: mouse
+      - type: pulldown_menu
+        desc: User ID
+        field: operator
+        options_field: operators
+    inputs:
+      - state: select_experiment
+
+  select_experiment:
+    description:
+    revert:
+      options:
+        - state: select_mouse_and_operator
+    display:
+      - type: note
+        desc: "Operator: <operator>" 
+      - type: note
+        desc: "Mouse: <mouse>" # quotes reqd to display ':'
+      - type: note
+        desc: "Assigned project: <project>"
+      - type: pulldown_menu
+        desc: "Select experiment:"
+        field: experiment
+        options_field: experiments
+      - type: warning_alert
+        desc: "Services will be initialized: monitor progress in the output window"
+    inputs:
+      - state: pre_mouse_checks
+        
+  pre_mouse_checks:
+    description:
+    revert:
+      options:
+        - state: select_experiment
+    display:
+      - <<: *null_display
+      - type: check_box
+        desc: "Open Ephys: tip-reference, channels, A:/B: disk space"
+      - type: check_box
+        desc: Water lines flushed
+      - type: check_box
+        desc: "*add other checks*"
+      - type: warning_alert
+        desc: Continue when mouse is on stage
+    inputs:
+      - state: pre_flight_checks
+  
+  pre_flight_checks:
+    description:
+    revert:
+      options:
+        - state: pre_mouse_checks
+    display:
+      - <<: *null_display
+      - type: check_box
+        desc: Stabilization screw
+      - type: check_box
+        desc: "Quickast, agarose/silicon oil"
+      - type: check_box
+        desc: Tail cone down, continuity check
+      - type: warning_alert
+        desc: Continue when cartridge is lowered
+    inputs:
+      - state: capture_photodoc_0
+
+  capture_photodoc_0: 
+    <<: *capture_photodoc
+    revert:
+      options:
+      - state: pre_flight_checks
+    inputs:
+      - state: review_photodoc_0
+        
+  review_photodoc_0: 
+    <<: *review_photodoc
+    revert:
+      options:
+      - state: capture_photodoc_0
+    inputs:
+      - state: start_experiment_loop
+  
+  start_experiment_loop:
+    description:
+    display: 
+      - <<: *null_display
+      - type: note
+        desc: Trial <trial_idx>
+      - type: note
+        desc: Advance probes to insertion depth
+      - type: warning_alert
+        desc: Settle timer will begin 
+    inputs:
+      - state: settle_timer
+
+  settle_timer:
+    description:
+    display:
+      - type: note
+        desc: "<settle_time_remaining_sec> / <settle_time_total_sec>"
+      - type: branch_radio_button
+        options:
+          - field: null
+            desc: Await timer
+            next: settle_timer
+            default: True
+          - field: null
+            desc: Override and continue
+            next: capture_photodoc_1
+    inputs:
+      - state: capture_photodoc_1
+
+  capture_photodoc_1: 
+    <<: *capture_photodoc
+    revert:
+      options:
+      - state: settle_timer
+    inputs:
+      - state: review_photodoc_1
+        
+  review_photodoc_1: 
+    <<: *review_photodoc
+    revert:
+      options:
+      - state: capture_photodoc_1
+    inputs:
+      - state: start_recording
+  
+  start_recording:
+    description:
+    display:
+      - <<: *null_display
+      - type: warning_alert
+        desc: Services will start recording
+    inputs:
+      - state: start_stimulus
+
+  start_stimulus:
+    description:
+    display:
+      - <<: *null_display
+      - type: warning_alert
+        desc: Stimulus will start
+    inputs:
+      - state: stop_recording
+
+  stop_recording:
+    description:
+    display:
+      - type: note
+      - <<: *null_display
+      - type: warning_alert
+        desc: Services will stop recording
+    inputs:
+      - state: repeat_experiment_loop  
+        
+  repeat_experiment_loop:
+    description:
+    display:
+      - type: branch_radio_button
+        options:
+          - desc: Continue to next trial
+            next: start_experiment_loop
+            default: True
+          - desc: Exit loop
+            next: capture_photodoc_2
+    inputs:
+      - states: start_experiment_loop
+      - states: capture_photodoc_2
+        
+  capture_photodoc_2: 
+    <<: *capture_photodoc
+    revert:
+      options:
+      - state: repeat_experiment_loop
+    inputs:
+      - state: review_photodoc_2
+        
+  review_photodoc_2: 
+    <<: *review_photodoc
+    revert:
+      options:
+      - state: capture_photodoc_2
+    inputs:
+      - state: post_experiment
+          
+  post_experiment:
+    description:
+    display:
+      - type: check_box
+        desc: Probes fully retracted
+      - type: check_box
+        desc: Cartridge raised
+      - type: check_box
+        desc: Added quickast
+      - type: warning_alert
+        desc: Files will transfer while mouse is returned
+    inputs: shutdown
+
+  shutdown:
+    description:
+    display:
+      - type: workflow_complete
+    inputs: None
+
+wfl_version: 1.0
