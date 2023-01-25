@@ -1,14 +1,66 @@
+# shared states ------------------------------------------------------------------------
+
+display: &null_display 
+  # enables next arrow without input
+  display:
+  - type: branch_radio_button
+    field: null
+    options:
+      - field: null
+        desc: 
+        default: True
+# usage
+#   display:
+#     - <<: *null_display
+
+capture_photodoc: &capture_photodoc
+  description:
+  display:
+    - type: note
+      desc: Switch on light
+    - type: note
+      desc: Focus image
+    - type: pulldown_menu
+      desc: "Select photodoc label:"
+      options_field: photodoc_labels
+      field: photodoc_label
+    - type: warning_alert
+      desc: Image will be captured
+  inputs:
+    - state: review_photodoc
+      
+review_photodoc: &review_photodoc
+  description:
+  display:      
+  - type: image
+    field: current_image
+  - type: note
+    desc: <current_image>
+  - type: note
+    desc: Check the image is correctly exposed and focussed
+  - type: branch_radio_button
+    field: null
+    options:
+      - field: null
+        desc: Revert state to re-capture image
+        default: True
+  inputs:
+    - state: capture_photodoc
+      
+# ------------------------------------------------------------------------------------- 
 wfl_version: 1.0
 
 import: np_workflows.workflows.pretest # py file relative to C:\Program Files\AIBS_MPE\workflow_launcher, without .py suffix
+
 entry_state: select_mouse_and_operator
 states:
+  
   select_mouse_and_operator: # corresponding functions in .py file use this name plus
     # a suffix from [_enter, _input, _exit]
     description: # mandatory key, but value can be missing (has no effect anyway)
-    display: # display widgets in GUI
       # - type: note # must correspond to file in C:\Program Files\AIBS_MPE\workflow_launcher\wfltk\resources\{type}.ui
       #   desc: Initializing # `desc` seems to be for entering text to display on-screen
+    display: # display widgets in GUI
       - type: text_entry
         desc: Mouse ID
         field: mouse
@@ -21,52 +73,74 @@ states:
 
   select_experiment:
     description:
-    display:
-      - type: note
-        desc: "Operator: <operator>"
-      - type: note
-        desc: "Mouse: <mouse>"
-      - type: note
-        desc: "Assigned project: <project>"
-      - type: pulldown_menu
-        desc: "Experiment:"
-        field: experiment
-        options_field: experiments
-    inputs:
-      - state: msg
     revert:
       options:
         - state: select_mouse_and_operator
+    display:
+      - type: note
+        desc: "Operator: <operator>" 
+      - type: note
+        desc: "Mouse: <mouse>" # quotes reqd to display ':'
+      - type: note
+        desc: "Assigned project: <project>"
+      - type: pulldown_menu
+        desc: "Select experiment:"
+        field: experiment
+        options_field: experiments
+      - type: warning_alert
+        desc: "Services will be initialized: monitor progress in the output window"
+    inputs:
+      - state: capture_photodoc_0
 
-  msg:
+  capture_photodoc_0: 
+    <<: *capture_photodoc
+    revert:
+      options:
+      - state: select_experiment
+    inputs:
+      - state: review_photodoc_0
+        
+  review_photodoc_0: 
+    <<: *review_photodoc
+    revert:
+      options:
+      - state: capture_photodoc_0
+    inputs:
+      - state: run_pretest
+
+  run_pretest:
     description:
     revert:
       options:
-        - state: select_experiment
+        - state: review_photodoc_0
     display:
-      # - type: radio_button
-      #   desc:
-      #   field: True
-      #   default: True
+      - <<: *null_display
+      - type: warning_alert
+        desc: "Pretest will start: monitor progress in the output window"
     inputs:
-      - state: warn
-
-  warn:
+      - state: finish_pretest
+        
+  finish_pretest:
     description:
+    revert: 
+      options:
+        - state: run_pretest
     display:
-      # field: warning_alert
-      #   desc: <warning_alert> # use variable in display
-      # must be assigned to state_globals['external'][<var>] in <state>_enter
-      - type: note
-        # desc: _
-      # - type: check_box
-      #   desc: _
-      #   field: True
-      # - type: external
-      #   transition_result: True
+      - type: branch_radio_button
+        desc: Check the output window for pretest errors
+        field: components_choice
+        options:
+          - field: shutdown
+            desc: Finish pretest workflow
+            next: shutdown
+            default: True
+          - field: rerun_pretest
+            desc: Retry pretest
+            next: run_pretest
     inputs:
       - state: shutdown
-
+      - state: run_pretest
+          
   shutdown:
     description:
     display:

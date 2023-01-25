@@ -19,7 +19,9 @@ from . import config
 from . import utils
 
 # global vars -------------------------------------------------------------------------- #
-logger = np_logging.getLogger(__name__)
+logger = np_logging.getLogger(__name__) # logs will show full module path
+
+__name__ = "OpenEphys" # Service protocol operations will see just the 'class' name
 
 exc: Optional[BaseException] = None
 initialized: float = 0
@@ -76,7 +78,6 @@ def set_state(state: State) -> requests.Response:
     msg = {"mode": state.value}
     mode = requests.put(u := url(Endpoint.status), json.dumps(msg))
     logger.debug('%s <- set mode: %s', u, state.value)
-    time.sleep(.1)
     return mode
 
 def is_connected() -> bool:
@@ -181,13 +182,13 @@ def set_idle():
 def unlock_previous_recording():
     "stop rec/acquiring | set name to _temp_ | record briefly | acquire"
     set_idle()
-    time.sleep(.1)
+    time.sleep(.5)
     clear_open_ephys_name()
-    time.sleep(.1)
+    time.sleep(.5)
     start()
-    time.sleep(.1)
+    time.sleep(.5)
     stop()
-    time.sleep(.1)
+    time.sleep(.5)
 
 def get_record_nodes() -> list[dict[str, Any]]:
     """Returns a list of record node info dicts, incl keys `node_id`, `parent_directory`"""

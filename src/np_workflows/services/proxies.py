@@ -54,6 +54,9 @@ class Proxy(abc.ABC):
     # info
     exc: ClassVar[Optional[Exception]] = None
     
+    latest_start: ClassVar[int] = 0
+    "`time.time()` when the service was last started via `start()`."
+    
     @classmethod
     def ensure_config(cls) -> None:
         """Updates any missing parameters for class proxy. 
@@ -152,7 +155,7 @@ class Proxy(abc.ABC):
         if not glob:
             glob = f'*{cls.raw_suffix}' if hasattr(cls, 'raw_suffix') else '*'
         if not hasattr(cls, 'latest_start'):
-            return [max(utils.get_files_created_between(cls.data_root / subfolders, glob), key=lambda x: x.stat().st_ctime)]
+            return [max(utils.get_files_created_between(cls.data_root / subfolders, glob), key=lambda x: x.stat().st_mtime)]
         return utils.get_files_created_between(cls.data_root / subfolders, glob, cls.latest_start)
          
     @classmethod
@@ -439,6 +442,7 @@ class ScriptCamstim(Camstim):
     
     @classmethod
     def start(cls):
+        cls.latest_start = time.time()
         cls.get_proxy().start_script_from_path(cls.script)#, cls.params)
         
 class SessionCamstim(Camstim):
@@ -446,12 +450,14 @@ class SessionCamstim(Camstim):
     labtracks_mouse_id: ClassVar[int]
     @classmethod
     def start(cls):
+        cls.latest_start = time.time()
         cls.get_proxy().start_session(cls.labtracks_mouse_id, cls.lims_user_id)#, cls.params)
     
 class NoCamstim(Camstim):
-    "Run remote files (.bat) without sending directly to Camstim Agent"
+    "Run remote files (e.g. .bat) without sending directly to Camstim Agent"
     
     remote_file: ClassVar[str | pathlib.Path]
+    extra_args: ClassVar[list[str]] = []
     ssh: ClassVar[fabric.Connection]
     user: ClassVar[str] = 'svc_neuropix'
     password: ClassVar[str]
@@ -494,14 +500,20 @@ class NoCamstim(Camstim):
             if result.exited != 0:
                 raise TestFailure(f"{cls.__name__} Error accessing {cls.remote_file} on {cls.host} - is filepath correct? {result}")
             logger.debug(f"{cls.__name__} | {cls.remote_file} is accessible via ssh on {cls.host}")
-            
+        
     @classmethod
     def start(cls):
+        
         if cls.is_started():
             logger.warning(f"{cls.__name__} already started")
-            return 
+            return
         logger.debug(f"{cls.__name__} | Starting {cls.remote_file} on {cls.host}")
-        cls.get_ssh().run(f'call {cls.remote_file}')
+        cls.latest_start = time.time()
+        cls.get_ssh().run(f'call {cls.remote_file} {cls.extra_args}')
+    
+    @classmethod
+    def verify(cls):
+        logger.warning(f"{cls.__name__} | No verification implemented")
     
 class MouseDirector(CamstimSyncShared):
     host = Rig.Mon.host
@@ -631,6 +643,8 @@ class MVR(CamstimSyncShared):
 class ImageMVR(MVR):
     gb_per_hr: ClassVar[int | float]
     min_rec_hr: ClassVar[int | float]
+    label: ClassVar[str]
+    "Rename file after capture to include label"
     
     # TODO ready state is if Aux cam is_open
     @classmethod
@@ -649,6 +663,11 @@ class ImageMVR(MVR):
         cls.get_proxy().take_snapshot()
         
     @classmethod
+    def stop(cls):
+        "Overload parent method to do nothing"
+        pass
+    
+    @classmethod
     def is_started(cls) -> bool:
         for msg in cls.get_proxy().read():
             if msg.get('mvr_broadcast', '') == 'snapshot_converted':
@@ -659,12 +678,6 @@ class ImageMVR(MVR):
     
     # TODO
     @classmethod
-    def verify(cls) -> None:
-        logger.warning('%s.verify() not implemented', cls.__name__)
-    @classmethod
-    def stop(cls) -> None:
-        logger.warning('%s.stop() not implemented', cls.__name__)
-    @classmethod
     def validate(cls) -> None: 
         logger.warning('%s.validate() not implemented', cls.__name__)
     
@@ -672,16 +685,27 @@ class ImageMVR(MVR):
     def finalize(cls) -> None:
         logger.debug('Finalizing %s', cls.__name__)
         t0 = time.time()
-        timedout = lambda: time.time() > t0 + 5
-        while cls.is_started() and not timedout():
+        timedout = lambda: time.time() > t0 + 10
+        while (
+            (
+                cls.is_started() 
+                or not cls.is_ready_to_start()
+                or not cls.get_latest_data('*')
+                or cls.get_latest_data('.bmp')
+            ) 
+            and not timedout()
+            ):
             logger.debug("Waiting for %s to finish processing", cls.__name__)
             time.sleep(1) # TODO add backoff module
-        if timedout:
+        if timedout():
             logger.warning("Timed out waiting for %s to finish processing", cls.__name__)
             return
         if not hasattr(cls, 'data_files'):
             cls.data_files = []
-        cls.data_files.extend(new := cls.get_latest_data('*'))
+        new = cls.get_latest_data('*')
+        if hasattr(cls, 'label'):
+            new = [_.rename(_.with_stem(f"{_.stem}_{cls.label}")) for _ in new]
+        cls.data_files.extend(new)
         logger.debug("%s processing finished: %s", cls.__name__, [_.name for _ in new])
             
 class VideoMVR(MVR):
@@ -689,7 +713,7 @@ class VideoMVR(MVR):
     gb_per_hr: ClassVar[int | float]
     min_rec_hr: ClassVar[int | float]
     
-    raw_suffix: ClassVar[int | float] = '.mp4'
+    raw_suffix: ClassVar[str] = '.mp4'
     
     started_state = ('BUSY', 'RECORDING')
     
@@ -816,7 +840,7 @@ class JsonRecorder:
         return data
     
     @classmethod
-    def write(cls, new: dict) -> None:
+    def write(cls, value: dict) -> None:
         try:
             data = cls.read()
         except json.JSONDecodeError:
@@ -826,7 +850,7 @@ class JsonRecorder:
             cls.all_files.append(file)
         else:
             file = cls.get_current_log()
-        data.update(new)
+        data.update(value)
         file.write_text(json.dumps(data, indent=4, sort_keys=False, default=str))
         logger.debug('%s wrote to %s', __class__.__name__, file)
      
@@ -867,8 +891,11 @@ class NewScaleCoordinateRecorder(JsonRecorder):
     max_travel: ClassVar[float]
     log_name: ClassVar[str] = 'newscale_coords_{}.json'
     log_root: ClassVar[pathlib.Path] = pathlib.Path('.').resolve() #! move to config after testing
+    label: ClassVar[str] = '' 
+    "A label to tag each entry with"
+    latest_start: ClassVar[int] = 0
+    "`time.time()` when the service was last started via `start()`."
     
-
     @classmethod
     def get_current_data(cls) -> pathlib.Path:
         cls.ensure_config()
@@ -880,9 +907,9 @@ class NewScaleCoordinateRecorder(JsonRecorder):
             reader = csv.DictReader(_, fieldnames=cls.data_fieldnames)
             rows = list(reader)
         coords = {}
-        for row in reversed(rows):
-            if len(coords.keys()) == cls.num_probes:
-                break
+        for row in reversed(rows): # search for the most recent coordinates
+            if len(coords.keys()) == cls.num_probes: 
+                break # we have an entry for each probe
             if (m := row.pop(cls.data_fieldnames[1]).strip()) not in coords:
                 coords[m] = {}
                 for k, v in row.items():
@@ -892,12 +919,13 @@ class NewScaleCoordinateRecorder(JsonRecorder):
                     with contextlib.suppress(ValueError):
                         v = float(v)
                     coords[m].update({k: v})
-                
+        coords['label'] = cls.label
         logger.debug('%s retrieved coordinates: %s', cls.__name__, coords)
         return coords
     
     @classmethod
     def start(cls):
+        cls.latest_start = time.time()
         cls.write({str(datetime.datetime.now()): cls.get_coordinates()})
         
     @classmethod

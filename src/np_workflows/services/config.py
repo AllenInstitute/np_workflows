@@ -94,8 +94,12 @@ class Rig(Enum):
         obj.AIBS_ID = f"{cls.ID}-{suffix}"
         return obj
         # cls(self.name).value = cls.ID + suffix
-        
-        
+    
+    @classmethod    
+    @property
+    def idx(cls) -> int:
+        return cls.rig_str_to_int(RIG_ID)
+    
     @property
     def host(self):
         if "BTVTest.1-Acq" == self.value: 
@@ -153,6 +157,7 @@ class Rig(Enum):
         if str_match:
             return str_match[0]
         return None
+    
     @staticmethod
     def rig_str_with_digit(rig:str) -> Union[str,None]:
         # extract RIG_ID from str if possible

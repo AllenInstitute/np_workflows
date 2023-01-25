@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import pathlib
+import time
 import typing
 from typing import Any, Optional, Protocol, Union
 
@@ -13,64 +14,66 @@ class TestFailure(AssertionError): ...
 @typing.runtime_checkable
 class Initializable(Protocol):
     "Supports `initialize()`: runs setup or configuration to effectively reset the service for fresh use."
-    def initialize() -> None: ...
+    def initialize(self) -> None: ...
 @typing.runtime_checkable
 class Configurable(Initializable, Protocol):
-    "Supports `ensure_config()`: ensures all required parameters are set before use. Called in `initialize()`."
-    def ensure_config() -> None: ...
+    "Supports `config()`: ensures all required parameters are set before use. Called in `initialize()`."
+    def configure(self) -> None: ...
+    # def ensure_config(self) -> None: ...
     
 @typing.runtime_checkable
 class Testable(Protocol):
     "Supports `test()`: without creating new data, quickly confirms readiness for use, or raises `TestFailure`. Always called before first use. See `PreTestable` for comprehensive test."
-    def test() -> None: ...
+    def test(self) -> None: ...
     
 @typing.runtime_checkable
 class Pretestable(Protocol):
     "Supports `pretest()`: comprehensively tests service functionality and code by calling every class method critical for use. Should be expected to fail."
-    def pretest() -> None: ...
+    def pretest(self) -> None: ...
     
 @typing.runtime_checkable
 class Startable(Protocol):
-    "Supports `start()`, `is_ready_to_start()`, `is_started()`, `latest_start`"
-    def start() -> None: ...
-    "Starts stimulus/recording after checking `self.is_ready_to_start()`."
-    def is_ready_to_start() -> bool: ...
-    "The body of start() will not execute unless `is_ready_to_start()` returns `True`"
-    def is_started() -> bool: ...
-    "Prevents service from being re-started once started"  
+    "Supports `start()`, `latest_start`"
+    def start(self) -> None:
+        self.latest_start = time.time()
+    "Starts stimulus/recording and records current time in `latest_start`."
+    # def is_ready_to_start(self) -> bool: ...
+    # "The body of start() will not execute unless `is_ready_to_start()` returns `True`"
+    # def is_started(self) -> bool: ...
+    # "Prevents service from being re-started once started"  
     latest_start: int
     "Store `time.time()` in each `start()` so we can find files created afterward."
 @typing.runtime_checkable
 class Primeable(Startable, Protocol): #? PreStartable 
     "Supports `prime()`: makes ready for imminent `start()` by re-arming, running checks, etc. Called before `start()`."
-    def prime() -> None: ...
+    def prime(self) -> None: ...
     #? auto-run at beginning of `start()`?
 @typing.runtime_checkable
 class Verifiable(Startable, Protocol): #? PostStartable 
     "Supports `verify()`: asserts service has started, e.g. stimulus is running, data file is increasing in size etc., or raises `AssertionError`. Called after `start()` and checking `self.is_started()`."
-    def verify() -> None: ...
+    def verify(self) -> None: ...
     #? auto-run at end of `start()`?
     
 @typing.runtime_checkable
 class Stoppable(Protocol):
     "Supports `stop()`: stops or pauses stimulus/recording. Called after `start()`."
-    def stop() -> None: ...
+    def stop(self) -> None: ...
 @typing.runtime_checkable
 class Finalizable(Protocol):
     "Supports `finalize()`: handle results of most-recent `start()` or `stop()`. Cleanup, file management etc."
-    def finalize() -> None: ...
+    def finalize(self) -> None: ...
     #? if multiple start-stop loops: finalize altogether or individually?
     #? auto-run `finalize()` at end of `stop()`?
     
 @typing.runtime_checkable
 class Validatable(Protocol):
     "Supports `validate()`: asserts most-recent data are valid, or raises `AssertionError`.  Called after checking `self.is_started() is not True`."
-    def validate(data: Optional[pathlib.Path] = None) -> None: ...
+    def validate(self, data: Optional[pathlib.Path] = None) -> None: ...
 
 @typing.runtime_checkable
 class Shutdownable(Protocol):
     "Supports `shutdown()`: gracefully closes service. Called after `finalize()`."
-    def shutdown() -> None: ...
+    def shutdown(self) -> None: ...
     
 PreExperimentProtocols = Union[Initializable, Testable, Pretestable, Primeable, Startable]
 PostExperimentProtocols = Union[Stoppable, Finalizable, Validatable, Shutdownable]

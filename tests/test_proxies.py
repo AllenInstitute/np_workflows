@@ -7,6 +7,8 @@ os.environ['AIBS_RIG_ID'] = 'NP.0'
 
 from np_workflows.services import proxies, utils
 from np_workflows.services import open_ephys as OpenEphys
+from np_workflows.services import zro
+
 
 
 with utils.debug_logging():
