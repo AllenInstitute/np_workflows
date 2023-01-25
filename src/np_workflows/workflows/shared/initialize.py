@@ -101,10 +101,3 @@ def select_experiment_input(state_globals) -> None:
     npxc.experiment.initialize_services()
 
     
-# -------------------------------------------------------------------------------------- #
-
-# def initialize_experiment_enter(state_globals) -> None:
-#     state_globals["external"]["msg_text"] = 'Initializing services... check progress in output window'
-#     state_globals['external']['alert'] = True # T adds warning icon 
-# def initialize_experiment_input(state_globals) -> None:
-    

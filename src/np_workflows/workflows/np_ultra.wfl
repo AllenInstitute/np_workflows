@@ -83,26 +83,49 @@ states:
       - type: warning_alert
         desc: "Services will be initialized: monitor progress in the output window"
     inputs:
+      - state: manual_open_ephys_checks
+        
+        
+  manual_open_ephys_checks:
+    description:
+    revert:
+      options:
+        - state: select_experiment
+    display:
+      - type: note
+        desc: Before putting mouse on stage
+      - type: note
+        desc: "Manually check Open Ephys config:"
+      - <<: *null_display
+        desc: "Record Nodes set to A:/B: (or E:/G: on NP.3)"
+      - <<: *null_display
+        desc: "Disk space on each Record Node (single long vertical bar)"
+      - <<: *null_display
+        desc: Tip-reference on all probes
+      - <<: *null_display
+        desc: Barcodes displaying
+      - type: note 
+        desc: Further pre-mouse checks on next screen
+    inputs: 
       - state: pre_mouse_checks
         
   pre_mouse_checks:
     description:
     revert:
       options:
-        - state: select_experiment
+        - state: manual_open_ephys_checks
     display:
+      - type: note
+        desc: Before putting mouse on stage
       - <<: *null_display
-      - type: check_box
-        desc: "Open Ephys: tip-reference, channels, A:/B: disk space"
-      - type: check_box
         desc: Water lines flushed
-      - type: check_box
+      - <<: *null_display
         desc: "*add other checks*"
       - type: warning_alert
-        desc: Continue when mouse is on stage
+        desc: Load mouse on stage then continue
     inputs:
       - state: pre_flight_checks
-  
+        
   pre_flight_checks:
     description:
     revert:
@@ -110,14 +133,20 @@ states:
         - state: pre_mouse_checks
     display:
       - <<: *null_display
+      - type: note
+        desc: Before lowering cartridge
       - type: check_box
         desc: Stabilization screw
       - type: check_box
         desc: "Quickast, agarose/silicon oil"
       - type: check_box
         desc: Tail cone down, continuity check
+      - type: check_box
+        desc: Test lick spout
+      - type: check_box
+        desc: "*add other checks*"
       - type: warning_alert
-        desc: Continue when cartridge is lowered
+        desc: Lower cartridge then continue
     inputs:
       - state: capture_photodoc_0
 
@@ -146,7 +175,7 @@ states:
       - type: note
         desc: Advance probes to insertion depth
       - type: warning_alert
-        desc: Settle timer will begin 
+        desc: Continue to timer when probes reach target depth 
     inputs:
       - state: settle_timer
 
@@ -222,8 +251,8 @@ states:
           - desc: Exit loop
             next: capture_photodoc_2
     inputs:
-      - states: start_experiment_loop
-      - states: capture_photodoc_2
+      - state: start_experiment_loop
+      - state: capture_photodoc_2
         
   capture_photodoc_2: 
     <<: *capture_photodoc
@@ -252,7 +281,8 @@ states:
         desc: Added quickast
       - type: warning_alert
         desc: Files will transfer while mouse is returned
-    inputs: shutdown
+    inputs: 
+     - state: shutdown
 
   shutdown:
     description:

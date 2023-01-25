@@ -61,12 +61,17 @@ for state, label in photodoc_states_to_labels.items():
     )
 
 def start_experiment_loop_enter(state_globals) -> None:
-    if (trial_idx := npxc.get(state_globals, 'trial_idx')) is None:
-        npxc.set(state_globals, trial_idx=0)
-    else:
-        npxc.set(state_globals, trial_idx=trial_idx+1)
-    OpenEphys.folder = f'{trial_idx}_{npxc.experiment.session}'
+    npxc.experiment.advance_trial_idx(state_globals)
+
+def start_recording_input(state_globals) -> None:
+    npxc.experiment.start_recording()
+    
+def start_stimulus_input(state_globals) -> None:
+    npxc.experiment.start_stimulus()
         
+def stop_recording_input(state_globals) -> None:
+    npxc.experiment.stop_recording()
+       
 def settle_timer_enter(state_globals):
     # TODO move time to experiment.config
     npxc.set(state_globals, settle_time_total_sec=10*60)

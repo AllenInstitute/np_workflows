@@ -10,7 +10,7 @@ from typing import Any, Optional, Protocol, Union, Sequence, ClassVar, Type
 
 
 from np_workflows.services import config
-from np_workflows.services.protocols import Service
+from np_workflows.services.protocols import Service, Startable, Verifiable, Stoppable, Finalizable
 from np_workflows.services.proxies import ImageMVR, VideoMVR, Sync, NoCamstim, ScriptCamstim, SessionCamstim, JsonRecorder, NewScaleCoordinateRecorder
 from np_workflows.services import open_ephys as OpenEphys
 from np_workflows.experiments.baseclasses import Experiment, WithLims
@@ -33,6 +33,9 @@ class NpUltra(Experiment):
         ImageMVR, NewScaleCoordinateRecorder,
     )
     "Services called during photodoc capture."
+    stimulus_services: tuple[Service, ...] = (
+        NoCamstim,
+    )
     
     def __init__(self, labtracks_mouse_id) -> None:    
         #TODO deepmerge config dicts 
@@ -45,6 +48,49 @@ class NpUltra(Experiment):
         OpenEphys.folder = self.session
         NoCamstim.remote_file = pathlib.Path('C:/Users/svc_neuropix/Desktop/run_blue_opto.bat')
     
+    def advance_trial_idx(self, state_globals):
+        if not hasattr(self, 'trial_idx'):
+            self.trial_idx = 0
+        else: 
+            self.trial_idx += 1
+        state_globals['external']['trial_idx'] = self.trial_idx
+        OpenEphys.set_folder(f'{self.session}_{self.trial_idx}')
+    
+    @property
+    def initial_services(self) -> tuple[Service, ...]:
+        return tuple(set(self.services) - set(self.stimulus_services) - set(self.photodoc_services) ) 
+    
+    def start_recording(self):
+        for service in self.initial_services:
+            if isinstance(service, Startable):
+                service.start()
+        for service in self.initial_services:
+            if isinstance(service, Verifiable):
+                service.verify()
+                
+    def start_stimulus(self):
+        for service in self.stimulus_services:
+            if isinstance(service, Startable):
+                service.start()
+        for service in self.stimulus_services:
+            if isinstance(service, Verifiable):
+                service.verify()
+                
+    def stop_recording(self):
+        for service in self.stimulus_services:
+            if isinstance(service, Stoppable):
+                service.stop()
+        for service in self.services:
+            if isinstance(service, Stoppable):
+                service.stop()
+                
+        for service in self.stimulus_services:
+            if isinstance(service, Finalizable):
+                service.finalize()
+        for service in self.services:
+            if isinstance(service, Finalizable):
+                service.finalize()
+        
 class Pretest(WithLims):
         
     services: tuple[Service, ...] = (
