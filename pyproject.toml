@@ -26,7 +26,8 @@ poetry = {version = "*", optional = true}
 # greenlet = "1.1.2"
 # gevent = "21.1.2"
 pandas = "^1.5.3"
-pytables = {git = "https://github.com/avalentino/PyTables"}
+# pytables = {git = "https://github.com/avalentino/PyTables"}
+protobuf = "^4.21.12"
 
 [tool.poetry.extras]
 dev = [

@@ -161,4 +161,5 @@ cython_debug/
 
 .vscode/
 !.vscode/settings.json
-src/np_workflows/experiments/classes.py
+tests/test_proxies.py
+run.bat
