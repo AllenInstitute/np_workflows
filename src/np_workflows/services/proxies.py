@@ -254,7 +254,7 @@ class CamstimSyncShared(Proxy):
         "Assert latest data file is currently increasing in size, or raise AssertionError."
         if not cls.is_started():
             logger.warning("Cannot verify %s if not started: %s", cls.__name__, cls.get_state())
-            return
+            raise AssertionError(f"{cls.__name__} not started: {cls.get_state()}")
         if cls.data_root and not utils.is_file_growing(cls.get_latest_data()[-1]):
             raise AssertionError(f"{cls.__name__} latest data file is not increasing in size: {cls.get_latest_data()[-1]}")
         logger.debug("%s latest data file is increasing in size", cls.__name__)
@@ -727,7 +727,7 @@ class VideoMVR(MVR):
     def start(cls) -> None:
         cls.latest_start = time.time()
         cls.get_proxy().start_record(
-            record_time=365 * 60, #? copied from WSE - mins or sec? default is 80 * 60
+            record_time=365 * 60, # sec
         )
 
     @classmethod
@@ -737,7 +737,7 @@ class VideoMVR(MVR):
         # is unreliable
         if not cls.is_started():
             logger.warning("Cannot verify %s if not started: %s", cls.__name__, cls.get_state())
-            return
+            raise AssertionError(f"{cls.__name__} not started: {cls.get_state()}")
         if datetime.datetime.fromtimestamp(cls.latest_start) < datetime.datetime.now() - datetime.timedelta(seconds=cls.pretest_duration_sec):
             time.sleep(cls.pretest_duration_sec)
         if not (files := cls.get_latest_data()) or len(files) < len(cls.get_cameras_recording()):
