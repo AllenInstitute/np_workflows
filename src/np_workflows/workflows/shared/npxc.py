@@ -1,4 +1,6 @@
-from __future__ import annotations 
+from __future__ import annotations
+import datetime
+import time 
 
 try:
     #! the wse allows import errors to pass silently!
@@ -116,3 +118,27 @@ def initialize_services(state_globals) -> None:
                 
                 else:
                     break
+                
+def await_timer(state_globals: dict, wait_sec: int) -> datetime.timedelta:
+    """
+    Return timedelta until wait_sec is reached, then returns timedelta(0) which
+    evaluates to False in Boolean contexts.
+    
+    Usage::
+        >>> while time_remaining := await_timer(state_globals, wait_sec=600):
+                print(f'{time_remaining} remaining')
+                time.sleep(.1)
+            print('Finished waiting')
+    """
+    if not get(state_globals, 'timer_start'):
+        set(state_globals, timer_start=time.time()) # can't put datetime obj in state_globals['external']
+    
+    time_remaining = datetime.timedelta(
+        seconds = wait_sec - (time.time() - get(state_globals, 'timer_start'))
+        )
+    
+    if time_remaining.total_seconds() >= 0:
+        print(f'{time_remaining} remaining')
+        return time_remaining
+    set(state_globals, timer_start=0) # reset for re-use
+    return datetime.timedelta(0)

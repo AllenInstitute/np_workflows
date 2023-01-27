@@ -1,8 +1,8 @@
 # shared states ------------------------------------------------------------------------
 
-display: &null_display 
+display:
   # enables next arrow without input
-  display:
+  display: &null_display 
   - type: branch_radio_button
     field: null
     options:
@@ -16,12 +16,12 @@ display: &null_display
 capture_photodoc: &capture_photodoc
   description:
   display:
+    - <<: *null_display
     - type: note
       desc: Switch on light
     - type: note
       desc: Focus image
-    - <<: *null_display
-    - type: warning_alert
+    - type: note
       desc: "'<photodoc_label>' image will be captured"
   inputs:
     - state: review_photodoc
@@ -39,7 +39,7 @@ review_photodoc: &review_photodoc
     field: null
     options:
       - field: null
-        desc: Continue accept image or revert state to re-capture
+        desc: Continue to accept image or revert state to re-capture
         default: True
   inputs:
     - state: capture_photodoc
@@ -92,17 +92,17 @@ states:
       options:
         - state: select_experiment
     display:
-      - type: note
+      - type: warning_alert
         desc: Before putting mouse on stage
       - type: note
         desc: "Manually check Open Ephys config:"
-      - <<: *null_display
+      - type: check_box
         desc: "Record Nodes set to A:/B: (or E:/G: on NP.3)"
-      - <<: *null_display
+      - type: check_box
         desc: "Disk space on each Record Node (single long vertical bar)"
-      - <<: *null_display
+      - type: check_box
         desc: Tip-reference on all probes
-      - <<: *null_display
+      - type: check_box
         desc: Barcodes displaying
       - type: note 
         desc: Further pre-mouse checks on next screen
@@ -115,14 +115,14 @@ states:
       options:
         - state: manual_open_ephys_checks
     display:
-      - type: note
-        desc: Before putting mouse on stage
-      - <<: *null_display
-        desc: Water lines flushed
-      - <<: *null_display
-        desc: "*add other checks*"
       - type: warning_alert
-        desc: Load mouse on stage then continue
+        desc: Before putting mouse on stage
+      - type: check_box
+        desc: Water lines flushed
+      - type: note
+        desc: "*add other checks*"
+      - type: note
+        desc: Load mouse, then continue
     inputs:
       - state: pre_flight_checks
         
@@ -132,8 +132,7 @@ states:
       options:
         - state: pre_mouse_checks
     display:
-      - <<: *null_display
-      - type: note
+      - type: warning_alert
         desc: Before lowering cartridge
       - type: check_box
         desc: Stabilization screw
@@ -143,10 +142,10 @@ states:
         desc: Tail cone down, continuity check
       - type: check_box
         desc: Test lick spout
-      - type: check_box
-        desc: "*add other checks*"
-      - type: warning_alert
-        desc: Lower cartridge then continue
+      - type: note
+        desc: "*add any other checks*"
+      - type: note
+        desc: Lower cartridge, then continue
     inputs:
       - state: capture_photodoc_0
 
@@ -183,16 +182,10 @@ states:
     description:
     display:
       - type: note
-        desc: "<settle_time_remaining_sec> / <settle_time_total_sec>"
-      - type: branch_radio_button
-        options:
-          - field: null
-            desc: Await timer
-            next: settle_timer
-            default: True
-          - field: null
-            desc: Override and continue
-            next: capture_photodoc_1
+        desc: "<time_remaining> remaining"
+      - type: check_box
+        field: override_settle_timer
+        desc: Override timer and continue
     inputs:
       - state: capture_photodoc_1
 
@@ -216,7 +209,7 @@ states:
     description:
     display:
       - <<: *null_display
-      - type: warning_alert
+      - type: note
         desc: Services will start recording
     inputs:
       - state: start_stimulus
@@ -225,7 +218,7 @@ states:
     description:
     display:
       - <<: *null_display
-      - type: warning_alert
+      - type: note
         desc: Stimulus will start
     inputs:
       - state: stop_recording
@@ -233,7 +226,6 @@ states:
   stop_recording:
     description:
     display:
-      - type: note
       - <<: *null_display
       - type: warning_alert
         desc: Services will stop recording
@@ -274,18 +266,18 @@ states:
     description:
     display:
       - type: check_box
-        desc: Probes fully retracted
+        desc: "Fully retract probes (Z = 0 absolute)"
       - type: check_box
-        desc: Cartridge raised
+        desc: Raise cartridge in SmartMotor
       - type: check_box
         desc: Added quickast
       - type: warning_alert
         desc: Files will transfer while mouse is returned
     inputs: 
-     - state: shutdown
+     - state: cleanup
 
-  shutdown:
-    description:
+  cleanup:
+    description: Used when workflow is aborted 
     display:
       - type: workflow_complete
     inputs: None
