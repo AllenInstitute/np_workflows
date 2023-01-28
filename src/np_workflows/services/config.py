@@ -98,7 +98,7 @@ class Rig(Enum):
     @classmethod    
     @property
     def idx(cls) -> int:
-        return cls.rig_str_to_int(RIG_ID)
+        return int(cls.rig_str_to_int(RIG_ID))
     
     @property
     def host(self):

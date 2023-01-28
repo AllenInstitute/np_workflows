@@ -34,7 +34,7 @@ except Exception as exc:
     import pdb; pdb.set_trace()
     exit()
 
-
+npxc.start_rsc_apps()
 
 # name each photodoc state `capture_photodoc_<state>`, `review_photodoc_<state>`
 photodoc_states_to_labels = {

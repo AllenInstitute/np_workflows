@@ -16,6 +16,7 @@ from typing import Any, Generator, Literal, Mapping, Optional, Sequence, Type
 import np_config
 import np_logging 
 
+from np_workflows.services import zro
 from .config import Rig, RIG_ID
 from .protocols import Stoppable
 
@@ -34,6 +35,17 @@ def config_from_zk(rig: Optional[Literal[0, 1, 2]]=None) -> Mapping[str, Any]:
         common_config[k] = common_config.get(k, {}) | v
     return common_config
 
+def start_rsc_app(host, app_id) -> None:
+    rsc_node = zro.Proxy(host, 6000)
+    if rsc_node.p_status().get(app_id) == 0:
+        logger.info("Launching %s on %s via RSC", app_id, host)
+        rsc_node.p_start(app_id)
+        time.sleep(.1)
+        if rsc_node.p_status().get(app_id) != 0:
+            logger.warning("Failed to start %s", app_id)
+            return
+    logger.info("%s is running on %s", app_id, host)
+            
 @contextlib.contextmanager
 def debug_logging() -> Generator[None, None, None]:
     level_0 = logger.level

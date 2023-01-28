@@ -27,28 +27,10 @@ except Exception as exc:
     print(repr(exc))
     import pdb; pdb.set_trace()
     exit()
-
-# name each photodoc state `capture_photodoc_<state>`, `review_photodoc_<state>`
-photodoc_states_to_labels = {
-    0: 'pretest',
-    }
-for state, label in photodoc_states_to_labels.items():
-    exec(
-        f"""def capture_photodoc_{state}_enter(state_globals):
-            npxc.set(state_globals, photodoc_label='{label}')
-        """
-    )
-    exec(
-        f"""def capture_photodoc_{state}_input(state_globals):
-            capture_photodoc_input(state_globals)
-        """
-    )
-    exec(
-        f"""def review_photodoc_{state}_enter(state_globals):
-            review_photodoc_enter(state_globals)
-        """
-    )
     
+npxc.start_rsc_apps()
+
+# name each photodoc state `capture_photodoc_<state>`, `review_photodoc_<stat
 if False:
     def msg_enter(state_globals) -> None: 
         state_globals["external"]["transition_result"] = False # T/F just sets text at bottom green/red - switches to T in next state

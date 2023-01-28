@@ -12,9 +12,12 @@ try:
     from np_workflows.experiments import baseclasses, classes
     from np_workflows.experiments.baseclasses import Experiment
     from np_workflows.services.protocols import Initializable, Testable, TestFailure
+    from np_workflows.services.config import Rig
+    from np_workflows.services import zro, utils
     
     import np_session
     import np_logging
+    import np_config
     
 except Exception as exc:
     print(repr(exc))
@@ -68,6 +71,15 @@ def get_operators() -> list[str]:
 def get_experiments(with_lims: bool = True) -> list[str]:
     return [cls.__name__ for cls in experiments if with_lims or not issubclass(cls, baseclasses.WithLims)]
 
+def start_rsc_apps() -> None:
+    rsc_app_ids_required = np_config.from_zk(f'/rigs/{Rig.ID}')['rsc_app_ids_required']
+    for comp in (Rig.Sync, Rig.Stim, Rig.Mon, Rig.Acq):
+        rsc_node = zro.Proxy(comp.host, 6000)
+        status = rsc_node.p_status()
+        if any(apps_required_in_node := [_ for _ in rsc_app_ids_required if _ in status]):
+            for app in apps_required_in_node:
+                rsc_node.p_start(app)
+        
 def set(state_globals, **kwargs) -> None:
     "Update `state_globals['external'][key]` with kwargs"
     state_globals['external'].update(kwargs)
