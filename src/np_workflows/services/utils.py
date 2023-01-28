@@ -48,12 +48,13 @@ def start_rsc_app(host, app_id) -> None:
             
 @contextlib.contextmanager
 def debug_logging() -> Generator[None, None, None]:
-    level_0 = logger.level
-    logger.setLevel(logging.DEBUG)
+    root_logger = logging.getLogger()
+    level_0 = root_logger.level
+    root_logger.setLevel(logging.DEBUG)
     try:
         yield
     finally:
-        logger.setLevel(level_0)
+        root_logger.setLevel(level_0)
 
 @contextlib.contextmanager
 def stop_on_error(obj: Stoppable, reraise=True):
