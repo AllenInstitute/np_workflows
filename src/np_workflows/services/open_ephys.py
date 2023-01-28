@@ -14,9 +14,8 @@ from typing import Any, Optional, Sequence
 import requests
 import np_logging
 
-from . import protocols
-from . import config
-from . import utils
+from np_workflows.services import utils, config, protocols, zro
+from np_workflows.services.protocols import TestFailure
 
 # global vars -------------------------------------------------------------------------- #
 logger = np_logging.getLogger(__name__) # logs will show full module path
@@ -31,6 +30,9 @@ host: str = config.Rig.Acq.host
 port: str | int = 37497 # 1-800-EPHYS
 latest_start: float = 0
 "`time.time()` when the service was last started via `start()`."
+
+# for launching:
+rsc_app_id = 'open-ephys'
 
 # device records:
 gb_per_hr: int | float = 250 # per drive
@@ -55,14 +57,22 @@ class Endpoint(enum.Enum):
     recording = "recording"
     processors = "processors"
     message = "message"
-
+    
+def launch() -> None:
+    utils.start_rsc_app(host, rsc_app_id)
+        
 def pretest() -> None:
+    logger.info("OpenEphys | Starting pretest")
+    global folder
+    folder = '_pretest_'
     initialize()
     test()
-    start()
-    time.sleep(pretest_duration_sec)
-    verify()
-    stop()
+    try:
+        start()
+        time.sleep(pretest_duration_sec)
+        verify()
+    finally:
+        stop()
     finalize()
     validate()
 
@@ -102,18 +112,43 @@ def is_connected() -> bool:
 
 def initialize() -> None:
     logger.info("OpenEphys | Initializing")
+    launch()
     global data_files
     data_files = []
     global initialized
     initialized = time.time()
-    test()
     set_folder(folder)
+    
+def get_required_disk_gb() -> int | float:
+    """The minimum amount of free disk space required to start recording."""
+    return gb_per_hr * min_rec_hr
 
+def is_disk_space_ok() -> bool:
+    global exc
+    exc = None
+    required = get_required_disk_gb()
+    for data_root in get_data_roots():
+        try:
+            free = utils.free_gb(data_root)
+        except FileNotFoundError as exc:
+            exc = exc
+            logger.exception(f"{__name__} data path not accessible: {data_root}")
+        else:
+            logger.info('%s free disk space on %s: %s GB', __name__, data_root.drive, free)
+            if free < required:
+                exc = ValueError(f"{__name__} free disk space on {data_root.drive} doesn't meet minimum of {required} GB")
+        if exc:
+            return False
+        return True
+       
 def test() -> None:
     logger.info("OpenEphys | Testing")
     if not is_connected():
         if exc:
             raise exc
+    gb = get_required_disk_gb()
+    if not is_disk_space_ok():
+        raise TestFailure(f"{__name__} free disk space on one or more recording drives doesn't meet minimum of {gb} GB") from exc
 
 def is_started() -> bool:
     if get_state() == State.record.value:
@@ -160,7 +195,7 @@ def set_folder(name: str,  prepend_text: Optional[str] = "", append_text: Option
     recording['base_text'] = name
     recording['prepend_text'] = prepend_text
     recording['append_text'] = append_text
-    
+    logger.debug("OpenEphys | Setting recording directory to: %s" , prepend_text+name+append_text)
     response = requests.put(url(Endpoint.recording), json.dumps(recording))
     time.sleep(.1)
     if (actual := response.json().get('base_text')) != name:
@@ -181,6 +216,7 @@ def set_idle():
     
 def unlock_previous_recording():
     "stop rec/acquiring | set name to _temp_ | record briefly | acquire"
+    logger.debug('OpenEphys | Unlocking previous recording')
     set_idle()
     time.sleep(.5)
     clear_open_ephys_name()
@@ -214,24 +250,11 @@ def verify() -> None:
                 break
         else:
             raise protocols.TestFailure(f"OpenEphys | Data file(s) not increasing in size in {data_dir}")
-
+    logger.info('OpenEphys | Verified files are increasing in size for all Record Nodes')
+    
 def validate() -> None:
     logger.warning('OpenEphys | validate() not implemented')
 
-if __name__ == "__main__":
-    # testing on np.0
-    host = 'W10DT713842'
-    
-    print(get_latest_data_dirs())
-    
-    # msg = {"mode": State.acquire.value}
-    # print(requests.put(url(Endpoint.status), json.dumps(msg)).json())
-    # print(get_state())
-    # start()
-    # print(get_state())
-    # time.sleep(.5)
-    # stop()
-    # print(get_state())
     
     
 
