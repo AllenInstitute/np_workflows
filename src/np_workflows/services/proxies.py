@@ -42,6 +42,9 @@ class Proxy(abc.ABC):
     timeout: ClassVar[float]
     serialization: ClassVar[Literal['json', 'pickle']]
     
+    # if a program needs to be launched (e.g. via RSC):
+    rsc_app_id: str 
+    
     # if device records:
     gb_per_hr: ClassVar[int | float]
     min_rec_hr: ClassVar[int | float]
@@ -102,11 +105,16 @@ class Proxy(abc.ABC):
             cls.data_root.mkdir(parents=True, exist_ok=True)
     
     @classmethod
+    def launch(cls) -> None:
+        utils.start_rsc_app(cls.host, cls.rsc_app_id)
+        
+        
+    @classmethod
     def initialize(cls) -> None:
+        cls.launch()
         with contextlib.suppress(AttributeError):
             del cls.proxy
         cls.proxy = cls.get_proxy()
-        cls.test()
         if isinstance(cls, Startable) and not cls.is_ready_to_start():
             if isinstance(cls, Finalizable):
                 cls.finalize()
@@ -239,6 +247,7 @@ class CamstimSyncShared(Proxy):
         with utils.debug_logging():
             logger.debug('Starting %s pretest', cls.__name__)
             cls.initialize() # calls test()
+
             with utils.stop_on_error(cls):
                 cls.start()
                 time.sleep(1)
@@ -271,7 +280,8 @@ class Sync(CamstimSyncShared):
     host = Rig.Sync.host
     started_state = ("BUSY", "RECORDING")
     raw_suffix: ClassVar[int | float] = '.sync'
-     
+    rsc_app_id: str = 'sync_device'
+    
     @classmethod
     def ensure_config(cls) -> None:
         """Updates any missing parameters for class proxy. 
@@ -324,7 +334,7 @@ class Sync(CamstimSyncShared):
         while not cls.is_ready_to_start():
             logger.debug("Waiting for %s to finish processing", cls.__name__)
             time.sleep(1) # TODO add backoff module
-        if not hasattr(cls,'data_files'):
+        if not cls.data_files:
             cls.data_files = []
         cls.data_files.extend(new := cls.get_latest_data('*.h5'))
         logger.debug("%s processing finished: %s", cls.__name__, [_.name for _ in new])
@@ -381,12 +391,21 @@ class Sync(CamstimSyncShared):
             raise FileNotFoundError(f"Expected .sync to be converted to .h5 immediately after recording stopped: {data}")
         logger.debug('%s minimal validation passed for %s', cls.__name__, data.name)
 
+class Phidget(CamstimSyncShared):
+    host = Rig.Stim.host
+    rsc_app_id = 'phidget_server'
     
 class Camstim(CamstimSyncShared):
     
     host = Rig.Stim.host
     started_state = ("BUSY", "Script in progress.")
+    rsc_app_id = 'camstim_agent'
     
+    @classmethod
+    def launch(cls) -> None:
+        super().launch()
+        Phidget.launch()
+        
     @classmethod
     def get_config(cls) -> dict[str, Any]:
         return cls.get_proxy().config
@@ -432,18 +451,36 @@ class Camstim(CamstimSyncShared):
                     raise FileNotFoundError(f"{cls.__name__} data path is not accessible: {root}") from exc
                 else:
                     cls.data_root = root
-        if hasattr(cls, 'data_root'):
+        if hasattr(cls, 'data_root') and cls.data_root is not None:
             cls.data_root.mkdir(parents=True, exist_ok=True)
     
+    @classmethod
+    def finalize(cls) -> None:
+        logger.info('Finalizing %s', cls.__name__)
+        if cls.is_started():
+            cls.stop()
+        while not cls.is_ready_to_start():
+            logger.debug("Waiting for %s to finish processing", cls.__name__)
+            time.sleep(1) # TODO add backoff module
+        if not cls.data_files:
+            cls.data_files = []
+        cls.data_files.extend(new := cls.get_latest_data('*.pkl'))
+        logger.info("%s added new data: %s", cls.__name__, [_.name for _ in new])
+        
 class ScriptCamstim(Camstim):
     script: ClassVar[str]
     "path to script on Stim computer"
     params: ClassVar[dict[str, Any]] = {}
     
     @classmethod
+    def pretest(cls) -> None:
+        cls.script = 'C:/ProgramData/StimulusFiles/dev/bi_script_pretest_v2.py'
+        super().pretest()
+        
+    @classmethod
     def start(cls):
         cls.latest_start = time.time()
-        cls.get_proxy().start_script_from_path(cls.script)#, cls.params)
+        cls.get_proxy().start_script_from_path(cls.script, cls.params)
         
 class SessionCamstim(Camstim):
     lims_user_id: ClassVar[str]
@@ -452,6 +489,12 @@ class SessionCamstim(Camstim):
     def start(cls):
         cls.latest_start = time.time()
         cls.get_proxy().start_session(cls.labtracks_mouse_id, cls.lims_user_id)#, cls.params)
+    
+    @classmethod
+    def pretest(cls) -> None:
+        cls.labtracks_mouse_id = 598796
+        cls.lims_user_id = 'ben.hardcastle'
+        super().pretest()
     
 class NoCamstim(Camstim):
     "Run remote files (e.g. .bat) without sending directly to Camstim Agent"
@@ -462,6 +505,11 @@ class NoCamstim(Camstim):
     user: ClassVar[str] = 'svc_neuropix'
     password: ClassVar[str]
     
+    # @classmethod
+    # def pretest(cls) -> None:
+    #     cls.remote_file = 
+    #     super().pretest()
+        
     @classmethod
     def get_ssh(cls) -> fabric.Connection:
         with contextlib.suppress(AttributeError):
@@ -676,6 +724,11 @@ class ImageMVR(MVR):
                 return False
         return False
     
+    @classmethod
+    def verify(cls):
+        "Overload parent method to do nothing"
+        pass
+    
     # TODO
     @classmethod
     def validate(cls) -> None: 
@@ -700,10 +753,10 @@ class ImageMVR(MVR):
         if timedout():
             logger.warning("Timed out waiting for %s to finish processing", cls.__name__)
             return
-        if not hasattr(cls, 'data_files'):
+        if not hasattr(cls, 'data_files') or not cls.data_files:
             cls.data_files = []
         new = cls.get_latest_data('*')
-        if hasattr(cls, 'label'):
+        if hasattr(cls, 'label') and cls.label:
             new = [_.rename(_.with_stem(f"{_.stem}_{cls.label}")) for _ in new]
         cls.data_files.extend(new)
         logger.debug("%s processing finished: %s", cls.__name__, [_.name for _ in new])

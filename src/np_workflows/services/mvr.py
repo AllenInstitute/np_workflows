@@ -95,7 +95,7 @@ class MVRConnector:
         _send creates json from the dictionary and sends it as a byte object
         """
         msg = json.dumps(msg).encode()
-        logger.debug('%s | Sending: %s', __class__.__name__, pformat(msg))
+        logger.debug('%s | Sending: %s', __class__.__name__, msg)
         if not self._mvr_connected:
             self.connect_to_mvr()
         if not self._mvr_connected:
@@ -140,10 +140,10 @@ class MVRConnector:
         return self.read()
 
     def start_record(self, file_name_prefix='', sub_folder='.', record_time=4800):
-        self._send({"mvr_request": "start_record",
-                    "sub_folder": sub_folder,
-                    "file_name_prefix": file_name_prefix,
-                    "recording_time": record_time,
+        self._send({'mvr_request': 'start_record',
+                    'sub_folder': sub_folder,
+                    'file_name_prefix': file_name_prefix,
+                    'recording_time': record_time,
                     })
 
     def start_single_record(self, host, file_name_prefix='', sub_folder='.', record_time=4800):

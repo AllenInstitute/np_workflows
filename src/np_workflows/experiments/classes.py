@@ -25,7 +25,7 @@ logger = np_logging.getLogger(__name__)
 class NpUltra(Experiment):
         
     services: tuple[Service, ...] = (
-        Sync, OpenEphys, ImageMVR, VideoMVR, NewScaleCoordinateRecorder, NoCamstim,
+        Sync, OpenEphys, ImageMVR, NewScaleCoordinateRecorder, NoCamstim,
     )
     "All services used in the experiment that support Service protocols."
     
