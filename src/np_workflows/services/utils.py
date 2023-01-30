@@ -95,7 +95,7 @@ def unc_to_local(path: pathlib.Path) -> pathlib.Path:
     comp = os.environ["COMPUTERNAME"]
     if comp in path.drive:
         drive = path.drive.split('\\')[-1]
-        drive = drive - '$' if drive[-1] == '$' else drive
+        drive = drive[:-1] if drive[-1] == '$' else drive
         drive = drive + ':' if drive[-1] != ':' else drive 
         drive += '\\'
         path =  pathlib.Path(drive, path.relative_to(path.drive))
