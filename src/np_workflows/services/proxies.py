@@ -480,7 +480,7 @@ class ScriptCamstim(Camstim):
     @classmethod
     def start(cls):
         cls.latest_start = time.time()
-        cls.get_proxy().start_script_from_path(cls.script, cls.params)
+        cls.get_proxy().start_script(cls.script, cls.params)
         
 class SessionCamstim(Camstim):
     lims_user_id: ClassVar[str]

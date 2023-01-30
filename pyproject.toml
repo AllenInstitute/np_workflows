@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "np-workflows"
-version = "0.1.0"
+version = "0.1.3"
 description = "Ecephys and behavior workflows for the Mindscope Neuropixels team."
 authors = ["Ben Hardcastle <ben.hardcastle@alleninstitute.org>"]
 readme = "README.md"
@@ -14,7 +14,7 @@ np_config = "*"
 np_session = "*"
 np_logging = "*"
 backoff = "*"
-pyzmq = "^19.0"
+pyzmq = "*"
 fabric = "^2.7.1"
 pip-tools = {version = "*", optional = true}
 isort = {version = "*", optional = true}
