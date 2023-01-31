@@ -42,7 +42,7 @@ pretest_duration_sec: int | float = .5
 # for resulting data:
 folder: str #! required
 "The string that will be sent to Open Ephys to name the recording: typically `0123456789_366122_20220618`"
-data_files: Sequence[pathlib.Path] = []
+data_files: list[pathlib.Path] = []
 "Storage for paths collected over the experiment."
 data_root: Optional[pathlib.Path] = None
 # -------------------------------------------------------------------------------------- #
