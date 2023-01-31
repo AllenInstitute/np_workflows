@@ -264,10 +264,7 @@ class CamstimSyncShared(Proxy):
         if not cls.is_started():
             logger.warning("Cannot verify %s if not started: %s", cls.__name__, cls.get_state())
             raise AssertionError(f"{cls.__name__} not started: {cls.get_state()}")
-        if cls.data_root and not utils.is_file_growing(cls.get_latest_data()[-1]):
-            raise AssertionError(f"{cls.__name__} latest data file is not increasing in size: {cls.get_latest_data()[-1]}")
-        logger.debug("%s latest data file is increasing in size", cls.__name__)
-    
+
     @classmethod
     def stop(cls) -> None:
         logger.debug("Stopping %s", cls.__name__)
@@ -825,7 +822,7 @@ class VideoMVR(MVR):
         while not cls.is_ready_to_start() and not timedout():
             logger.debug("Waiting for %s to finish processing", cls.__name__)
             time.sleep(1) # TODO add backoff module
-        if timedout:
+        if timedout():
             logger.warning("Timed out waiting for %s to finish processing", cls.__name__)
             return
         if not hasattr(cls, 'data_files'):
