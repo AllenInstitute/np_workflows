@@ -378,6 +378,14 @@ class Sync(CamstimSyncShared):
             cls.full_validation(data)
     
     @classmethod
+    def verify(cls) -> None:
+        "Assert latest data file is currently increasing in size, or raise AssertionError."
+        super().verify()
+        if cls.data_root and not utils.is_file_growing(cls.get_latest_data()[-1]):
+            raise AssertionError(f"{cls.__name__} latest data file is not increasing in size: {cls.get_latest_data()[-1]}")
+        logger.debug("%s latest data file is increasing in size", cls.__name__)
+    
+    @classmethod
     def full_validation(cls, data: pathlib.Path) -> None:
         line_labels: dict = cls.get_config()['line_labels']
         # TODO 
