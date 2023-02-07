@@ -87,3 +87,14 @@ def initialize_services() -> None:
                 else:
                     break
                 
+def print_countdown_timer(seconds: int | float | datetime.timedelta = 0, **kwargs):
+    """Block execution for a given number of seconds (or any timedelta kwargs), printing a countdown timer to the console."""
+    if isinstance(seconds, datetime.timedelta):
+        wait = seconds
+    else:
+        wait = datetime.timedelta(seconds = seconds, **kwargs)
+    time_0: float = time.time()
+    time_remaining = lambda: datetime.timedelta(seconds = wait.total_seconds() - (time.time() - time_0))
+    while time_remaining().total_seconds() > 0:
+        print(f'Waiting {wait}: \t{time_remaining()}', end='\r', flush=True)
+        time.sleep(.1)
