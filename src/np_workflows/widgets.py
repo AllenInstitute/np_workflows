@@ -133,7 +133,7 @@ def mtrain_widget(labtracks_mouse_id: str | int) -> IPython.display.DisplayHandl
 
 def isi_widget(
         labtracks_mouse_id: str | int | np_session.LIMS2MouseInfo,
-        show_colormap: bool = False,
+        colormap: bool = False,
     ) -> IPython.display.DisplayHandle | None:
     """Displays ISI target map from lims (contours only), or colormap overlay if
     `show_colormap = True`."""
@@ -142,7 +142,7 @@ def isi_widget(
     else:
         lims_info = labtracks_mouse_id
     
-    if show_colormap:
+    if colormap:
         key = 'isi_image_overlay_path'
     else:
         key = 'target_map_image_path'
