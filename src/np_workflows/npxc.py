@@ -1,42 +1,33 @@
 from __future__ import annotations
 import datetime
 import time 
+import inspect
+from typing import Any, Type
 
-try:
-    #! the wse allows import errors to pass silently!
-    #* put all imports in this try block so that we can see the error before exiting
-    
-    import inspect
-    from typing import Any, Type
+# from np_workflows.models import baseclasses, classes
+# from np_workflows.models.baseclasses import Experiment
+# from np_workflows.models import utils
+# # from np_services import Initializable, Testable, TestFailure
+from np_config import Rig
 
-    from np_workflows.models import baseclasses, classes
-    from np_workflows.models.baseclasses import Experiment
-    from np_workflows.models import zro, utils
-    from np_services import Initializable, Testable, TestFailure
-    from np_config import Rig
-    
-    import np_session
-    import np_logging
-    import np_config
-    
-except Exception as exc:
-    print(repr(exc))
-    import pdb; pdb.set_trace()
-    quit()
+import np_session
+import np_logging
+import np_config
+
     
 logger = np_logging.getLogger(__name__)
 
 # Assign default values to global variables so they can be imported elsewhere
-experiment: Experiment | str = ''
+# experiment: Experiment | str = ''
 operator: np_session.User | str = ''
 mouse: np_session.Mouse | str = ''
 is_mouse_in_lims: bool | None = None
 session: np_session.Session | str | int = ''
 
-experiments: tuple[Type[Experiment], ...] = (
-    classes.Pretest,
-    classes.NpUltra,
-    ) # TODO plug-in experiments
+# experiments: tuple[Type[Experiment], ...] = (
+#     classes.Pretest,
+#     classes.NpUltra,
+#     ) # TODO plug-in experiments
 
 # TODO get userlist from np_config on per-rig basis
 lims_user_ids: tuple[str, ...] = (         
@@ -96,23 +87,3 @@ def initialize_services() -> None:
                 else:
                     break
                 
-def await_timer(state_globals: dict, wait_sec: int) -> datetime.timedelta:
-    """
-    Return timedelta until wait_sec is reached, then returns timedelta(0) which
-    evaluates to False in Boolean contexts.
-    
-    Usage::
-        >>> while time_remaining := await_timer(state_globals, wait_sec=600):
-                print(f'{time_remaining} remaining')
-                time.sleep(.1)
-            print('Finished waiting')
-    """    
-    time_remaining = datetime.timedelta(
-        seconds = wait_sec - (time.time() - get(state_globals, 'timer_start'))
-        )
-    
-    if time_remaining.total_seconds() >= 0:
-        print(f'{time_remaining} remaining')
-        return time_remaining
-    set(state_globals, timer_start=0) # reset for re-use
-    return datetime.timedelta(0)
