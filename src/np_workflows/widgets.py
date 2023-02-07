@@ -12,6 +12,7 @@ import PIL.Image
 import np_config
 import np_session
 
+import np_workflows.npxc
 if 'start_time' not in globals():
     start_time = time.time()
     
@@ -30,9 +31,23 @@ def elapsed_time_widget() -> IPython.display.DisplayHandle | None:
             time.sleep(0.2)
     thread = threading.Thread(target=update_timer, args=())
     thread.start()
-    return IPython.display.display(widget)
 
 
+def user_and_mouse_widget() -> tuple[np_session.User, np_session.Mouse]:
+    user_widget = ipw.Select(options=np_workflows.npxc.lims_user_ids, description='User:')
+    mouse_widget = ipw.Text(value='366122', description='Mouse:')
+    user = np_session.User(str(user_widget.value))
+    mouse = np_session.Mouse(str(mouse_widget.value))
+    def new_user(change) -> None:
+        user.__init__(str(user_widget.value))
+    def new_mouse(change) -> None:
+        mouse.__init__(str(mouse_widget.value))
+    user_widget.observe(new_user)
+    mouse_widget.observe(new_mouse)
+    IPython.display.display(ipw.VBox([user_widget, mouse_widget]))
+    return user, mouse
+    
+    
 def mtrain_widget(labtracks_mouse_id: str | int | np_session.Mouse) -> IPython.display.DisplayHandle | None:
     """Displays a widget to view and edit MTrain regimen/stage for a mouse.
     """
