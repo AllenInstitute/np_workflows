@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "np-workflows"
-version = "0.1.5"
+version = "1.0.1"
 description = "Ecephys and behavior workflows for the Mindscope Neuropixels team."
 authors = ["Ben Hardcastle <ben.hardcastle@alleninstitute.org>"]
 readme = "README.md"
@@ -8,31 +8,21 @@ packages = [{include = "np_workflows", from = "src"}]
 include = ["notebooks/*"]
 
 [tool.poetry.dependencies]
-python = "^3.9"
-requests = "*"
+python = "^3.10"
+# np_services = "*"
 np_config = "*"
 np_session = "*"
 np_logging = "*"
-backoff = "*"
-pyzmq = "*"
-fabric = "^2.7.1"
+np_probe_targets = "*"
+np_datajoint = "*"
+jupyterlab = "*"
+ipywidgets = "^7.0"
 pip-tools = {version = "*", optional = true}
 isort = {version = "*", optional = true}
 mypy = {version = "*", optional = true}
 black = {version = "*", optional = true}
 pytest = {version = "*", optional = true}
 poetry = {version = "*", optional = true}
-# zope-event = "4.5.0"
-# zope-interface = "5.3.0"
-# greenlet = "1.1.2"
-# gevent = "21.1.2"
-pandas = "^1.5.3"
-# pytables = {git = "https://github.com/avalentino/PyTables"}
-protobuf = "^4.21.12"
-jupyterlab = "*"
-ipywidgets = "^7.0"
-ipython = "*"
-np-probe-targets = "^0.0.6"
 
 [tool.poetry.extras]
 dev = [
