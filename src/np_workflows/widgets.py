@@ -13,13 +13,16 @@ import np_config
 import np_session
 
 import np_workflows.npxc
-if 'start_time' not in globals():
-    start_time = time.time()
-    
+
 def elapsed_time_widget() -> IPython.display.DisplayHandle | None:
-    """Displays a clock showing the elapsed time since the kernel was restarted."""
-    widget = ipw.Label('')
+    """Displays a clock showing the elapsed time since the cell was first run."""
+    
+    clock_widget = ipw.Label('')
+    reminder_widget = ipw.Label('Remember to restart the kernel for every experiment!')
     global start_time
+    if 'start_time' not in globals():
+        start_time = time.time()
+        
     if isinstance(start_time, datetime.datetime):
         start_time = start_time.timestamp()
     def update_timer() -> NoReturn:
@@ -27,10 +30,15 @@ def elapsed_time_widget() -> IPython.display.DisplayHandle | None:
             elapsed_sec = time.time() - start_time
             hours, remainder = divmod(elapsed_sec, 3600)
             minutes, seconds = divmod(remainder, 60)
-            widget.value = 'Time since kernel restarted: {:02}h:{:02}m:{:02}s'.format(int(hours), int(minutes), int(seconds))
+            clock_widget.value = 'Elapsed time: {:02}h {:02}m {:02}s'.format(int(hours), int(minutes), int(seconds))
+            if hours > 4: # ipywidgets >= 8.0 
+                clock_widget.style = dict(
+                    text_color='red',
+                )
             time.sleep(0.2)
     thread = threading.Thread(target=update_timer, args=())
     thread.start()
+    return IPython.display.display(ipw.VBox([clock_widget, reminder_widget]))
 
 
 def user_and_mouse_widget() -> tuple[np_session.User, np_session.Mouse]:
