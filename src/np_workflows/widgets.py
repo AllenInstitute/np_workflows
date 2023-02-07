@@ -33,11 +33,14 @@ def elapsed_time_widget() -> IPython.display.DisplayHandle | None:
     return IPython.display.display(widget)
 
 
-def mtrain_widget(labtracks_mouse_id: str | int) -> IPython.display.DisplayHandle | None:
+def mtrain_widget(labtracks_mouse_id: str | int | np_session.Mouse) -> IPython.display.DisplayHandle | None:
     """Displays a widget to view and edit MTrain regimen/stage for a mouse.
     """
-    mtrain = np_session.MTrain(labtracks_mouse_id)
-    
+    if not isinstance(labtracks_mouse_id, np_session.Mouse):
+        mtrain = np_session.MTrain(labtracks_mouse_id)
+    else:
+        mtrain = labtracks_mouse_id.mtrain
+        
     all_regimens = mtrain.get_all('regimens')
     regimen_names = sorted(_['name'] for _ in all_regimens)
     
