@@ -161,5 +161,3 @@ cython_debug/
 
 .vscode/
 !.vscode/settings.json
-tests/test_proxies.py
-run.bat
