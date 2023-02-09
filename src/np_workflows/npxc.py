@@ -29,19 +29,28 @@ session: np_session.Session | str | int = ''
 #     classes.NpUltra,
 #     ) # TODO plug-in experiments
 
-# TODO get userlist from np_config on per-rig basis
-lims_user_ids: tuple[str, ...] = (         
-        "hannah.belski",
-        "hannah.cabasco",
-        "ryan.gillis",
-        "henry.loeffler",
-        "corbettb",
-        "ben.hardcastle",
-        "samg",
-        "ethan.mcbride",
-        "jackie.kuyat",
-        "andrew.shelton",
+CONFIG = np_config.Rig().config
+
+lims_user_ids: tuple[str, ...] = tuple(
+    sorted(
+        CONFIG.get('lims_user_ids',
+            [
+            "hannah.belski",
+            "hannah.cabasco",
+            "ryan.gillis",
+            "henry.loeffler",
+            "corbettb",
+            "ben.hardcastle",
+            "samg",
+            "ethan.mcbride",
+            "jackie.kuyat",
+            "andrew.shelton",
+            ]
+        )
     )
+)
+
+default_mouse_id: int = int(CONFIG.get('default_mouse_id', 366122))
 
 def get_operators() -> list[str]:
     return list(lims_user_ids)
