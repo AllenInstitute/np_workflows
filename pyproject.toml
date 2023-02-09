@@ -9,14 +9,11 @@ include = ["notebooks/*"]
 
 [tool.poetry.dependencies]
 python = "^3.10"
-# np_services = "*"
-np_config = "*"
-np_session = "*"
-np_logging = "*"
+np_services = "*"
 np_probe_targets = "*"
 np_datajoint = "*"
-jupyterlab = "*"
 ipywidgets = "^7.0"
+pydantic = "^1.10.4"
 pip-tools = {version = "*", optional = true}
 isort = {version = "*", optional = true}
 mypy = {version = "*", optional = true}
