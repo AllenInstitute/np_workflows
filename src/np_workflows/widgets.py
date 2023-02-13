@@ -50,12 +50,14 @@ def user_and_mouse_widget() -> tuple[np_session.User, np_session.Mouse]:
     mouse_widget = ipw.Text(value=str(npxc.default_mouse_id), description=mouse_description)
     user = np_session.User(str(user_widget.value))
     mouse = np_session.Mouse(str(mouse_widget.value))
-    
+    console = ipw.Output()
+
     def update_user(new_user: str):
         if str(user) == (new := str(new_user).strip()):
             return
         user.__init__(new)
-        print(f"User updated: {user}")
+        with console:
+            print(f"User updated: {user}")
 
     def update_mouse(new_mouse: str):
         if str(mouse) == (new := str(new_mouse).strip()):
@@ -63,7 +65,8 @@ def user_and_mouse_widget() -> tuple[np_session.User, np_session.Mouse]:
         if len(new) < 6:
             return
         mouse.__init__(new)
-        print(f"Mouse updated: {mouse}")
+        with console:
+            print(f"Mouse updated: {mouse}")
         
     def new_value(change) -> None:
         if change['name'] != 'value':
@@ -80,7 +83,7 @@ def user_and_mouse_widget() -> tuple[np_session.User, np_session.Mouse]:
     user_widget.observe(new_value)
     mouse_widget.observe(new_value)
     
-    IPython.display.display(ipw.VBox([user_widget, mouse_widget]))
+    IPython.display.display(ipw.VBox([user_widget, mouse_widget, console]))
     return user, mouse
 
 
