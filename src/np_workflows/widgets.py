@@ -198,6 +198,75 @@ def mtrain_widget(
 
     return IPython.display.display(display)
 
+def check_widget(check: str, *checks: str) -> ipw.Widget:
+    layout = ipw.Layout(min_width="600px")
+    widget = ipw.VBox([
+        ipw.Label(check, layout=layout), 
+        *(ipw.Checkbox(description=_, layout=layout) for _ in checks),
+        # ipw.Button(description="Continue", disabled=True)
+        ])
+    return widget
+
+def await_all_checkboxes(widget: ipw.Box) -> None:
+    while any(_.value == False for _ in widget.children if isinstance(_, ipw.Checkbox)):
+        time.sleep(0.1)
+    
+    
+def check_openephys_widget(await_checkboxes: bool = True) -> None:
+    check = "OpenEphys checks before pretest:"
+    checks = (
+        "Record Node paths are set to two different drives (A: & B: or E: & G:)",
+        "Each Record Node recording only ABC or DEF probes",
+        "Tip-reference on all probes",
+        "Barcodes visible",
+    )
+    IPython.display.display(widget := check_widget(check, *checks))
+
+def check_hardware_widget(await_checkboxes: bool = True) ->  None:
+    check = "Stage checks before pretest:"
+    checks = (
+        "Cartridge raised (fully retract probes before raising!)",
+        "Water lines flushed",
+    )
+    IPython.display.display(widget := check_widget(check, *checks))
+    # if await_checkboxes:
+    #     # await_all_checkboxes(widget)
+    #     while any(_.value == False for _ in widget.children if isinstance(_, ipw.Checkbox)):
+    #         time.sleep(0.1)
+
+def check_mouse_widget() -> None:
+    check = "Mouse checks before lowering cartridge:"
+    checks = (
+        "Stabilization screw",
+        "Quickcast, agarose, silicon oil",
+        "Tail cone down",
+        "Continuity check",
+    )
+    IPython.display.display(widget := check_widget(check, *checks))
+    
+def finishing_checks_widget() -> None:
+    check = "Finishing checks:"
+    checks = (
+        "Add quickcast",
+        "Remove and water mouse",      
+    )
+    IPython.display.display(widget := check_widget(check, *checks))
+    
+def dye_widget(session_folder: pathlib.Path) -> IPython.display.DisplayHandle | None:
+    "Saves a JSON file with the dye used in the session and a timestamp."
+    from np_services import JsonRecorder
+    class DyeRecorder(JsonRecorder):
+        log_name = f'{session_folder.name}_dye.json'
+        log_root = session_folder
+
+    dye_dropdown = ipw.Dropdown(options=['DiI', 'DiO'])
+    save_button = ipw.Button(description='Save', button_style='warning')
+    def on_click(b):
+        DyeRecorder.write(dict(dye=dye_dropdown.value, datetime=datetime.datetime.now(), time=time.time()))
+        save_button.button_style = 'success'
+        save_button.description = 'Saved'
+    save_button.on_click(on_click)
+    return IPython.display.display(ipw.VBox([dye_dropdown, save_button]))
 
 def isi_widget(
     labtracks_mouse_id: str | int | np_session.LIMS2MouseInfo, colormap: bool = False,
@@ -213,7 +282,7 @@ def isi_widget(
         key = "isi_image_overlay_path"
     else:
         key = "target_map_image_path"
-
+    
     try:
         lims_path = lims_info.isi_info[key]
     except ValueError:
@@ -230,3 +299,36 @@ def isi_widget(
         print(f"ISI map found for {lims_info.np_id}:\n{path}")
         img = PIL.Image.open(path)
         return IPython.display.display(img)
+
+def photodoc_widget(img_name: str) -> IPython.display.DisplayHandle | None:
+    "Captures and displays snapshot from image camera, appending `img_name` to the filename."
+    image = ipw.Image(value=b'', format='png', width='80%', layout=ipw.Layout(visibility='hidden'))
+    widget = ipw.VBox([
+        image,
+        button := ipw.Button(description="Capture", button_style='warning'),
+        console := ipw.Output(),
+    ])
+    def capture() -> pathlib.Path:
+        image.value = b''
+        image.layout.visibility = 'hidden'
+        button.button_style = ''
+        button.description = 'Capturing image...'
+        button.disabled = True
+        return npxc.photodoc(img_name)
+    def capture_and_display(b):
+        img_path = capture()
+        # image.value = PIL.Image.open(img_path).tobytes()
+        image.value = img_path.read_bytes()
+        image.layout.visibility = 'visible'
+        button.button_style = 'warning'
+        button.description = 'Capture'
+        button.disabled = False
+        with console:
+            print(img_path)
+    button.on_click(capture_and_display)
+    return IPython.display.display(widget)
+
+def probe_targeting_widget(session_folder) -> IPython.display.DisplayHandle | None:
+    from np_probe_targets.implant_drawing import CurrentWeek, DRWeeklyTargets
+    CurrentWeek.display()
+    IPython.display.display(DRWeeklyTargets())
