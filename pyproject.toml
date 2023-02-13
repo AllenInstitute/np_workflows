@@ -1,38 +1,30 @@
 [tool.poetry]
 name = "np-workflows"
-version = "1.0.1"
+version = "1.2.0"
 description = "Ecephys and behavior workflows for the Mindscope Neuropixels team."
 authors = ["Ben Hardcastle <ben.hardcastle@alleninstitute.org>"]
 readme = "README.md"
 packages = [{include = "np_workflows", from = "src"}]
-include = ["notebooks/*"]
 
 [tool.poetry.dependencies]
-python = "^3.10"
-np_services = "*"
+python = "^3.11"
+np_services = ">= 0.1.10"
 np_probe_targets = "*"
 np_datajoint = "*"
-ipywidgets = "^7.0"
-pydantic = "^1.10.4"
-pip-tools = {version = "*", optional = true}
-isort = {version = "*", optional = true}
-mypy = {version = "*", optional = true}
-black = {version = "*", optional = true}
-pytest = {version = "*", optional = true}
-poetry = {version = "*", optional = true}
+ipywidgets = "^7"
+pydantic = "^1"
 
-[tool.poetry.extras]
-dev = [
-    "pip-tools", # convert pyproject.toml to requirements.txt
-    "isort", # sort imports
-    "mypy",
-    "black",
-    "pytest",
-    "poetry",
-]
+[tool.poetry.group.dev.dependencies]
+pip-tools = "*"
+isort = "*"
+mypy = "*"
+black = "*"
+pytest = "*"
+coverage = {extras = ["toml"], version = "^7.1.0"}
+pytest-cov = "^4.0.0"
 
 [build-system]
-requires = ["poetry-core>=1.0.0"]
+requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.pytest.ini_options]
@@ -53,3 +45,13 @@ testpaths = [
     "tests",
     "src",
 ]
+
+[tool.coverage.paths]
+source = ["src"]
+
+[tool.coverage.run]
+branch = true
+source = ["np_workflows"]
+
+[tool.coverage.report]
+show_missing = true
