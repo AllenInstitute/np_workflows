@@ -1,32 +1,38 @@
+import contextlib
 import datetime
 import inspect
+import pathlib
+import shutil
 import time
-from typing import Any, Type
+from typing import Any, Sequence, Type
 
+import fabric
 import np_config
 import np_logging
 import np_session
 # from np_workflows.models import baseclasses, classes
 # from np_workflows.models.baseclasses import Experiment
 # from np_workflows.models import utils
-from np_services import Initializable, Testable, TestError
+from np_services import Initializable, Testable, TestError, Finalizable, Service
+from np_services import Sync, VideoMVR, ImageMVR, Cam3d, ScriptCamstim, OpenEphys  
 from np_config import Rig
 
 logger = np_logging.getLogger(__name__)
 
 # Assign default values to global variables so they can be imported elsewhere
 # experiment: Experiment | str = ''
-operator: np_session.User | str = ''
-mouse: np_session.Mouse | str = ''
+operator: np_session.User | str = ""
+mouse: np_session.Mouse | str = ""
 is_mouse_in_lims: bool | None = None
-session: np_session.Session | str | int = ''
+session: np_session.Session | str | int = ""
 
 # experiments: tuple[Type[Experiment], ...] = (
 #     classes.Pretest,
 #     classes.NpUltra,
 #     ) # TODO plug-in experiments
 
-CONFIG = np_config.Rig().config
+RIG = np_config.Rig()
+CONFIG = RIG.config
 
 lims_user_ids: tuple[str, ...] = tuple(
     sorted(
@@ -49,58 +55,115 @@ lims_user_ids: tuple[str, ...] = tuple(
 
 default_mouse_id: int = int(CONFIG.get('default_mouse_id', 366122))
 
+
 def get_operators() -> list[str]:
     return list(lims_user_ids)
-    
+
+
 def get_experiments(with_lims: bool = True) -> list[str]:
-    return [cls.__name__ for cls in experiments if with_lims or not issubclass(cls, baseclasses.WithLims)]
+    return [
+        cls.__name__
+        for cls in experiments
+        if with_lims or not issubclass(cls, baseclasses.WithLims)
+    ]
+
 
 def initialize_services() -> None:
     experiment.apply_config_to_services()
     for service in experiment.services:
-        
+
         if isinstance(service, Initializable):
             while True:
                 try:
                     service.initialize()
-                    
+
                 except Exception as exc:
                     logger.error("%s | %r", service.__name__, exc)
-                    import pdb; pdb.set_trace()
+                    import pdb
+
+                    pdb.set_trace()
                     continue
-                
+
                 else:
                     break
-        
+
         if isinstance(service, Testable):
             while True:
                 try:
                     service.test()
-                    
-                except TestFailure as exc:
+
+                except TestError as exc:
                     try:
                         logger.error("%s | %r", service.__name__, service.exc)
                     except AttributeError:
                         logger.error("%s | %r", service.__name__, exc)
-                    import pdb; pdb.set_trace()
+                    import pdb
+
+                    pdb.set_trace()
                     continue
-                
+
                 except Exception as exc:
                     logger.error("%s | %r", service.__name__, exc)
-                    import pdb; pdb.set_trace()
+                    import pdb
+
+                    pdb.set_trace()
                     continue
-                
+
                 else:
                     break
-                
+
+
 def print_countdown_timer(seconds: int | float | datetime.timedelta = 0, **kwargs):
     """Block execution for a given number of seconds (or any timedelta kwargs), printing a countdown timer to the console."""
     if isinstance(seconds, datetime.timedelta):
         wait = seconds
     else:
-        wait = datetime.timedelta(seconds = seconds, **kwargs)
+        wait = datetime.timedelta(seconds=seconds, **kwargs)
     time_0: float = time.time()
-    time_remaining = lambda: datetime.timedelta(seconds = wait.total_seconds() - (time.time() - time_0))
+    time_remaining = lambda: datetime.timedelta(
+        seconds=wait.total_seconds() - (time.time() - time_0)
+    )
     while time_remaining().total_seconds() > 0:
-        print(f'Waiting {wait}: \t{time_remaining()}', end='\r', flush=True)
-        time.sleep(.1)
+        print(f"Waiting {wait} \t{time_remaining()}", end="\r", flush=True)
+        time.sleep(0.1)
+
+def photodoc(img_name: str) -> pathlib.Path:
+    """Capture image with `label` appended to filename, and return the filepath."""
+    if RIG.idx == 0:
+        from np_services import Cam3d as ImageCamera
+    else:
+        from np_services import ImageMVR as ImageCamera
+    from np_services import NewScaleCoordinateRecorder
+    
+    ImageCamera.label = img_name
+    if isinstance(ImageCamera, Initializable) and not getattr(ImageCamera, 'initialization', None):
+        ImageCamera.initialize()
+        
+    ImageCamera.start()
+    
+    if isinstance(ImageCamera, Finalizable):
+        ImageCamera.finalize()
+        
+    NewScaleCoordinateRecorder.start()
+    return ImageCamera.data_files[-1]
+
+def copy_files(services: Sequence[Service], session_folder: pathlib.Path):
+    """Copy files from raw data storage to session folder for all services."""
+    password = input(f'Enter password for svc_neuropix:')
+    for service in services:
+        match service.__class__.__name__:
+            case "OpenEphys" | "open_ephys":
+                continue # copy ephys after other files
+            case _:
+                with contextlib.suppress(AttributeError):
+                    files = (service.data_files or service.get_latest_data('*'))
+                    print(files)
+                    for file in files:
+                        shutil.copy2(file, session_folder)
+                    
+    # copy ephys                    
+    for ephys_folder in OpenEphys.data_files:
+        fabric.Connection(host=OpenEphys.host, user='svc_neuropix', connect_kwargs=dict(password=password)).run(
+            f'robocopy "{ephys_folder}" "{session_folder}" /j /s /xo' # /j unbuffered, /s incl non-empty subdirs, /xo exclude src files older than dest
+        ) 
+            
