@@ -214,7 +214,7 @@ def await_all_checkboxes(widget: ipw.Box) -> None:
         time.sleep(0.1)
     
     
-def check_openephys_widget(await_checkboxes: bool = True) -> None:
+def check_openephys_widget() -> None:
     check = "OpenEphys checks before pretest:"
     checks = (
         "Record Node paths are set to two different drives (A: & B: or E: & G:)",
@@ -224,17 +224,13 @@ def check_openephys_widget(await_checkboxes: bool = True) -> None:
     )
     IPython.display.display(widget := check_widget(check, *checks))
 
-def check_hardware_widget(await_checkboxes: bool = True) ->  None:
+def check_hardware_widget() ->  None:
     check = "Stage checks before pretest:"
     checks = (
         "Cartridge raised (fully retract probes before raising!)",
         "Water lines flushed",
     )
     IPython.display.display(widget := check_widget(check, *checks))
-    # if await_checkboxes:
-    #     # await_all_checkboxes(widget)
-    #     while any(_.value == False for _ in widget.children if isinstance(_, ipw.Checkbox)):
-    #         time.sleep(0.1)
 
 def check_mouse_widget() -> None:
     check = "Mouse checks before lowering cartridge:"
