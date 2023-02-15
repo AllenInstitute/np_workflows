@@ -365,3 +365,41 @@ def probe_targeting_widget(session_folder) -> IPython.display.DisplayHandle | No
     from np_probe_targets.implant_drawing import CurrentWeek, DRWeeklyTargets
     CurrentWeek.display()
     IPython.display.display(DRWeeklyTargets())
+    
+def quiet_mode_widget() -> IPython.display.DisplayHandle | None:
+    """Displays a toggle button that switches logging level INFO <-> DEBUG and
+    hides/shows tracebacks.
+    """
+    debug_mode_toggle = ipw.ToggleButton(
+            value=True,
+            description='Quiet mode is on',
+            disabled=False,
+            button_style='info', # 'success', 'info', 'warning', 'danger' or ''
+            icon='check',
+            tooltip='Quiet mode: tracebacks hidden, logging level set to INFO.',
+        )
+    def set_debug_mode(value: bool) -> None:
+        if value:
+            npxc.show_tracebacks()
+            np_logging.getLogger().setLevel('DEBUG')
+        else:
+            npxc.hide_tracebacks()
+            np_logging.getLogger().setLevel('INFO')
+            
+    np_logging.getLogger('Comm').setLevel('INFO')
+    
+    def on_click(b) -> None:
+        if not debug_mode_toggle.value:
+            set_debug_mode(True)
+            debug_mode_toggle.description = 'Quiet mode is off'
+            debug_mode_toggle.button_style = ''
+            debug_mode_toggle.icon = 'times'
+        else:
+            set_debug_mode(False)
+            debug_mode_toggle.description = 'Quiet mode is on'
+            debug_mode_toggle.button_style = 'info'
+            debug_mode_toggle.icon = 'check'
+    
+    debug_mode_toggle.observe(on_click)
+     
+    return IPython.display.display(debug_mode_toggle)
