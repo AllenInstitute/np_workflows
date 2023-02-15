@@ -2,13 +2,15 @@ import datetime
 import pathlib
 import threading
 import time
-from typing import NoReturn
+from typing import NoReturn, Optional
 
 import IPython
 import IPython.display
 import ipywidgets as ipw
 import np_config
+import np_logging
 import np_session
+import np_services
 import PIL.Image
 
 import np_workflows.npxc as npxc
@@ -252,9 +254,44 @@ def finishing_checks_widget() -> None:
     )
     IPython.display.display(widget := check_widget(check, *checks))
     
-def dye_widget(session_folder: pathlib.Path) -> IPython.display.DisplayHandle | None:
-    "Saves a JSON file with the dye used in the session and a timestamp."
-    from np_services import JsonRecorder
+    
+def di_widget(platform_json: pathlib.Path | np_services.PlatformJsonWriter) -> IPython.display.DisplayHandle | None:
+    "Supply a path or a platform json instance. Saves a JSON file with the dye used in the session and a timestamp."
+
+    di_info: dict[str, int | str] = dict(
+        EndTime=0, StartTime=str(npxc.now()), dii_description="", times_dipped=0,
+    )
+    if isinstance(platform_json, pathlib.Path):
+        platform_json = np_services.PlatformJsonWriter(path=platform_json)
+    layout = ipw.Layout(max_width='130px')
+    dipped_counter = ipw.IntText(value=0, min=0, max=99, description="Dipped count", layout=layout)
+    dye_dropdown = ipw.Dropdown(options=['DiI', 'DiO'], layout=layout)
+    save_button = ipw.Button(description='Save', button_style='warning', layout=layout)
+    
+    def update_di_info():
+        di_info['EndTime'] = str(npxc.now())
+        di_info['times_dipped'] = int(dipped_counter.value)
+        di_info['dii_description'] = str(dye_dropdown.value)
+        
+    def on_click(b):
+        update_di_info()
+        platform_json.DiINotes = di_info
+        platform_json.write(update_existing=False)
+        save_button.button_style = 'success'
+        save_button.description = 'Saved'
+    save_button.on_click(on_click)
+    return IPython.display.display(ipw.VBox([dipped_counter, dye_dropdown, save_button]))
+
+    
+def dye_widget(path: Optional[pathlib.Path | np_services.PlatformJsonWriter]) -> IPython.display.DisplayHandle | None:
+    "Supply a path or a platform json instance. Saves a JSON file with the dye used in the session and a timestamp."
+
+    di_info: dict[str, int | str] = dict(
+        EndTime=0, StartTime=0, dii_description="DiI", times_dipped=0,
+    )
+    if isinstance(path, pathlib.Path):
+        session_folder = np_services.PlatformJsonWriter(session_folder)
+    
     class DyeRecorder(JsonRecorder):
         log_name = f'{session_folder.name}_dye.json'
         log_root = session_folder
