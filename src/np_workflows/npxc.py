@@ -15,6 +15,7 @@ import np_session
 # from np_workflows.models import utils
 from np_services import Initializable, Testable, TestError, Finalizable, Service
 from np_services import Sync, VideoMVR, ImageMVR, Cam3d, ScriptCamstim, OpenEphys  
+import np_services 
 from np_config import Rig
 
 logger = np_logging.getLogger(__name__)
@@ -167,3 +168,34 @@ def copy_files(services: Sequence[Service], session_folder: pathlib.Path):
             f'robocopy "{ephys_folder}" "{session_folder}" /j /s /xo' # /j unbuffered, /s incl non-empty subdirs, /xo exclude src files older than dest
         ) 
             
+            
+import warnings
+
+def hide_warning_lines(msg:str,category:str,*args,**kwargs):
+    print("\n{}: {}\n".format(category.__name__, msg))
+warnings.showwarning = hide_warning_lines
+
+import IPython
+def toggle_tracebacks() -> Generator[None, None, None]:
+    ipython = IPython.get_ipython()
+    show_traceback = ipython.showtraceback
+    
+    def hide_traceback(exc_tuple=None, filename=None, tb_offset=None,
+                    exception_only=False, running_compiled_code=False):
+        etype, value, tb = sys.exc_info()
+        return ipython._showtraceback(etype, value, ipython.InteractiveTB.get_exception_only(etype, value))
+    
+    hidden = True
+    while True:
+        ipython.showtraceback = hide_traceback if hidden else show_traceback
+        hidden = yield
+        
+toggle_tb = toggle_tracebacks()
+toggle_tb.send(None)
+def show_tracebacks():
+    toggle_tb.send(False)
+def hide_tracebacks():
+    toggle_tb.send(True)
+    
+def now() -> str:
+    return np_services.utils.normalize_time(time.time())
