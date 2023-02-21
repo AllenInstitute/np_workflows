@@ -178,25 +178,29 @@ warnings.showwarning = hide_warning_lines
 
 import IPython
 def toggle_tracebacks() -> Generator[None, None, None]:
-    ipython = IPython.get_ipython()
-    show_traceback = ipython.showtraceback
-    
-    def hide_traceback(exc_tuple=None, filename=None, tb_offset=None,
-                    exception_only=False, running_compiled_code=False):
-        etype, value, tb = sys.exc_info()
-        return ipython._showtraceback(etype, value, ipython.InteractiveTB.get_exception_only(etype, value))
-    
-    hidden = True
-    while True:
-        ipython.showtraceback = hide_traceback if hidden else show_traceback
-        hidden = yield
+    if ipython := IPython.get_ipython():
+        show_traceback = ipython.showtraceback
         
-toggle_tb = toggle_tracebacks()
-toggle_tb.send(None)
-def show_tracebacks():
-    toggle_tb.send(False)
-def hide_tracebacks():
-    toggle_tb.send(True)
+        def hide_traceback(exc_tuple=None, filename=None, tb_offset=None,
+                        exception_only=False, running_compiled_code=False):
+            etype, value, tb = sys.exc_info()
+            return ipython._showtraceback(etype, value, ipython.InteractiveTB.get_exception_only(etype, value))
+        
+        hidden = True
+        while True:
+            ipython.showtraceback = hide_traceback if hidden else show_traceback
+            hidden = yield
+    else:
+        raise RuntimeError("Not in IPython")
     
+with contextlib.suppress(RuntimeError):
+    toggle_tb = toggle_tracebacks()
+
+    toggle_tb.send(None)
+    def show_tracebacks():
+        toggle_tb.send(False)
+    def hide_tracebacks():
+        toggle_tb.send(True)
+        
 def now() -> str:
     return np_services.utils.normalize_time(time.time())
