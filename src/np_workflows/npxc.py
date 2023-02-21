@@ -160,6 +160,8 @@ def copy_files(services: Sequence[Service], session_folder: pathlib.Path):
             case _:
                 with contextlib.suppress(AttributeError):
                     files = (service.data_files or service.get_latest_data('*'))
+                    if not files:
+                        continue
                     print(files)
                     for file in files:
                         shutil.copy2(file, session_folder)
