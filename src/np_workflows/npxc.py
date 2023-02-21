@@ -146,6 +146,7 @@ def photodoc(img_name: str) -> pathlib.Path:
     if isinstance(ImageCamera, Finalizable):
         ImageCamera.finalize()
         
+    NewScaleCoordinateRecorder.label = img_name
     NewScaleCoordinateRecorder.start()
     return ImageCamera.data_files[-1]
 
