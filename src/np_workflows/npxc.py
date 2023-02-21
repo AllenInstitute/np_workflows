@@ -159,7 +159,7 @@ def copy_files(services: Sequence[Service], session_folder: pathlib.Path):
                 continue # copy ephys after other files
             case _:
                 with contextlib.suppress(AttributeError):
-                    files = (service.data_files or service.get_latest_data('*'))
+                    files = set(service.data_files or service.get_latest_data('*'))
                     if not files:
                         continue
                     print(files)
