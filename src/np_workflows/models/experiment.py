@@ -111,11 +111,13 @@ class WithLims(abc.ABC):
             self._rig = np_config.Rig()
             return self.rig
     
-    # @property
-    # def services(self) -> tuple[Service, ...]:
-    #     with contextlib.suppress(AttributeError):
-    #         return self._services
-    #     return ()
+    @property
+    def mouse(self) -> np_session.Mouse:
+        return self.session.mouse
+    
+    @property
+    def user(self) -> np_session.User | None:
+        return self.session.user
     
     @property
     def imager(self) -> Type[np_services.Cam3d] | Type[np_services.ImageMVR]:
