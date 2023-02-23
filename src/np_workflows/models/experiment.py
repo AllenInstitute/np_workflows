@@ -59,6 +59,9 @@ class WithLims(abc.ABC):
         self.configure_services()
         self.session.npexp_path.mkdir(parents=True, exist_ok=True)
 
+    def __repr__(self) -> str:
+        return f'{self.__class__.__name__}({self.session})'
+    
     @property
     def platform_json(self) -> np_services.PlatformJsonWriter:
         with contextlib.suppress(AttributeError):
