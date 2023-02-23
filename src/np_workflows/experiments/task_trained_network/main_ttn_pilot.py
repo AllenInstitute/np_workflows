@@ -65,12 +65,15 @@ class TTNMixin:
 
     def initialize_and_test_services(self) -> None:
         """Configure, initialize (ie. reset), then test all services."""
+        
         MouseDirector.user = self.user.id
         MouseDirector.mouse = self.mouse.id
 
         OpenEphys.folder = self.session.folder
 
         NewScaleCoordinateRecorder.log_root = self.session.npexp_path
+
+        self.configure_services()
 
         super().initialize_and_test_services()
 
