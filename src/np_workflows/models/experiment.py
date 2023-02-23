@@ -154,7 +154,6 @@ class WithLims(abc.ABC):
 
     def initialize_and_test_services(self) -> None:
 
-        self.configure_services()
         for service in self.services:
 
             if isinstance(service, Initializable):
