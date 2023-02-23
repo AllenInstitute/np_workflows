@@ -381,10 +381,14 @@ def quiet_mode_widget() -> IPython.display.DisplayHandle | None:
     def set_debug_mode(value: bool) -> None:
         if value:
             npxc.show_tracebacks()
-            np_logging.getLogger().setLevel('DEBUG')
+            for handler in np_logging.getLogger().handlers:
+                if isinstance(handler, logging.StreamHandler):
+                    handler.setLevel('DEBUG')
         else:
             npxc.hide_tracebacks()
-            np_logging.getLogger().setLevel('INFO')
+            for handler in np_logging.getLogger().handlers:
+                if isinstance(handler, logging.StreamHandler):
+                    handler.setLevel('INFO')
             
     np_logging.getLogger('Comm').setLevel('INFO')
     
