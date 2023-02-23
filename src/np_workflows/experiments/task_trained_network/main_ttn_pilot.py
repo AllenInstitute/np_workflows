@@ -77,7 +77,7 @@ class TTNMixin:
 
         super().initialize_and_test_services()
 
-    def start_stim(self) -> None:
+    def run_stim_scripts(self) -> None:
         for stim in ('mapping', 'main', 'opto'):
             
             if not (params := self.params[stim]):
