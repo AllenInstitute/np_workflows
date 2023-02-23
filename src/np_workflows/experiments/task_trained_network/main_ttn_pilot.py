@@ -119,7 +119,7 @@ class TTNMixin:
         "System config on Stim computer, if accessible."
         return camstim_defaults()
     
-class Hab(np_workflows.Hab, TTNMixin):
+class Hab(TTNMixin, np_workflows.Hab):
     def __init__(self, *args, **kwargs):
         self.services = (
             MouseDirector,
@@ -131,7 +131,7 @@ class Hab(np_workflows.Hab, TTNMixin):
         super().__init__(*args, **kwargs)
 
 
-class Ecephys(np_workflows.Ecephys, TTNMixin):
+class Ecephys(TTNMixin, np_workflows.Ecephys):
     def __init__(self, *args, **kwargs):
         self.services = (
             MouseDirector,
