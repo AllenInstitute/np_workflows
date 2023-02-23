@@ -1,10 +1,12 @@
 import abc
 import contextlib
 import functools
+import getpass
 import pathlib
+import re
 import shutil
 import time
-from typing import Any, ClassVar, Literal, Optional, Protocol, Sequence, Type, Union
+from typing import Any, ClassVar, Iterable, Literal, Optional, Protocol, Sequence, Type, Union
 
 import fabric 
 
@@ -34,15 +36,17 @@ logger = np_logging.getLogger(__name__)
 
 class WithLims(abc.ABC):
     
-    services: tuple[Service, ...]
-    "Devices, databases etc. Order will be preserved when called, but not necessarily called altogether."
+    default_session_type: Literal['ecephys', 'hab'] = 'ecephys'
+    
+    services: tuple[Service, ...] = ()
+    "Devices, databases, etc."
 
     def __init__(self, 
         mouse: Optional[str | int |  np_session.LIMS2MouseInfo] = None,
         operator: Optional[str | np_session.LIMS2UserInfo] = None, 
         session: Optional[str | pathlib.Path | int | np_session.LIMS2SessionInfo] = None,
-        session_type: Literal['ecephys', 'hab'] = 'ecephys',
-        **kwargs
+        session_type: Literal['ecephys', 'hab'] = default_session_type,
+        **kwargs,
         ):
         
         # np_config.merge(self.__dict__, kwargs)
@@ -275,7 +279,7 @@ class WithLims(abc.ABC):
         return self.imager.data_files[-1]
     
 class Ecephys(WithLims):
-    pass
-    
+    default_session_type = 'ecephys'
+
 class Hab(WithLims):
-    pass
+    default_session_type = 'hab'
