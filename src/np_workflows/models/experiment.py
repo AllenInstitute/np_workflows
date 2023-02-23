@@ -211,10 +211,46 @@ class WithLims(abc.ABC):
         for service in (_ for _ in self.services if isinstance(_, Shutdownable)):
             service.shutdown()
             
-    def copy_files(self, services: Sequence[Service], session_folder: pathlib.Path):
+    def copy_files(self):
         """Copy files from raw data storage to session folder for all services."""
-        npxc.copy_files(self.services, self.session.npexp_path)
-            
+        session_folder = self.session.npexp_path
+        for service in self.services:
+            match service.__name__:
+                case "np_services.open_ephys":
+                    continue # copy ephys after other files
+                case _:
+                    with contextlib.suppress(AttributeError):
+                        files = service.data_files or service.get_latest_data('*')
+                        if not files:
+                            continue
+                        files = set(files)
+                        logger.info("%s | Copying files %r", service.__name__, files)
+                        for file in files:
+                            if file.suffix == '.h5':
+                                renamed = f'{self.session.folder}.sync'
+                            elif file.suffix == '.pkl':
+                                for _ in ('opto', 'main', 'mapping'):
+                                    if _ in file.name:
+                                        renamed = f'{self.session.folder}.{"stim" if _ == "main" else _}.pkl'
+                            elif file.suffix in ('.json', 'mp4') and (cam_label := re.match('Behavior|Eye|Face',file.name)):
+                                renamed = f'{self.session.folder}.{cam_label.group().lower()}{file.suffix}'
+                            shutil.copy2(file, session_folder / renamed)
+
+        # copy ephys       
+        password = getpass.getpass(f'Enter password for svc_neuropix:')
+        for ephys_folder in np_services.OpenEphys.data_files:
+
+            if ephys_folder.drive.endswith("A"):
+                probes = '_probeABC'
+            elif ephys_folder.drive.endswith("B"):
+                probes = '_probeDEF'
+            else:
+                probes = ''
+                
+            fabric.Connection(host=np_services.OpenEphys.host, user='svc_neuropix', connect_kwargs=dict(password=password)).run(
+                f'robocopy "{ephys_folder}" "{session_folder}{probes}" /j /s /xo' # /j unbuffered, /s incl non-empty subdirs, /xo exclude src files older than dest
+            ) 
+                           
     def photodoc(self, img_label: Optional[str] = None) -> pathlib.Path:
         """Capture image with `img_label` appended to filename, and return the filepath."""        
         if img_label:
