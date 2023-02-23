@@ -64,7 +64,7 @@ def camstim_defaults() -> dict:
 default_ttn_params["main"] = {}
 
 default_ttn_params["main"]["sweepstim"] = {
-    "trigger_delay_sec": 5.0,
+    'sync_sqr_loc': (870, 525),     # for stim with warp=Warp.disabled 
 }
 # default_ttn_params["main"]["movie_path"] = "C:/ProgramData/StimulusFiles/dev/"
 default_ttn_params["main"][
