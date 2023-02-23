@@ -46,10 +46,13 @@ logger = np_logging.getLogger(__name__)
 
 
 class TTNMixin:
+    """Provides TTN-specific methods and attributes, mainly related to camstim scripts."""
+    
     ttn_session: TTNSession
-
+    """Enum for session type, e.g. PRETEST, HAB_60, HAB_90, ECEPHYS."""
     @property
     def recorders(self) -> tuple[Service, ...]:
+        """Services to be started before stimuli run, and stopped after. Session-dependent."""
         match self.ttn_session:
             case TTNSession.PRETEST | TTNSession.ECEPHYS:
                 return (Sync, VideoMVR, OpenEphys)
@@ -61,10 +64,7 @@ class TTNMixin:
         return (ScriptCamstim,)
 
     def initialize_and_test_services(self) -> None:
-        """Initialize and test services."""
-
-        self.configure_services()
-
+        """Configure, initialize (ie. reset), then test all services."""
         MouseDirector.user = self.user.id
         MouseDirector.mouse = self.mouse.id
 
