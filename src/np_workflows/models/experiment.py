@@ -179,9 +179,17 @@ class WithLims(abc.ABC):
         self.platform_json.ExperimentStartTime = npxc.now()        
         self.platform_json.write()
     
-    def stop_recording(self, *recorders: Startable) -> None:
+    def stop_recording_after_stim_finished(self, 
+            recorders: Optional[Iterable[Startable]] = None, 
+            stims: Optional[Iterable[Startable]] = None,
+        ) -> None:
+        """Stop recording after all stims have finished."""
         if not recorders and hasattr(self, 'recorders'):
             recorders = self.recorders
+        if not stims and hasattr(self, 'stims'):
+            stims = self.stims
+        while not all(_.is_ready_to_start() for _ in stims):
+            time.sleep(5)
         for stoppable in (_ for _ in recorders if isinstance(_, Stoppable)):
             stoppable.stop()
         self.platform_json.ExperimentCompleteTime = npxc.now()        
