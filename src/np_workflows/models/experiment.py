@@ -254,6 +254,7 @@ class WithLims(abc.ABC):
 
         # copy ephys       
         password = getpass.getpass(f'Enter password for svc_neuropix:')
+        ssh = fabric.Connection(host=np_services.OpenEphys.host, user='svc_neuropix', connect_kwargs=dict(password=password))
         for ephys_folder in np_services.OpenEphys.data_files:
 
             if ephys_folder.drive.endswith("A"):
@@ -263,9 +264,12 @@ class WithLims(abc.ABC):
             else:
                 probes = '_probes'
                 
-            fabric.Connection(host=np_services.OpenEphys.host, user='svc_neuropix', connect_kwargs=dict(password=password)).run(
-                f'robocopy "{ephys_folder}" "{session_folder / (session_folder.name + probes)}" /j /s /xo' # /j unbuffered, /s incl non-empty subdirs, /xo exclude src files older than dest
-            ) 
+            with contextlib.suppress(Exception):
+                with ssh:
+                    ssh.run(
+                    f'robocopy "{ephys_folder}" "{session_folder / (session_folder.name + probes)}" /j /s /xo' 
+                    # /j unbuffered, /s incl non-empty subdirs, /xo exclude src files older than dest
+                    ) 
                            
     def photodoc(self, img_label: Optional[str] = None) -> pathlib.Path:
         """Capture image with `img_label` appended to filename, and return the filepath."""        
