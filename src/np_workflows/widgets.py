@@ -307,34 +307,37 @@ def di_widget(platform_json: pathlib.Path | np_services.PlatformJsonWriter) -> I
         platform_json = np_services.PlatformJsonWriter(path=platform_json)
     layout = ipw.Layout(max_width='130px')
     dipped_counter = ipw.IntText(value=0, min=0, max=99, description="Dipped count", layout=layout)
-    dye_dropdown = ipw.Dropdown(options=['DiI', 'DiO'], layout=layout)
+    usage_counter = ipw.IntText(value=0, min=0, max=99, description="Previous uses", layout=layout)
+    dye_dropdown = ipw.Dropdown(options=['CM-DiI 100%', 'DiO'], layout=layout)
     save_button = ipw.Button(description='Save', button_style='warning', layout=layout)
     
     def update_di_info():
         di_info['EndTime'] = str(npxc.now())
-        di_info['times_dipped'] = int(dipped_counter.value)
+        di_info['times_dipped'] = str(dipped_counter.value)
         di_info['dii_description'] = str(dye_dropdown.value)
+        di_info['previous_uses'] = str(usage_counter.value)
         
     def on_click(b):
+        platform_json.load_from_existing()
         update_di_info()
         platform_json.DiINotes = di_info
         platform_json.write(update_existing=False)
         save_button.button_style = 'success'
         save_button.description = 'Saved'
     save_button.on_click(on_click)
-    return IPython.display.display(ipw.VBox([dipped_counter, dye_dropdown, save_button]))
+    return IPython.display.display(ipw.VBox([
+        dipped_counter, dye_dropdown, 
+        usage_counter, save_button]))
 
     
-def dye_widget(path: Optional[pathlib.Path | np_services.PlatformJsonWriter]) -> IPython.display.DisplayHandle | None:
-    "Supply a path or a platform json instance. Saves a JSON file with the dye used in the session and a timestamp."
+def dye_widget(session_folder: pathlib.Path) -> IPython.display.DisplayHandle | None:
+    "Supply a path - saves a JSON file with the dye used in the session and a timestamp."
 
     di_info: dict[str, int | str] = dict(
         EndTime=0, StartTime=0, dii_description="DiI", times_dipped=0,
     )
-    if isinstance(path, pathlib.Path):
-        session_folder = np_services.PlatformJsonWriter(session_folder)
     
-    class DyeRecorder(JsonRecorder):
+    class DyeRecorder(np_services.JsonRecorder):
         log_name = f'{session_folder.name}_dye.json'
         log_root = session_folder
 
