@@ -144,7 +144,7 @@ class WithLims(abc.ABC):
                 for key, value in config.items():
                     setattr(service, key, value)
                     logger.debug(
-                        f"{self.__class__.__name__} | Set {service.__name__}.{key} = {getattr(service, key)}"
+                        f"{self.__class__.__name__} | Configuring {service.__name__}.{key} = {getattr(service, key)}"
                     )
 
         for service in self.services:
@@ -248,7 +248,7 @@ class WithLims(abc.ABC):
                                 for _ in ('opto', 'main', 'mapping'):
                                     if _ in file.name:
                                         renamed = f'{self.session.folder}.{"stim" if _ == "main" else _}.pkl'
-                            elif file.suffix in ('.json', 'mp4') and (cam_label := re.match('Behavior|Eye|Face',file.name)):
+                            elif file.suffix in ('.json', '.mp4') and (cam_label := re.match('Behavior|Eye|Face',file.name)):
                                 renamed = f'{self.session.folder}.{cam_label.group().lower()}{file.suffix}'
                             shutil.copy2(file, session_folder / renamed)
 
@@ -261,10 +261,10 @@ class WithLims(abc.ABC):
             elif ephys_folder.drive.endswith("B"):
                 probes = '_probeDEF'
             else:
-                probes = ''
+                probes = '_probes'
                 
             fabric.Connection(host=np_services.OpenEphys.host, user='svc_neuropix', connect_kwargs=dict(password=password)).run(
-                f'robocopy "{ephys_folder}" "{session_folder}{probes}" /j /s /xo' # /j unbuffered, /s incl non-empty subdirs, /xo exclude src files older than dest
+                f'robocopy "{ephys_folder}" "{session_folder / (session_folder.name + probes)}" /j /s /xo' # /j unbuffered, /s incl non-empty subdirs, /xo exclude src files older than dest
             ) 
                            
     def photodoc(self, img_label: Optional[str] = None) -> pathlib.Path:
