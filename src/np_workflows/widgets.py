@@ -146,9 +146,9 @@ def mtrain_widget(
         reset_update_button()
         if change["new"] is None:
             return
-        if change["new"] not in stage_label.value or str(
+        if change["new"] != stage_label.value or str(
             regimen_dropdown.value
-        ) not in str(regimen_label.value):
+        ) != str(regimen_label.value):
             # enable button if stage name changed, or regimen name changed (some
             # regimens have the same stage names as other regimens)
             update_button.disabled = False
