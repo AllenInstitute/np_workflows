@@ -1,4 +1,6 @@
+import contextlib
 import datetime
+import logging
 import pathlib
 import threading
 import time
@@ -215,7 +217,7 @@ def await_all_checkboxes(widget: ipw.Box) -> None:
     
     
 def check_openephys_widget() -> None:
-    check = "OpenEphys checks before pretest:"
+    check = "OpenEphys checks:"
     checks = (
         "Record Node paths are set to two different drives (A: & B: or E: & G:)",
         "Each Record Node recording only ABC or DEF probes",
@@ -225,7 +227,7 @@ def check_openephys_widget() -> None:
     IPython.display.display(widget := check_widget(check, *checks))
 
 def check_hardware_widget() ->  None:
-    check = "Stage checks before pretest:"
+    check = "Stage checks:"
     checks = (
         "Cartridge raised (fully retract probes before raising!)",
         "Water lines flushed",
@@ -238,17 +240,61 @@ def check_mouse_widget() -> None:
         "Stabilization screw",
         "Quickcast, agarose, silicon oil",
         "Tail cone down",
-        "Continuity check",
+        "Continuity/Resistance check",
+        "Eye-tracking mirror",
+    )
+    IPython.display.display(widget := check_widget(check, *checks))
+
+def pre_stim_check_widget() -> None:
+    check = "Before running stim:"
+    checks = (
+        "Windows minimized on Stim computer (Win+D)",
+        "Eye-tracking mirror", 
+        "Monitor closed",
+        "Photodoc light off",
+        "Curtain down",     
     )
     IPython.display.display(widget := check_widget(check, *checks))
     
 def finishing_checks_widget() -> None:
     check = "Finishing checks:"
     checks = (
-        "Add quickcast",
+        "Add quickcast etc.",
         "Remove and water mouse",      
+        "Dip probes",     
     )
     IPython.display.display(widget := check_widget(check, *checks))
+    
+    
+def wheel_height_widget(platform_json: pathlib.Path | np_services.PlatformJsonWriter) -> IPython.display.DisplayHandle | None:
+    "Supply a path or a platform json instance. Saves a JSON file with the wheel height recorded."
+
+    if isinstance(platform_json, pathlib.Path):
+        platform_json = np_services.PlatformJsonWriter(path=platform_json)
+    platform_json.load_from_existing()
+    
+    if platform_json.mouseID:
+        mouse = np_session.Mouse(platform_json.mouseID)
+        
+    layout = ipw.Layout(max_width='130px')
+    
+    try:
+        prev_height = mouse.state.get('wheel_height', 0)
+    except:
+        prev_height = 0
+    height_counter = ipw.BoundedFloatText(value=prev_height, min=0, max=10, step=0.1, description="Wheel height", layout=layout)
+    save_button = ipw.Button(description='Save', button_style='warning', layout=layout)
+
+    def on_click(b):
+        platform_json.load_from_existing()
+        platform_json.wheel_height = height_counter.value
+        with contextlib.suppress(Exception):
+            mouse.state['wheel_height'] = height_counter.value
+        platform_json.write(update_existing=False)
+        save_button.button_style = 'success'
+        save_button.description = 'Saved'
+    save_button.on_click(on_click)
+    return IPython.display.display(ipw.VBox([height_counter,save_button]))
     
     
 def di_widget(platform_json: pathlib.Path | np_services.PlatformJsonWriter) -> IPython.display.DisplayHandle | None:
