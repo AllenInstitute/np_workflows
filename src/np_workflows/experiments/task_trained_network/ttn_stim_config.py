@@ -64,6 +64,7 @@ def camstim_defaults() -> dict:
 default_ttn_params["main"] = {}
 
 default_ttn_params["main"]["sweepstim"] = {
+    "trigger_delay_sec": 5.0,       #! does it matter?
     'sync_sqr_loc': (870, 525),     # for stim with warp=Warp.disabled 
 }
 # default_ttn_params["main"]["movie_path"] = "C:/ProgramData/StimulusFiles/dev/"
@@ -172,11 +173,8 @@ default_ttn_params["mapping"]["flash_path"] = "flash_250ms.stim" # relpath in St
 default_ttn_params["mapping"]["default_gabor_duration_seconds"] = 1200
 default_ttn_params["mapping"]["default_flash_duration_seconds"] = 300 # may be overriden by 'max_total_duration_minutes'
 
-default_ttn_params["mapping"][
-    "sweepstim"
-] = {}  # from a DR experiment with mapping_script_v2.py
-
-
+default_ttn_params["mapping"]["sweepstim"] = {} 
+# trigger_delay_sec not specified
 # all stim parameters depend on session type (pretest, hab, ecephys):
 def per_session_mapping_params(session: TTNSession) -> dict[str, dict[str, int]]:
     "`'mapping'` key in params dict should be updated with the returned dict (which will be empty for habs)."
