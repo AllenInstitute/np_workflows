@@ -241,7 +241,7 @@ def check_mouse_widget() -> None:
         "Quickcast, agarose, silicon oil",
         "Tail cone down",
         "Continuity/Resistance check",
-        "Eye-tracking mirror",
+        "Eye-tracking mirror in place",
     )
     IPython.display.display(widget := check_widget(check, *checks))
 
@@ -249,7 +249,7 @@ def pre_stim_check_widget() -> None:
     check = "Before running stim:"
     checks = (
         "Windows minimized on Stim computer (Win+D)",
-        "Eye-tracking mirror", 
+        "Eye-tracking mirror clean", 
         "Monitor closed",
         "Photodoc light off",
         "Curtain down",     
