@@ -9,6 +9,7 @@ import time
 from typing import Any, ClassVar, Iterable, Literal, Optional, Protocol, Sequence, Type, Union
 
 import fabric 
+import ipylab
 
 import np_config
 import np_logging
@@ -252,6 +253,23 @@ class WithLims(abc.ABC):
                                 renamed = f'{self.session.folder}.{cam_label.group().lower()}{file.suffix}'
                             shutil.copy2(file, session_folder / renamed)
 
+        # copy ipynb, logs and lock/pyproject files
+        app = ipylab.JupyterFrontEnd()
+        app.commands.execute('docmanager:save')
+
+        src = pathlib.Path('.').resolve()
+        dest = self.session.npexp_path / 'exp'
+        dest.mkdir(exist_ok=True, parents=True)
+
+        ipynb = sorted(src.glob('*.ipynb'), key=lambda path: path.stat().st_mtime, reverse=True)[0]
+        logs = src / 'logs'
+        lock = src.parent / 'pdm.lock'
+        pyproject = src.parent / 'pyproject.toml'
+
+        shutil.copytree(src, dest, dirs_exist_ok=True)
+        for _ in (lock, pyproject):
+            shutil.copy2(_, dest)
+            
         # copy ephys       
         password = getpass.getpass(f'Enter password for svc_neuropix:')
         ssh = fabric.Connection(host=np_services.OpenEphys.host, user='svc_neuropix', connect_kwargs=dict(password=password))
