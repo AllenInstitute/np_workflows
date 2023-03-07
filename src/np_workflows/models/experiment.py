@@ -68,14 +68,12 @@ class WithLims(abc.ABC):
         return f'{self.__class__.__name__}({self.session})'
     
     @property
-    def platform_json(self) -> np_services.PlatformJsonWriter:
-        with contextlib.suppress(AttributeError):
-            return self._platform_json
-        self._platform_json = np_services.PlatformJsonWriter(path=self.session.npexp_path)
-        self._platform_json.operatorID = str(self.user)
-        self._platform_json.mouseID = str(self.mouse)
-        self._platform_json.sessionID = str(self.session)
-        return self.platform_json
+    def platform_json(self) -> np_session.PlatformJson:
+        self.session.platform_json.update('operatorID', str(self.user))
+        self.session.platform_json.update('mouseID', str(self.mouse))
+        self.session.platform_json.update('sessionID', self.session.id)
+        self.session.platform_json.update('rig_id', str(self.rig))
+        return self.session.platform_json
     
     @property
     def session(self) -> np_session.Session:
