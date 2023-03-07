@@ -15,7 +15,7 @@ import np_session
 import np_services
 import PIL.Image
 
-import np_workflows.npxc as npxc
+import np_workflows.shared.npxc as npxc
 
 
 def elapsed_time_widget() -> IPython.display.DisplayHandle | None:
@@ -260,7 +260,7 @@ def finishing_checks_widget() -> None:
     check = "Finishing checks:"
     checks = (
         "Add quickcast etc.",
-        "Remove and water mouse",      
+        "Remove and water mouse", 
         "Dip probes",     
     )
     IPython.display.display(widget := check_widget(check, *checks))
@@ -336,7 +336,7 @@ def dye_widget(session_folder: pathlib.Path) -> IPython.display.DisplayHandle | 
     di_info: dict[str, int | str] = dict(
         EndTime=0, StartTime=0, dii_description="DiI", times_dipped=0,
     )
-    
+        
     class DyeRecorder(np_services.JsonRecorder):
         log_name = f'{session_folder.name}_dye.json'
         log_root = session_folder
@@ -381,6 +381,13 @@ def isi_widget(
         print(f"ISI map found for {lims_info.np_id}:\n{path}")
         img = PIL.Image.open(path)
         return IPython.display.display(img)
+    
+    # alternative to use ipw with toggle button -------------------------------------------- #
+    # import io
+    # membuf = io.BytesIO()
+    # img.save(membuf, format="png") 
+    # return IPython.display.display(ipw.VBox([ipw.Image(value=membuf.getvalue())]))
+
 
 def photodoc_widget(img_name: str) -> IPython.display.DisplayHandle | None:
     "Captures and displays snapshot from image camera, appending `img_name` to the filename."
@@ -456,3 +463,4 @@ def quiet_mode_widget() -> IPython.display.DisplayHandle | None:
     debug_mode_toggle.observe(on_click)
      
     return IPython.display.display(debug_mode_toggle)
+

@@ -15,7 +15,7 @@ import np_config
 import np_logging
 import np_session
 import np_services
-import np_workflows.npxc as npxc
+import np_workflows.shared.npxc as npxc
 from np_services import (
     Service,
     TestError,
@@ -49,8 +49,6 @@ class WithLims(abc.ABC):
         session_type: Literal['ecephys', 'hab'] = default_session_type,
         **kwargs,
         ):
-        
-        # np_config.merge(self.__dict__, kwargs)
         
         if session:
             self.session = session
@@ -243,20 +241,20 @@ class WithLims(abc.ABC):
                     files = None
                     with contextlib.suppress(AttributeError):
                         files = service.data_files or service.get_latest_data('*')
-                        if not files:
-                            continue
-                        files = set(files)
-                        logger.info("%s | Copying files %r", service.__name__, files)
-                        for file in files:
+                    if not files:
+                        continue
+                    files = set(files)
+                    logger.info("%s | Copying files %r", service.__name__, files)
+                    for file in files:
                         renamed = None
-                            if file.suffix == '.h5':
-                                renamed = f'{self.session.folder}.sync'
-                            elif file.suffix == '.pkl':
-                                for _ in ('opto', 'main', 'mapping'):
-                                    if _ in file.name:
-                                        renamed = f'{self.session.folder}.{"stim" if _ == "main" else _}.pkl'
-                            elif file.suffix in ('.json', '.mp4') and (cam_label := re.match('Behavior|Eye|Face',file.name)):
-                                renamed = f'{self.session.folder}.{cam_label.group().lower()}{file.suffix}'
+                        if file.suffix == '.h5':
+                            renamed = f'{self.session.folder}.sync'
+                        elif file.suffix == '.pkl':
+                            for _ in ('opto', 'main', 'mapping'):
+                                if _ in file.name:
+                                    renamed = f'{self.session.folder}.{"stim" if _ == "main" else _}.pkl'
+                        elif file.suffix in ('.json', '.mp4') and (cam_label := re.match('Behavior|Eye|Face',file.name)):
+                            renamed = f'{self.session.folder}.{cam_label.group().lower()}{file.suffix}'
                         elif service in (np_services.Cam3d, np_services.MVR):
                             for lims_label, img_label  in {
                                     'pre_experiment_surface_image_left': '_surface-image1-left.png',
@@ -281,7 +279,7 @@ class WithLims(abc.ABC):
         from np_notebooks root."""
 
         self.save_current_notebook()
-
+        
         cwd = pathlib.Path('.').resolve()
         dest = self.session.npexp_path / 'exp'
         dest.mkdir(exist_ok=True, parents=True)
@@ -290,10 +288,10 @@ class WithLims(abc.ABC):
 
         lock = cwd.parent / 'pdm.lock'
         pyproject = cwd.parent / 'pyproject.toml'
-
+        
         for _ in (lock, pyproject):
             shutil.copy2(_, dest)
-            
+        
     def save_current_notebook(self) -> None:
         app = ipylab.JupyterFrontEnd()
         app.commands.execute('docmanager:save')

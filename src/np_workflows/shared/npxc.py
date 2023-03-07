@@ -11,9 +11,6 @@ import fabric
 import np_config
 import np_logging
 import np_session
-# from np_workflows.models import baseclasses, classes
-# from np_workflows.models.baseclasses import Experiment
-# from np_workflows.models import utils
 from np_services import Initializable, Testable, TestError, Finalizable, Service
 from np_services import Sync, VideoMVR, ImageMVR, Cam3d, ScriptCamstim, OpenEphys  
 import np_services 
