@@ -228,14 +228,21 @@ class WithLims(abc.ABC):
         for service in (_ for _ in self.services if isinstance(_, Shutdownable)):
             service.shutdown()
             
-    def copy_files(self):
+    def copy_files(self) -> None:
         """Copy files from raw data storage to session folder for all services."""
-        session_folder = self.session.npexp_path
+        self.copy_data_files()
+        self.copy_workflow_files()
+        self.platform_json.fix_D1_files()
+        self.copy_ephys()
+    
+    def copy_data_files(self) -> None:
+        """Copy data files from raw data storage to session folder for all services."""
         for service in self.services:
             match service.__name__:
                 case "np_services.open_ephys":
                     continue # copy ephys after other files
                 case _:
+                    files = None
                     with contextlib.suppress(AttributeError):
                         files = service.data_files or service.get_latest_data('*')
                         if not files:
@@ -243,6 +250,7 @@ class WithLims(abc.ABC):
                         files = set(files)
                         logger.info("%s | Copying files %r", service.__name__, files)
                         for file in files:
+                        renamed = None
                             if file.suffix == '.h5':
                                 renamed = f'{self.session.folder}.sync'
                             elif file.suffix == '.pkl':
@@ -251,25 +259,48 @@ class WithLims(abc.ABC):
                                         renamed = f'{self.session.folder}.{"stim" if _ == "main" else _}.pkl'
                             elif file.suffix in ('.json', '.mp4') and (cam_label := re.match('Behavior|Eye|Face',file.name)):
                                 renamed = f'{self.session.folder}.{cam_label.group().lower()}{file.suffix}'
-                            shutil.copy2(file, session_folder / renamed)
+                        elif service in (np_services.Cam3d, np_services.MVR):
+                            for lims_label, img_label  in {
+                                    'pre_experiment_surface_image_left': '_surface-image1-left.png',
+                                    'pre_experiment_surface_image_right': '_surface-image1-right.png',
+                                    'brain_surface_image_left': '_surface-image2-left.png',
+                                    'brain_surface_image_right': '_surface-image2-right.png',
+                                    'pre_insertion_surface_image_left': '_surface-image3-left.png',
+                                    'pre_insertion_surface_image_right': '_surface-image3-right.png',
+                                    'post_insertion_surface_image_left': '_surface-image4-left.png',
+                                    'post_insertion_surface_image_right': '_surface-image4-right.png',
+                                    'post_stimulus_surface_image_left': '_surface-image5-left.png',
+                                    'post_stimulus_surface_image_right': '_surface-image5-right.png',
+                                    'post_experiment_surface_image_left': '_surface-image6-left.png',
+                                    'post_experiment_surface_image_right': '_surface-image6-right.png',
+                                }.items():
+                                if lims_label in file.name:
+                                    renamed = f'{self.session.folder}{img_label}{file.suffix}'
+                        shutil.copy2(file, self.session.npexp_path / (renamed or file.name))
+                        
+    def copy_workflow_files(self) -> None:
+        """Copy working directory (with ipynb, logs folder) and lock/pyproject files
+        from np_notebooks root."""
 
-        # copy ipynb, logs and lock/pyproject files
-        app = ipylab.JupyterFrontEnd()
-        app.commands.execute('docmanager:save')
+        self.save_current_notebook()
 
-        src = pathlib.Path('.').resolve()
+        cwd = pathlib.Path('.').resolve()
         dest = self.session.npexp_path / 'exp'
         dest.mkdir(exist_ok=True, parents=True)
 
-        ipynb = sorted(src.glob('*.ipynb'), key=lambda path: path.stat().st_mtime, reverse=True)[0]
-        logs = src / 'logs'
-        lock = src.parent / 'pdm.lock'
-        pyproject = src.parent / 'pyproject.toml'
+        shutil.copytree(cwd, dest, dirs_exist_ok=True)
 
-        shutil.copytree(src, dest, dirs_exist_ok=True)
+        lock = cwd.parent / 'pdm.lock'
+        pyproject = cwd.parent / 'pyproject.toml'
+
         for _ in (lock, pyproject):
             shutil.copy2(_, dest)
             
+    def save_current_notebook(self) -> None:
+        app = ipylab.JupyterFrontEnd()
+        app.commands.execute('docmanager:save')
+        
+    def copy_ephys(self) -> None:
         # copy ephys       
         password = getpass.getpass(f'Enter password for svc_neuropix:')
         ssh = fabric.Connection(host=np_services.OpenEphys.host, user='svc_neuropix', connect_kwargs=dict(password=password))
@@ -285,7 +316,7 @@ class WithLims(abc.ABC):
             with contextlib.suppress(Exception):
                 with ssh:
                     ssh.run(
-                    f'robocopy "{ephys_folder}" "{session_folder / (session_folder.name + probes)}" /j /s /xo' 
+                    f'robocopy "{ephys_folder}" "{self.session.npexp_path / (self.session.npexp_path.name + probes)}" /j /s /xo' 
                     # /j unbuffered, /s incl non-empty subdirs, /xo exclude src files older than dest
                     ) 
                            
