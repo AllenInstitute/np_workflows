@@ -316,37 +316,10 @@ class WithLims(abc.ABC):
                     # /j unbuffered, /s incl non-empty subdirs, /xo exclude src files older than dest
                     ) 
                            
-    def photodoc(self, img_label: Optional[str] = None) -> pathlib.Path:
-        """Capture image with `img_label` appended to filename, and return the filepath.
-        
-        If multiple images are captured, only the last will remain in the Imager.data_files list.
-        """        
-        if img_label:
-            self.imager.label = img_label
-        
-        if isinstance(self.imager, Initializable) and not getattr(self.imager, 'initialization', None):
-            self.imager.initialize()
-            
-        self.imager.start()
-        
-        if isinstance(self.imager, Finalizable):
-            self.imager.finalize()
-            
-        if (recorder := np_services.NewScaleCoordinateRecorder) in self.services:
-            if img_label:
-                recorder.label = img_label
-            recorder.start()
-        
-        # remove all but latest file with this label
-        if img_label and self.imager.data_files:
-            for idx, file in enumerate(self.imager.data_files[:-2]):
-                if img_label in file.name:
-                    self.imager.data_files.pop(idx)
-            
-        return self.imager.data_files[-1]
     
 class Ecephys(WithLims):
     default_session_type = 'ecephys'
+
 
 class Hab(WithLims):
     default_session_type = 'hab'
