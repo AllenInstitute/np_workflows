@@ -228,7 +228,6 @@ class WithLims(abc.ABC):
         """Copy files from raw data storage to session folder for all services."""
         self.copy_data_files()
         self.copy_workflow_files()
-        self.platform_json.fix_D1_files()
         self.copy_ephys()
     
     def copy_data_files(self) -> None:
