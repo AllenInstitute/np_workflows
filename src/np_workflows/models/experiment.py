@@ -319,7 +319,10 @@ class WithLims(abc.ABC):
                     ) 
                            
     def photodoc(self, img_label: Optional[str] = None) -> pathlib.Path:
-        """Capture image with `img_label` appended to filename, and return the filepath."""        
+        """Capture image with `img_label` appended to filename, and return the filepath.
+        
+        If multiple images are captured, only the last will remain in the Imager.data_files list.
+        """        
         if img_label:
             self.imager.label = img_label
         
@@ -335,6 +338,12 @@ class WithLims(abc.ABC):
             if img_label:
                 recorder.label = img_label
             recorder.start()
+        
+        # remove all but latest file with this label
+        if img_label and self.imager.data_files:
+            for idx, file in enumerate(self.imager.data_files[:-2]):
+                if img_label in file.name:
+                    self.imager.data_files.pop(idx)
             
         return self.imager.data_files[-1]
     
