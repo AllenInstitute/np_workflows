@@ -17,6 +17,11 @@ import PIL.Image
 
 import np_workflows.shared.npxc as npxc
 
+logger = np_logging.getLogger(__name__)
+
+np_logging.getLogger('Comm').propagate = False
+np_logging.getLogger('PIL').propagate = False
+
 
 def elapsed_time_widget() -> IPython.display.DisplayHandle | None:
     """Displays a clock showing the elapsed time since the cell was first run."""
@@ -448,8 +453,6 @@ def quiet_mode_widget() -> IPython.display.DisplayHandle | None:
                 if isinstance(handler, logging.StreamHandler):
                     handler.setLevel('INFO')
                 
-    np_logging.getLogger('Comm').setLevel('INFO')
-    
     def on_click(b) -> None:
         if not debug_mode_toggle.value:
             set_debug_mode(True)
