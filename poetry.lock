@@ -2847,20 +2847,21 @@ files = [
 
 [[package]]
 name = "np-services"
-version = "0.1.33"
+version = "0.1.34"
 description = "Tools for interfacing with devices and services used in Mindscope Neuropixels experiments at the Allen Institute."
 category = "main"
 optional = false
 python-versions = ">=3.11,<4.0"
 files = [
-    {file = "np_services-0.1.33-py3-none-any.whl", hash = "sha256:a4217e22e9cc496172c5f1ab55b04426f9049242c25dbaab33f0d7786924c32c"},
-    {file = "np_services-0.1.33.tar.gz", hash = "sha256:181ce481f5fdce20e3da3047914f13b239ca0c4e6a0751f5baf3c01f0b8aeef8"},
+    {file = "np_services-0.1.34-py3-none-any.whl", hash = "sha256:2a146c0286d43f786820da752e340becfa4400688613427c8544e3ce2c0a5796"},
+    {file = "np_services-0.1.34.tar.gz", hash = "sha256:0410129e2535de8c3dbd5eec9df5e34c13627883f6995448441d6a0cdfeefb85"},
 ]
 
 [package.dependencies]
 backoff = "*"
 fabric = ">=2.7,<3.0"
 h5py = ">=3.8.0,<4.0.0"
+np_config = ">=0.4.17"
 np_session = ">=0.2"
 pandas = ">=1.5.3,<2.0.0"
 pydantic = ">=1.10,<2.0"
@@ -2869,14 +2870,14 @@ requests = ">=2,<3"
 
 [[package]]
 name = "np-session"
-version = "0.4.0"
+version = "0.4.2"
 description = "Tools for accessing data, metadata, and jobs related to ecephys and behavior sessions for the Mindscope Neuropixels team."
 category = "main"
 optional = false
 python-versions = ">=3.7,<4.0"
 files = [
-    {file = "np_session-0.4.0-py3-none-any.whl", hash = "sha256:f31cd7a121ab6fcb1856c81f4072aa4dead6b518210eb6a90fb0472467425911"},
-    {file = "np_session-0.4.0.tar.gz", hash = "sha256:5426616e9ae2fb498cddcd144d430c77d2e3e82cfb2d55ca5b1b0cda360300c4"},
+    {file = "np_session-0.4.2-py3-none-any.whl", hash = "sha256:a7ea6dda1de5de20bb08095fc14b0e24a616c89050008aa9f3a739d4ffb4f922"},
+    {file = "np_session-0.4.2.tar.gz", hash = "sha256:4b24389de1684d3372361f0e693ebc61f9867444f074d08f5515108d2a2fac52"},
 ]
 
 [package.dependencies]
@@ -4707,4 +4708,4 @@ test = ["mypy", "pre-commit", "pytest", "pytest-asyncio", "websockets (>=10.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.11"
-content-hash = "52f71dd6e0e3682d8ad76b06ae5f894f130ab13f524b6885030a46b8d00005c7"
+content-hash = "206c9e19ae3560625e8caee87468c013cd114963bd34db34eda5d3665c6b7676"
