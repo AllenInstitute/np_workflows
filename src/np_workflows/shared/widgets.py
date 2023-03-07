@@ -14,6 +14,7 @@ import np_logging
 import np_session
 import np_services
 import PIL.Image
+import PIL.ImageDraw
 
 import np_workflows.shared.npxc as npxc
 
