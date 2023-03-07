@@ -286,11 +286,9 @@ def wheel_height_widget(platform_json: pathlib.Path | np_services.PlatformJsonWr
     save_button = ipw.Button(description='Save', button_style='warning', layout=layout)
 
     def on_click(b):
-        platform_json.load_from_existing()
         platform_json.wheel_height = height_counter.value
         with contextlib.suppress(Exception):
             mouse.state['wheel_height'] = height_counter.value
-        platform_json.write(update_existing=False)
         save_button.button_style = 'success'
         save_button.description = 'Saved'
     save_button.on_click(on_click)
@@ -318,10 +316,8 @@ def di_widget(platform_json: pathlib.Path | np_services.PlatformJsonWriter) -> I
         di_info['previous_uses'] = str(usage_counter.value)
         
     def on_click(b):
-        platform_json.load_from_existing()
         update_di_info()
         platform_json.DiINotes = di_info
-        platform_json.write(update_existing=False)
         save_button.button_style = 'success'
         save_button.description = 'Saved'
     save_button.on_click(on_click)
