@@ -352,9 +352,9 @@ def isi_widget(
     """Displays ISI target map from lims (contours only), or colormap overlay if
     `show_colormap = True`."""
     if not isinstance(labtracks_mouse_id, np_session.LIMS2MouseInfo):
-        lims_info = np_session.LIMS2MouseInfo(labtracks_mouse_id)
+        mouse_info = np_session.LIMS2MouseInfo(labtracks_mouse_id)
     else:
-        lims_info = labtracks_mouse_id
+        mouse_info = labtracks_mouse_id
 
     if colormap:
         key = "isi_image_overlay_path"
@@ -362,7 +362,7 @@ def isi_widget(
         key = "target_map_image_path"
     
     try:
-        lims_path = lims_info.isi_info[key]
+        lims_path = mouse_info.isi_info[key]
     except ValueError:
         print("Mouse is not in lims.")
         return
@@ -371,11 +371,16 @@ def isi_widget(
         return
     except KeyError:
         print(f"ISI info found for this mouse, but {key=!r} is missing.")
-        return IPython.display.display(IPython.display.JSON(lims_info.isi_info))
+        return IPython.display.display(IPython.display.JSON(mouse_info.isi_info))
     else:
         path: pathlib.Path = np_config.normalize_path(lims_path)
-        print(f"ISI map found for {lims_info.np_id}:\n{path}")
+        print(f"ISI map found for {mouse_info.np_id}:\n{path}")
         img = PIL.Image.open(path)
+        if coords := mouse_info.isi_targets:
+            draw = PIL.ImageDraw.Draw(img)
+            draw.line([(_['x'], _['y']) for _ in coords], fill=True, width=5)
+        else: 
+            logger.debug("No ISI targets found for %r in lims, ISI experiment id %s", mouse_info, mouse_info.isi_id)
         return IPython.display.display(img)
     
     # alternative to use ipw with toggle button -------------------------------------------- #
@@ -430,6 +435,7 @@ def quiet_mode_widget() -> IPython.display.DisplayHandle | None:
             icon='check',
             tooltip='Quiet mode: tracebacks hidden, logging level set to INFO.',
         )
+    
     def set_debug_mode(value: bool) -> None:
         if value:
             npxc.show_tracebacks()
@@ -441,7 +447,7 @@ def quiet_mode_widget() -> IPython.display.DisplayHandle | None:
             for handler in np_logging.getLogger().handlers:
                 if isinstance(handler, logging.StreamHandler):
                     handler.setLevel('INFO')
-            
+                
     np_logging.getLogger('Comm').setLevel('INFO')
     
     def on_click(b) -> None:
