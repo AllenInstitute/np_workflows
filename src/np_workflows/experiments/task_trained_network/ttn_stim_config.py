@@ -23,7 +23,7 @@ class TTNSession(enum.Enum):
     HAB_60 = "hab 60"
     HAB_90 = "hab 90"
     HAB_120 = "hab 120"
-    ECEPHYS = "ecephys"
+    EPHYS = "ephys"
 
 
 # setup parameters ---------------------------------------------------------------------
@@ -72,7 +72,7 @@ default_ttn_params["main"][
     "monitor"
 ] = 'Gamma1.Luminance50'
 
-# other parameters that vary depending on session type (pretest, hab, ecephys):
+# other parameters that vary depending on session type (pretest, hab, ephys):
 def per_session_main_stim_params(session: TTNSession) -> dict[str, Any]:
     def build_session_stim_params(
         key: str, old: int, reversed: int, annotated: int
@@ -88,7 +88,7 @@ def per_session_main_stim_params(session: TTNSession) -> dict[str, Any]:
                 return repeats(15, 5, 1)
             case TTNSession.HAB_90:
                 return repeats(20, 7, 2)
-            case TTNSession.HAB_120 | TTNSession.ECEPHYS:
+            case TTNSession.HAB_120 | TTNSession.EPHYS:
                 return repeats(25, 8, 2)
             case _:
                 raise ValueError(f"Stim repeats not implemented for {session}")
@@ -119,7 +119,7 @@ def per_session_main_stim_params(session: TTNSession) -> dict[str, Any]:
 
 default_ttn_params["opto"] = {}
 
-# all parameters depend on session type (pretest, hab, ecephys):
+# all parameters depend on session type (pretest, hab, ephys):
 
 def per_session_opto_params(
     session: TTNSession, mouse: str | int | np_session.Mouse
@@ -134,7 +134,7 @@ def per_session_opto_params(
             "level_list"
         ]
         match session:
-            case TTNSession.PRETEST | TTNSession.ECEPHYS:
+            case TTNSession.PRETEST | TTNSession.EPHYS:
                 return {"level_list": sorted(default_opto_levels)[-2:]}
             case _:
                 raise ValueError(f"Opto levels not implemented for {session}")
@@ -145,13 +145,13 @@ def per_session_opto_params(
         match session:
             case TTNSession.PRETEST:
                 return {"operation_mode": "pretest"}
-            case TTNSession.ECEPHYS:
+            case TTNSession.EPHYS:
                 return {"operation_mode": "experiment"}
             case _:
                 raise ValueError(f"Opto levels not implemented for {session}")
 
     match session:
-        case TTNSession.PRETEST | TTNSession.ECEPHYS:
+        case TTNSession.PRETEST | TTNSession.EPHYS:
             params = copy.deepcopy(default_ttn_params["opto"])
             params.update(opto_mouse_id(mouse))
             params.update(opto_levels(session))
@@ -175,7 +175,7 @@ default_ttn_params["mapping"]["default_flash_duration_seconds"] = 300 # may be o
 
 default_ttn_params["mapping"]["sweepstim"] = {} 
 # trigger_delay_sec not specified
-# all stim parameters depend on session type (pretest, hab, ecephys):
+# all stim parameters depend on session type (pretest, hab, ephys):
 def per_session_mapping_params(session: TTNSession) -> dict[str, dict[str, int]]:
     "`'mapping'` key in params dict should be updated with the returned dict (which will be empty for habs)."
 
@@ -184,7 +184,7 @@ def per_session_mapping_params(session: TTNSession) -> dict[str, dict[str, int]]
         match session:
             case TTNSession.PRETEST:
                 return {"max_total_duration_minutes": 0.1}
-            case TTNSession.ECEPHYS | TTNSession.HAB_120:
+            case TTNSession.EPHYS | TTNSession.HAB_120:
                 return {"max_total_duration_minutes": 10}
             case _:
                 raise ValueError(f"Mapping params not implemented for {session}")
@@ -193,13 +193,13 @@ def per_session_mapping_params(session: TTNSession) -> dict[str, dict[str, int]]
         match session:
             case TTNSession.PRETEST:
                 return {"pre_blank_screen_sec": .5, "post_blank_screen_sec": .5}
-            case TTNSession.ECEPHYS | TTNSession.HAB_120:
+            case TTNSession.EPHYS | TTNSession.HAB_120:
                 return {"pre_blank_screen_sec": 2, "post_blank_screen_sec": 2}
             case _:
                 raise ValueError(f"Mapping params not implemented for {session}")
 
     match session:
-        case TTNSession.PRETEST | TTNSession.ECEPHYS | TTNSession.HAB_120:
+        case TTNSession.PRETEST | TTNSession.EPHYS | TTNSession.HAB_120:
             params = copy.deepcopy(default_ttn_params["mapping"])
             params.update(mapping_duration(session))
             params.update(mapping_blank_screen(session))

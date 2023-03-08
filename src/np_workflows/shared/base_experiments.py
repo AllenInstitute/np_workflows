@@ -37,7 +37,7 @@ logger = np_logging.getLogger(__name__)
 
 class WithLims(abc.ABC):
     
-    default_session_type: Literal['ecephys', 'hab'] = 'ecephys'
+    default_session_type: Literal['ephys', 'hab'] = 'ephys'
     
     services: tuple[Service, ...] = ()
     "Devices, databases, etc."
@@ -45,19 +45,20 @@ class WithLims(abc.ABC):
     def __init__(self, 
         mouse: Optional[str | int |  np_session.LIMS2MouseInfo] = None,
         operator: Optional[str | np_session.LIMS2UserInfo] = None, 
-        session: Optional[str | pathlib.Path | int | np_session.LIMS2SessionInfo] = None,
-        session_type: Literal['ecephys', 'hab'] = default_session_type,
+        session: Optional[str | pathlib.Path | int | np_session.Session] = None,
+        session_type: Optional[Literal['ephys', 'hab']] = None,
         **kwargs,
         ):
         
-        if session:
-            self.session = session
+        if session and not isinstance(session, np_session.Session):
+            session = np_session.Session(session)
         elif operator and mouse:
-            self.session = np_session.generate_session(mouse, operator, session_type)
+            session = np_session.generate_session(mouse, operator, session_type)
         else:
             raise ValueError('Must specify either a mouse + operator, or an existing session')
     
-        self.session_type = session_type
+        self.session = session
+        self.session_type = session_type or self.default_session_type
             
         self.configure_services()
         self.session.npexp_path.mkdir(parents=True, exist_ok=True)
@@ -83,19 +84,19 @@ class WithLims(abc.ABC):
         logger.debug('Set experiment.session to %r', self._session)
     
     @property
-    def session_type(self) -> Literal['ecephys', 'hab']:
+    def session_type(self) -> Literal['ephys', 'hab']:
         with contextlib.suppress(AttributeError):
             return self._session_type
         if self.session:
-            if self.session.is_ecephys_session:
-                return 'ecephys'
+            if self.session.is_hab:
             return 'hab'
+            return 'ephys'
         raise AttributeError('Session has not been set')
     
     @session_type.setter
-    def session_type(self, value: Literal['ecephys', 'hab']):
-        if value not in ('ecephys', 'hab'):
-            raise ValueError('Session type must be either "ecephys" or "hab"')
+    def session_type(self, value: Literal['ephys', 'hab']):
+        if value not in ('ephys', 'hab'):
+            raise ValueError('Session type must be either "ephys" or "hab"')
         self._session_type = value
         logger.debug('Set session_type to %r', value)
         
@@ -316,8 +317,8 @@ class WithLims(abc.ABC):
                     ) 
                            
     
-class Ecephys(WithLims):
-    default_session_type = 'ecephys'
+class Ephys(WithLims):
+    default_session_type = 'ephys'
 
 
 class Hab(WithLims):

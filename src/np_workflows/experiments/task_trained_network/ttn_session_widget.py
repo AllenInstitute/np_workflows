@@ -31,7 +31,7 @@ class TTNSelectedSession:
 def stim_session_select_widget(
     mouse: str | int | np_session.Mouse,
 ) -> TTNSelectedSession:
-    """Select a stimulus session (hab, pretest, ecephys) to run.
+    """Select a stimulus session (hab, pretest, ephys) to run.
 
     An object with mutable attributes is returned, so the selected session can be
     updated along with the GUI selection. (Preference would be to return an enum

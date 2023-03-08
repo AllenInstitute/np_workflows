@@ -49,12 +49,12 @@ class TTNMixin:
     """Provides TTN-specific methods and attributes, mainly related to camstim scripts."""
     
     ttn_session: TTNSession
-    """Enum for session type, e.g. PRETEST, HAB_60, HAB_90, ECEPHYS."""
+    """Enum for session type, e.g. PRETEST, HAB_60, HAB_90, EPHYS."""
     @property
     def recorders(self) -> tuple[Service, ...]:
         """Services to be started before stimuli run, and stopped after. Session-dependent."""
         match self.ttn_session:
-            case TTNSession.PRETEST | TTNSession.ECEPHYS:
+            case TTNSession.PRETEST | TTNSession.EPHYS:
                 return (Sync, VideoMVR, OpenEphys)
             case TTNSession.HAB_60 | TTNSession.HAB_90 | TTNSession.HAB_120:
                 return (Sync, VideoMVR)
@@ -72,6 +72,7 @@ class TTNMixin:
         OpenEphys.folder = self.session.folder
 
         NewScaleCoordinateRecorder.log_root = self.session.npexp_path
+        NewScaleCoordinateRecorder.log_name = self.platform_json.path.name
 
         self.configure_services()
 
@@ -134,7 +135,7 @@ class Hab(TTNMixin, np_workflows.Hab):
         super().__init__(*args, **kwargs)
 
 
-class Ecephys(TTNMixin, np_workflows.Ecephys):
+class Ephys(TTNMixin, np_workflows.Ephys):
     def __init__(self, *args, **kwargs):
         self.services = (
             MouseDirector,
@@ -155,11 +156,11 @@ def new_experiment(
     mouse: int | str | np_session.Mouse,
     user: str | np_session.User,
     session: TTNSession,
-) -> Ecephys | Hab:
+) -> Ephys | Hab:
     """Create a new experiment for the given mouse and user."""
     match session:
-        case TTNSession.PRETEST | TTNSession.ECEPHYS:
-            experiment = Ecephys(mouse, user)
+        case TTNSession.PRETEST | TTNSession.EPHYS:
+            experiment = Ephys(mouse, user)
         case TTNSession.HAB_60 | TTNSession.HAB_90 | TTNSession.HAB_120:
             experiment = Hab(mouse, user)
         case _:
