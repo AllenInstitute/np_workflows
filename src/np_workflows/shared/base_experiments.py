@@ -255,20 +255,24 @@ class WithLims(abc.ABC):
                                     renamed = f'{self.session.folder}.{"stim" if _ == "main" else _}.pkl'
                         elif file.suffix in ('.json', '.mp4') and (cam_label := re.match('Behavior|Eye|Face',file.name)):
                             renamed = f'{self.session.folder}.{cam_label.group().lower()}{file.suffix}'
+                        elif isinstance(service, np_services.NewScaleCoordinateRecorder):
+                            if file == self.platform_json.path:
+                                file = service.get_current_data()
+                                renamed = f'{self.session.folder}.motor-locs.csv'
                         elif service in (np_services.Cam3d, np_services.MVR):
                             for lims_label, img_label  in {
-                                    'pre_experiment_surface_image_left': '_surface-image1-left.png',
-                                    'pre_experiment_surface_image_right': '_surface-image1-right.png',
-                                    'brain_surface_image_left': '_surface-image2-left.png',
-                                    'brain_surface_image_right': '_surface-image2-right.png',
-                                    'pre_insertion_surface_image_left': '_surface-image3-left.png',
-                                    'pre_insertion_surface_image_right': '_surface-image3-right.png',
-                                    'post_insertion_surface_image_left': '_surface-image4-left.png',
-                                    'post_insertion_surface_image_right': '_surface-image4-right.png',
-                                    'post_stimulus_surface_image_left': '_surface-image5-left.png',
-                                    'post_stimulus_surface_image_right': '_surface-image5-right.png',
-                                    'post_experiment_surface_image_left': '_surface-image6-left.png',
-                                    'post_experiment_surface_image_right': '_surface-image6-right.png',
+                                    'pre_experiment_surface_image_left': '_surface-image1-left',
+                                    'pre_experiment_surface_image_right': '_surface-image1-right',
+                                    'brain_surface_image_left': '_surface-image2-left',
+                                    'brain_surface_image_right': '_surface-image2-right',
+                                    'pre_insertion_surface_image_left': '_surface-image3-left',
+                                    'pre_insertion_surface_image_right': '_surface-image3-right',
+                                    'post_insertion_surface_image_left': '_surface-image4-left',
+                                    'post_insertion_surface_image_right': '_surface-image4-right',
+                                    'post_stimulus_surface_image_left': '_surface-image5-left',
+                                    'post_stimulus_surface_image_right': '_surface-image5-right',
+                                    'post_experiment_surface_image_left': '_surface-image6-left',
+                                    'post_experiment_surface_image_right': '_surface-image6-right',
                                 }.items():
                                 if lims_label in file.name:
                                     renamed = f'{self.session.folder}{img_label}{file.suffix}'
