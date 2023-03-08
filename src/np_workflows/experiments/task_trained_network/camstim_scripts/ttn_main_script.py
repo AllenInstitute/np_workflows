@@ -38,7 +38,7 @@ window = Window(
     fullscr=True,
     monitor=json_params["monitor"],
     screen=0,
-    warp=Warp.Disabled,
+    warp=Warp.Spherical,
 )
 
 # patch the Stimulus_v2 class to allow for serializing without large arrays
