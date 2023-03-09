@@ -298,14 +298,12 @@ def wheel_height_widget(platform_json: np_session.PlatformJson) -> IPython.displ
     return IPython.display.display(ipw.VBox([height_counter,save_button]))
     
     
-def di_widget(platform_json: pathlib.Path | np_services.PlatformJsonWriter) -> IPython.display.DisplayHandle | None:
+def di_widget(platform_json: np_session.PlatformJson) -> IPython.display.DisplayHandle | None:
     "Supply a path or a platform json instance. Saves a JSON file with the dye used in the session and a timestamp."
 
     di_info: dict[str, int | str] = dict(
-        EndTime=0, StartTime=str(npxc.now()), dii_description="", times_dipped=0,
+        EndTime=0, StartTime=npxc.now(), dii_description="", times_dipped=0,
     )
-    if isinstance(platform_json, pathlib.Path):
-        platform_json = np_services.PlatformJsonWriter(path=platform_json)
     layout = ipw.Layout(max_width='130px')
     dipped_counter = ipw.IntText(value=0, min=0, max=99, description="Dipped count", layout=layout)
     usage_counter = ipw.IntText(value=0, min=0, max=99, description="Previous uses", layout=layout)
@@ -313,7 +311,7 @@ def di_widget(platform_json: pathlib.Path | np_services.PlatformJsonWriter) -> I
     save_button = ipw.Button(description='Save', button_style='warning', layout=layout)
     
     def update_di_info():
-        di_info['EndTime'] = str(npxc.now())
+        di_info['EndTime'] = npxc.now()
         di_info['times_dipped'] = str(dipped_counter.value)
         di_info['dii_description'] = str(dye_dropdown.value)
         di_info['previous_uses'] = str(usage_counter.value)
