@@ -52,13 +52,14 @@ class WithLims(abc.ABC):
         
         if session and not isinstance(session, np_session.Session):
             session = np_session.Session(session)
+            if session_type and ((a := session_type == 'hab') != (b := session.is_hab)):
+                logger.warning('session_type arg specified (%r) does not match that of supplied %r: %r', a, b, session)
         elif operator and mouse:
-            session = np_session.generate_session(mouse, operator, session_type)
+            session = np_session.generate_session(mouse, operator, session_type or self.default_session_type)
         else:
             raise ValueError('Must specify either a mouse + operator, or an existing session')
-    
+
         self.session = session
-        self.session_type = session_type or self.default_session_type
             
         self.configure_services()
         self.session.npexp_path.mkdir(parents=True, exist_ok=True)
@@ -89,7 +90,7 @@ class WithLims(abc.ABC):
             return self._session_type
         if self.session:
             if self.session.is_hab:
-            return 'hab'
+                return 'hab'
             return 'ephys'
         raise AttributeError('Session has not been set')
     
@@ -320,7 +321,7 @@ class WithLims(abc.ABC):
                     # /j unbuffered, /s incl non-empty subdirs, /xo exclude src files older than dest
                     ) 
                            
-    
+                           
 class Ephys(WithLims):
     default_session_type = 'ephys'
 
