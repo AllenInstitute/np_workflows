@@ -272,12 +272,9 @@ def finishing_checks_widget() -> None:
     IPython.display.display(widget := check_widget(check, *checks))
     
     
-def wheel_height_widget(platform_json: pathlib.Path | np_services.PlatformJsonWriter) -> IPython.display.DisplayHandle | None:
-    "Supply a path or a platform json instance. Saves a JSON file with the wheel height recorded."
+def wheel_height_widget(platform_json: np_session.PlatformJson) -> IPython.display.DisplayHandle | None:
+    "Saves wheel height to platform_json and stores in `mouse.state['wheel_height']`."
 
-    if isinstance(platform_json, pathlib.Path):
-        platform_json = np_services.PlatformJsonWriter(path=platform_json)
-    platform_json.load_from_existing()
     
     if platform_json.mouseID:
         mouse = np_session.Mouse(platform_json.mouseID)
