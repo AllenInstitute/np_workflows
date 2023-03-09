@@ -127,7 +127,10 @@ def print_countdown_timer(seconds: int | float | datetime.timedelta = 0, **kwarg
         time.sleep(0.1)
 
 def photodoc(img_name: str) -> pathlib.Path:
-    """Capture image with `label` appended to filename, and return the filepath."""
+    """Capture image with `label` appended to filename, and return the filepath.
+            
+    If multiple images are captured, only the last will remain in the Imager.data_files list.
+    """
     if RIG.idx == 0:
         from np_services import Cam3d as ImageCamera
     else:
@@ -143,8 +146,19 @@ def photodoc(img_name: str) -> pathlib.Path:
     if isinstance(ImageCamera, Finalizable):
         ImageCamera.finalize()
         
+    if isinstance(NewScaleCoordinateRecorder, Initializable) and not getattr(NewScaleCoordinateRecorder, 'initialization', None):
+        NewScaleCoordinateRecorder.initialize()
     NewScaleCoordinateRecorder.label = img_name
     NewScaleCoordinateRecorder.start()
+    
+    # remove all but latest file with the current label
+    if img_name and ImageCamera.data_files:
+        views = 2 if isinstance(ImageCamera, np_services.Cam3d) else 1
+        def files_with_label():
+            return sorted([_ for _ in ImageCamera.data_files if img_name in _.name])
+        while len(files_with_label()) > views:
+            ImageCamera.data_files.remove(files_with_label()[0])
+            
     return ImageCamera.data_files[-1]
 
 def copy_files(services: Sequence[Service], session_folder: pathlib.Path):
