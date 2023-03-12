@@ -2,6 +2,7 @@ import contextlib
 import datetime
 import logging
 import pathlib
+import re
 import threading
 import time
 from typing import NoReturn, Optional
@@ -244,18 +245,17 @@ def check_mouse_widget() -> None:
     check = "Mouse checks before lowering cartridge:"
     checks = (
         "Stabilization screw",
-        "Quickcast, agarose, silicon oil",
+        ("Silicon oil applied" if npxc.RIG.idx == 1 else "Quickcast removed, agarose applied"),
         "Tail cone down",
         "Continuity/Resistance check",
-        "Eye-tracking mirror in place",
     )
     IPython.display.display(widget := check_widget(check, *checks))
 
 def pre_stim_check_widget() -> None:
     check = "Before running stim:"
     checks = (
+        "Clean eye-tracking mirror and install", 
         "Windows minimized on Stim computer (Win+D)",
-        "Eye-tracking mirror clean", 
         "Monitor closed",
         "Photodoc light off",
         "Curtain down",     
@@ -272,38 +272,32 @@ def finishing_checks_widget() -> None:
     IPython.display.display(widget := check_widget(check, *checks))
     
     
-def wheel_height_widget(platform_json: np_session.PlatformJson) -> IPython.display.DisplayHandle | None:
+def wheel_height_widget(session: np_session.Session) -> IPython.display.DisplayHandle | None:
     "Saves wheel height to platform_json and stores in `mouse.state['wheel_height']`."
-
     
-    if platform_json.mouseID:
-        mouse = np_session.Mouse(platform_json.mouseID)
-        
     layout = ipw.Layout(max_width='130px')
     
-    try:
-        prev_height = mouse.state.get('wheel_height', 0)
-    except:
-        prev_height = 0
+    prev_height = session.mouse.state.get('wheel_height', 0)
     height_counter = ipw.BoundedFloatText(value=prev_height, min=0, max=10, step=0.1, description="Wheel height", layout=layout)
     save_button = ipw.Button(description='Save', button_style='warning', layout=layout)
 
     def on_click(b):
-        platform_json.wheel_height = height_counter.value
-        with contextlib.suppress(Exception):
-            mouse.state['wheel_height'] = height_counter.value
+        session.platform_json.wheel_height = height_counter.value
+        session.mouse.state['wheel_height'] = height_counter.value
         save_button.button_style = 'success'
         save_button.description = 'Saved'
     save_button.on_click(on_click)
     return IPython.display.display(ipw.VBox([height_counter,save_button]))
     
     
-def di_widget(platform_json: np_session.PlatformJson) -> IPython.display.DisplayHandle | None:
+def di_widget(session: np_session.Session) -> IPython.display.DisplayHandle | None:
     "Supply a path or a platform json instance. Saves a JSON file with the dye used in the session and a timestamp."
 
     di_info: dict[str, int | str] = dict(
-        EndTime=0, StartTime=npxc.now(), dii_description="", times_dipped=0,
+        EndTime=0, StartTime=npxc.now(), dii_description="", times_dipped=0, previous_uses="",
     )
+    di_info.update(session.platform_json.DiINotes)
+    
     layout = ipw.Layout(max_width='130px')
     dipped_counter = ipw.IntText(value=0, min=0, max=99, description="Dipped count", layout=layout)
     usage_counter = ipw.IntText(value=0, min=0, max=99, description="Previous uses", layout=layout)
@@ -318,9 +312,10 @@ def di_widget(platform_json: np_session.PlatformJson) -> IPython.display.Display
         
     def on_click(b):
         update_di_info()
-        platform_json.DiINotes = di_info
-        save_button.button_style = 'success'
+        session.platform_json.DiINotes = di_info
         save_button.description = 'Saved'
+        save_button.button_style = 'success'
+        
     save_button.on_click(on_click)
     return IPython.display.display(ipw.VBox([
         dipped_counter, dye_dropdown, 
@@ -389,6 +384,98 @@ def isi_widget(
     # membuf = io.BytesIO()
     # img.save(membuf, format="png") 
     # return IPython.display.display(ipw.VBox([ipw.Image(value=membuf.getvalue())]))
+
+
+def insertion_notes_widget(session: np_session.Session):
+    
+    probes = 'ABCDEF'
+    probe = lambda _: f'Probe{_}'
+    fields = (
+        "FailedToInsert",
+        # "ProbeLocationChanged",
+        # "ProbeBendingOnSurface",
+        # "ProbeBendingElsewhere",
+    )
+    # "NumAgarInsertions",
+    
+    get_notes = lambda _: session.platform_json.InsertionNotes.get(probe(_), {}).get('Notes', '')
+    get_field = lambda _, field: session.platform_json.InsertionNotes.get(probe(_), {}).get(field, None)
+    
+    def disp_str(s): # split PascalCase fieldname into 'Title case' words
+        matches = re.finditer('.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)', s)
+        return ' '.join([m.group(0) for m in matches]).lower().capitalize()
+    save_str = lambda s: ''.join([_.capitalize() for _ in s.split(' ')])
+    
+    row = lambda *args: ipw.HBox([*args])
+    probe_row = lambda p: row(
+        ipw.Text(value=get_notes(p), placeholder='Insertion notes', description=disp_str(probe(p).strip('Probe ')), layout=ipw.Layout(width='auto', min_width='400px')),
+        *(ipw.Checkbox(value=get_field(p, field), description=disp_str(field)) for field in fields),
+        )
+    button = ipw.Button(description="Save", button_style='warning')
+    console = ipw.Output()
+    
+    rows = [probe_row(p) for p in probes]
+    widget = ipw.VBox([*rows, button, console])
+    
+    def save(b):
+        d = {}
+        for letter, row in zip(probes, rows):
+            p = d.get(probe(letter), {})
+            for widget in row.children:
+                v = widget.value
+                if v in (None, False, ''):
+                    continue
+                if isinstance(widget, ipw.Text):
+                    p['Notes'] = widget.value
+                if isinstance(widget, ipw.Checkbox):
+                    p[save_str(widget.description)] = widget.value
+            if p:
+                d[probe(letter)] = p  
+        
+        session.platform_json.InsertionNotes = d 
+        with console:
+            print('Updated notes')
+        button.button_style = 'success'
+        
+    button.on_click(save)
+    return IPython.display.display(widget)
+
+
+def probe_depth_widget(session: np_session.Session):
+    
+    probes = 'ABCDEF'
+    
+    coords = lambda: session.platform_json.manipulator_coordinates
+    
+    if not coords():
+        logger.warning("No photodocs have been captured yet.")
+    
+    probe_coords = lambda img: coords().get(img, dict.fromkeys(probes, dict(x=None, y=None, z=None)))
+    field_str = lambda s: '_'.join(s.split(' ')).lower() + '_surface_image' if s else ''
+    
+    selection = ipw.ToggleButtons(
+    options=[' '.join(_.strip('_surface_image').split('_')).capitalize() for _ in coords().keys()],
+    description='Depth',
+    disabled=False,
+    button_style='', # 'success', 'info', 'warning', 'danger' or ''
+    tooltips=[field_str(_) for _ in coords().keys()],
+    )
+    
+    def update(_):
+        for probe in probes:
+            depth = probe_coords(field_str(selection.value))[probe]["z"]
+            textbox[probe].value = f'{depth:6.1f}' if depth is not None else ''
+            
+    textbox = {
+        probe: ipw.Text(
+        value='', description=probe, disabled=True,
+        layout=ipw.Layout(max_width='150px'),)
+        for probe in probes
+    }
+    selection.observe(update, 'value')
+    update(None)
+    widget = ipw.VBox([selection, ipw.HBox([*textbox.values()])])
+    return IPython.display.display(widget)
 
 
 def photodoc_widget(img_name: str) -> IPython.display.DisplayHandle | None:
