@@ -59,59 +59,6 @@ def get_operators() -> list[str]:
     return list(lims_user_ids)
 
 
-def get_experiments(with_lims: bool = True) -> list[str]:
-    return [
-        cls.__name__
-        for cls in experiments
-        if with_lims or not issubclass(cls, baseclasses.WithLims)
-    ]
-
-
-def initialize_services() -> None:
-    experiment.apply_config_to_services()
-    for service in experiment.services:
-
-        if isinstance(service, Initializable):
-            while True:
-                try:
-                    service.initialize()
-
-                except Exception as exc:
-                    logger.error("%s | %r", service.__name__, exc)
-                    import pdb
-
-                    pdb.set_trace()
-                    continue
-
-                else:
-                    break
-
-        if isinstance(service, Testable):
-            while True:
-                try:
-                    service.test()
-
-                except TestError as exc:
-                    try:
-                        logger.error("%s | %r", service.__name__, service.exc)
-                    except AttributeError:
-                        logger.error("%s | %r", service.__name__, exc)
-                    import pdb
-
-                    pdb.set_trace()
-                    continue
-
-                except Exception as exc:
-                    logger.error("%s | %r", service.__name__, exc)
-                    import pdb
-
-                    pdb.set_trace()
-                    continue
-
-                else:
-                    break
-
-
 def print_countdown_timer(seconds: int | float | datetime.timedelta = 0, **kwargs):
     """Block execution for a given number of seconds (or any timedelta kwargs), printing a countdown timer to the console."""
     if isinstance(seconds, datetime.timedelta):
