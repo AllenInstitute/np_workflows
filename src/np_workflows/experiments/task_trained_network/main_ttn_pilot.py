@@ -7,8 +7,10 @@ import enum
 import functools
 import pathlib
 import platform
+import shutil
 import threading
 import time
+import zlib
 from typing import ClassVar, Literal, NamedTuple, NoReturn, Optional, TypedDict
 
 import IPython
@@ -50,6 +52,23 @@ class TTNMixin:
     
     ttn_session: TTNSession
     """Enum for session type, e.g. PRETEST, HAB_60, HAB_90, EPHYS."""
+
+    @property
+    def script_root_on_stim(self) -> pathlib.Path:
+        "Path to local copy on Stim, from Stim."
+        return pathlib.Path('C:/ProgramData/StimulusFiles/dev')
+    
+    @property
+    def script_root_on_local(self) -> pathlib.Path:
+        "Path to version controlled scripts on local machine."
+        return (pathlib.Path(__file__).parent / 'camstim_scripts')
+    
+    @property
+    def script_names(self) -> dict[Literal["main", "mapping", "opto"], str]:
+        return {
+            label: f"ttn_{label}_script.py" for label in ("main", "mapping", "opto")
+        }
+        
     @property
     def recorders(self) -> tuple[Service, ...]:
         """Services to be started before stimuli run, and stopped after. Session-dependent."""
@@ -62,7 +81,7 @@ class TTNMixin:
     @property
     def stims(self) -> tuple[Service, ...]:
         return (ScriptCamstim,)
-
+    
     def initialize_and_test_services(self) -> None:
         """Configure, initialize (ie. reset), then test all services."""
         
@@ -78,7 +97,24 @@ class TTNMixin:
 
         super().initialize_and_test_services()
 
+    def update_state(self) -> None:
+        "Store useful but non-essential info."
+        self.mouse.state['last_session'] = self.session.id
+        self.mouse.state['last_ttn_session'] = str(self.ttn_session)
+        if self.mouse == 366122:
+            return
+        match self.ttn_session:
+            case TTNSession.PRETEST:
+                return
+            case TTNSession.HAB_60 | TTNSession.HAB_90 | TTNSession.HAB_120:
+                self.session.project.state['latest_hab'] = self.session.id
+            case TTNSession.EPHYS:
+                self.session.project.state['latest_ephys'] = self.session.id
+            
     def run_stim_scripts(self) -> None:
+
+        self.update_state()
+        
         for stim in ('mapping', 'main', 'opto'):
             
             if not (params := self.params[stim]):
@@ -88,18 +124,24 @@ class TTNMixin:
             ScriptCamstim.params = params
             ScriptCamstim.script = self.scripts[stim]
             
-            logger.info("Starting %s script", stim)
+            logger.debug("Starting %s script", stim)
+            
             ScriptCamstim.start()
+            
+            with contextlib.suppress(Exception):
+                np_logging.web(f'ttn_{self.ttn_session.name.lower()}').info(f"{stim.capitalize()} stim started")
             
             with contextlib.suppress(Exception):
                 while not ScriptCamstim.is_ready_to_start():
                     time.sleep(2.5)
                 
-            logger.info("%s script complete", stim)
-            
             if isinstance(ScriptCamstim, Finalizable):
                 ScriptCamstim.finalize()
 
+            with contextlib.suppress(Exception):
+                np_logging.web(f'ttn_{self.ttn_session.name.lower()}').info(f"{stim.capitalize()} stim finished")
+            
+            
     @property
     def params(self) -> dict[Literal["main", "mapping", "opto", "system"], dict[str, Any]]:
         params = copy.deepcopy(DEFAULT_STIM_PARAMS)
@@ -112,16 +154,30 @@ class TTNMixin:
 
     @functools.cached_property
     def scripts(self) -> dict[Literal["main", "mapping", "opto"], str]:
-        "Relative path to script on Stim computer from current location."
-        return {label: np_config.local_to_unc(
-            platform.node(),
-            pathlib.Path(__file__).parent / 'camstim_scripts' / f"ttn_{label}_script.py"
-        ).as_posix() for label in ("main", "mapping", "opto")}
+        """Local path on Stim computer to each script.
+        
+        Verifies Stim copy matches v.c., or overwrites on Stim.
+        """
+        for label in ("main", "mapping", "opto"):
+            script = self.script_names[label]
+            vc_copy = self.script_root_on_local / script
+            stim_copy = np_config.local_to_unc(
+                self.rig.stim, self.script_root_on_stim / script,
+            )
+            
+            validate_or_overwrite(validate=stim_copy, src=vc_copy)
+            logger.debug("Validated %s script", label)
+            
+        return {
+            label: str(self.script_root_on_stim / script) 
+            for label, script in self.script_names.items()
+        }
 
     @functools.cached_property
     def system_camstim_params(self) -> dict[str, Any]:
         "System config on Stim computer, if accessible."
         return camstim_defaults()
+    
     
 class Hab(TTNMixin, np_workflows.Hab):
     def __init__(self, *args, **kwargs):
@@ -130,6 +186,7 @@ class Hab(TTNMixin, np_workflows.Hab):
             Sync,
             VideoMVR,
             self.imager,
+            NewScaleCoordinateRecorder,
             ScriptCamstim,
         )
         super().__init__(*args, **kwargs)
@@ -142,9 +199,9 @@ class Ephys(TTNMixin, np_workflows.Ephys):
             Sync,
             VideoMVR,
             self.imager,
+            NewScaleCoordinateRecorder,
             ScriptCamstim,
             OpenEphys,
-            NewScaleCoordinateRecorder,
         )
         super().__init__(*args, **kwargs)
 
@@ -166,8 +223,24 @@ def new_experiment(
         case _:
             raise ValueError(f"Invalid session type: {session}")
     experiment.ttn_session = session
-    logger.info("Created new experiment session: %s", experiment)
+    
+    with contextlib.suppress(Exception):
+        np_logging.web(f'ttn_{experiment.ttn_session.name.lower()}').info(f"{experiment} created")
+            
     return experiment
 
 
 # --------------------------------------------------------------------------------------
+
+def validate_or_overwrite(validate: str | pathlib.Path, src: str | pathlib.Path):
+    "Checksum validate against `src`, (over)write `validate` as `src` if different."
+    validate, src = pathlib.Path(validate), pathlib.Path(src)
+    def copy():
+        logger.debug("Copying %s to %s", src, validate)
+        shutil.copy2(src, validate)
+    while (
+        validate.exists() == False
+        or (v := zlib.crc32(validate.read_bytes())) != (c := zlib.crc32(pathlib.Path(src).read_bytes()))
+        ):
+        copy()
+    logger.debug("Validated %s CRC32: %08X", validate, (v & 0xFFFFFFFF) )

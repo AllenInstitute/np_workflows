@@ -1,4 +1,5 @@
 import configparser
+import contextlib
 import copy
 import enum
 import functools
@@ -47,6 +48,8 @@ def stim_session_select_widget(
     )
     console = ipw.Output()
     with console:
+        if last_session := np_session.Mouse(selection.mouse).state.get('last_ttn_session'):
+            print(f"{mouse} last session: {last_session}")
         print(f"Selected: {selection.session}")
 
     def update(change):
@@ -58,11 +61,10 @@ def stim_session_select_widget(
             return
         if change["new"] == change["old"]:
             return
-        selection.__init__(str(session_dropdown.value), mouse)
+        selection.__init__(str(session_dropdown.value), mouse.id if isinstance(mouse, np_session.Mouse) else str(mouse))
         with console:
             print(f"Selected: {selection.session}")
-
-    session_dropdown.observe(update)
+    session_dropdown.observe(update, names='value')
 
     IPython.display.display(ipw.VBox([session_dropdown, console]))
 

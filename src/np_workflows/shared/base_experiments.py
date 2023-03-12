@@ -52,9 +52,11 @@ class WithLims(abc.ABC):
         
         if session and not isinstance(session, np_session.Session):
             session = np_session.Session(session)
+            logger.debug('%s | Initialized with existing session %s', self.__class__.__name__, session)
             if session_type and ((a := session_type == 'hab') != (b := session.is_hab)):
                 logger.warning('session_type arg specified (%r) does not match that of supplied %r: %r', a, b, session)
         elif operator and mouse:
+            logger.debug('%s | Creating new session for mouse %r, operator %r', self.__class__.__name__, mouse, operator)
             session = np_session.generate_session(mouse, operator, session_type or self.default_session_type)
         else:
             raise ValueError('Must specify either a mouse + operator, or an existing session')
@@ -69,9 +71,6 @@ class WithLims(abc.ABC):
     
     @property
     def platform_json(self) -> np_session.PlatformJson:
-        self.session.platform_json.update('operatorID', str(self.user))
-        self.session.platform_json.update('mouseID', str(self.mouse))
-        self.session.platform_json.update('sessionID', self.session.id)
         self.session.platform_json.update('rig_id', str(self.rig))
         return self.session.platform_json
     
@@ -232,6 +231,23 @@ class WithLims(abc.ABC):
         self.copy_workflow_files()
         self.copy_ephys()
     
+    def rename_split_ephys_folders(self) -> None:
+        "Add `_probeABC` or `_probeDEF` to ephys folders recorded on two drives."
+        folders = np_services.OpenEphys.data_files
+        if not folders:
+            logger.info('Renaming: no ephys folders have been recorded')
+        for name in set(_.name for _ in folders):
+            if length := len(split_folders := [_ for _ in folders if _.name == name]) != 2:
+                logger.info(f'Renaming: {length} folders found for {name}, expected 2 - aborted')
+                return
+            if '_probeABC' in name or '_probeDEF' in name:
+                logger.debug(f'Renaming: {name} already has probe letter suffix - aborted')
+                return
+            logger.debug('Renaming split ephys folders %r', split_folders)
+            for folder, probe_letters in zip(sorted(split_folders, key=lambda x: x.as_posix()), ('ABC', 'DEF')):
+                folder.replace(folder.with_name(f'{name}_probe{probe_letters}'))
+            logger.info('Renamed split ephys folders %r', split_folders)
+        
     def copy_data_files(self) -> None:
         """Copy data files from raw data storage to session folder for all services."""
         for service in self.services:
@@ -241,7 +257,7 @@ class WithLims(abc.ABC):
                 case _:
                     files = None
                     with contextlib.suppress(AttributeError):
-                        files = service.data_files or service.get_latest_data('*')
+                        files = service.data_files
                     if not files:
                         continue
                     files = set(files)
@@ -257,9 +273,7 @@ class WithLims(abc.ABC):
                         elif file.suffix in ('.json', '.mp4') and (cam_label := re.match('Behavior|Eye|Face',file.name)):
                             renamed = f'{self.session.folder}.{cam_label.group().lower()}{file.suffix}'
                         elif isinstance(service, np_services.NewScaleCoordinateRecorder):
-                            if file == self.platform_json.path:
-                                file = service.get_current_data()
-                                renamed = f'{self.session.folder}.motor-locs.csv'
+                            renamed = f'{self.session.folder}.motor-locs.csv'
                         elif service in (np_services.Cam3d, np_services.MVR):
                             for lims_label, img_label  in {
                                     'pre_experiment_surface_image_left': '_surface-image1-left',
