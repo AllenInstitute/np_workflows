@@ -100,7 +100,7 @@ def photodoc(img_name: str) -> pathlib.Path:
     
     # remove all but latest file with the current label
     if img_name and ImageCamera.data_files:
-        views = 2 if isinstance(ImageCamera, np_services.Cam3d) else 1
+        views = 2 if ImageCamera.__name__ == 'Cam3d' else 1
         def files_with_label():
             return sorted([_ for _ in ImageCamera.data_files if img_name in _.name])
         while len(files_with_label()) > views:
