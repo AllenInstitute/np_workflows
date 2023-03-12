@@ -504,6 +504,7 @@ def photodoc_widget(img_name: str) -> IPython.display.DisplayHandle | None:
         with console:
             print(img_path)
     button.on_click(capture_and_display)
+    capture_and_display(None)
     return IPython.display.display(widget)
 
 def probe_targeting_widget(session_folder) -> IPython.display.DisplayHandle | None:
