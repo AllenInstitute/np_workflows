@@ -66,7 +66,7 @@ default_ttn_params["main"] = {}
 default_ttn_params["main"]["sweepstim"] = {
     "trigger_delay_sec": 5.0,           #! does it matter?
     'sync_sqr_loc': (870, 525),         # for Window.warp=Warp.Disabled 
-    'sync_sqr_loc_warp': (540, 325),    # for Window.warp=Warp.Spherical
+    'sync_sqr_loc_warp': (540, 329),    # for Window.warp=Warp.Spherical
 }
 # default_ttn_params["main"]["movie_path"] = "C:/ProgramData/StimulusFiles/dev/"
 default_ttn_params["main"][
@@ -175,7 +175,7 @@ default_ttn_params["mapping"]["default_gabor_duration_seconds"] = 1200
 default_ttn_params["mapping"]["default_flash_duration_seconds"] = 300 # may be overriden by 'max_total_duration_minutes'
 
 default_ttn_params["mapping"]["sweepstim"] = {
-    'sync_sqr_loc_warp': (540, 325),     # for Window.warp=Warp.Spherical
+    'sync_sqr_loc_warp': (540, 329),     # for Window.warp=Warp.Spherical
 } 
 # trigger_delay_sec not specified
 # all stim parameters depend on session type (pretest, hab, ephys):
