@@ -486,6 +486,7 @@ def photodoc_widget(img_name: str) -> IPython.display.DisplayHandle | None:
         button := ipw.Button(description="Capture", button_style='warning'),
         console := ipw.Output(),
     ])
+    
     def capture() -> pathlib.Path:
         image.value = b''
         image.layout.visibility = 'hidden'
@@ -493,9 +494,8 @@ def photodoc_widget(img_name: str) -> IPython.display.DisplayHandle | None:
         button.description = 'Capturing image...'
         button.disabled = True
         return npxc.photodoc(img_name)
-    def capture_and_display(b):
-        img_path = capture()
-        # image.value = PIL.Image.open(img_path).tobytes()
+    
+    def disp(img_path) -> None:
         image.value = img_path.read_bytes()
         image.layout.visibility = 'visible'
         button.button_style = 'warning'
@@ -503,8 +503,17 @@ def photodoc_widget(img_name: str) -> IPython.display.DisplayHandle | None:
         button.disabled = False
         with console:
             print(img_path)
+            
+    def capture_and_display(*args):
+        disp(capture())
+        
     button.on_click(capture_and_display)
-    capture_and_display(None)
+    
+    if (matches := [_ for _ in (np_services.Cam3d.data_files or np_services.ImageMVR.data_files or []) if img_name in _.stem]):
+        disp(sorted(matches)[-1])
+    else:
+        capture_and_display()
+    
     return IPython.display.display(widget)
 
 def probe_targeting_widget(session_folder) -> IPython.display.DisplayHandle | None:
