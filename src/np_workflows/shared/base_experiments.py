@@ -229,7 +229,8 @@ class WithLims(abc.ABC):
         """Copy files from raw data storage to session folder for all services."""
         self.copy_data_files()
         self.copy_workflow_files()
-        self.copy_ephys()
+        if self.session_type != 'hab':
+            self.copy_ephys()
     
     def rename_split_ephys_folders(self) -> None:
         "Add `_probeABC` or `_probeDEF` to ephys folders recorded on two drives."
@@ -272,7 +273,7 @@ class WithLims(abc.ABC):
                                     renamed = f'{self.session.folder}.{"stim" if _ == "main" else _}.pkl'
                         elif file.suffix in ('.json', '.mp4') and (cam_label := re.match('Behavior|Eye|Face',file.name)):
                             renamed = f'{self.session.folder}.{cam_label.group().lower()}{file.suffix}'
-                        elif isinstance(service, np_services.NewScaleCoordinateRecorder):
+                        elif service in (np_services.NewScaleCoordinateRecorder, ):
                             renamed = f'{self.session.folder}.motor-locs.csv'
                         elif service in (np_services.Cam3d, np_services.MVR):
                             for lims_label, img_label  in {
