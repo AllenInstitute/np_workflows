@@ -12,8 +12,9 @@ import numpy as np
 from psychopy import visual
 from camstim import Foraging
 from camstim import Stimulus_v2
-from camstim import SweepStim_v2
+from camstim import SweepStim_v2, MovieStim
 from camstim import Warp, Window
+from camstim.misc import wecanpicklethat
 
 
 # get params ------------------------------------------------------------------
@@ -41,25 +42,24 @@ window = Window(
     warp=Warp.Spherical,
 )
 
-# patch the Stimulus_v2 class to allow for serializing without large arrays
+# monkey-patch MovieStim to serialize without large redundant arrays
 # ----------------------------------------------------------------------------
-class Stimulus_v2_MinusFrameArrays(Stimulus_v2):
 
-    def __init__(self, *args, **kwargs):
-        super(Stimulus_v2_MinusFrameArrays, self).__init__(*args, **kwargs)
+def package(self):
+    """
+    Package for serializing - minus large arrays of frame timing/order.
+    """
+    if not self.save_sweep_table:
+        self.sweep_table = None
+        self.sweep_params = self.sweep_params.keys()
+    self_dict = self.__dict__
+    del self_dict['sweep_frames']
+    del self_dict['sweep_order']
+    del self_dict['frame_list']
+    self_dict['stim'] = str(self_dict['stim'])
+    return wecanpicklethat(self_dict)
 
-    def package(self):
-        """
-        Package for serializing - minus large arrays of frame timing/order.
-        """
-        if not self.save_sweep_table:
-            self.sweep_table = None
-            self.sweep_params = self.sweep_params.keys()
-        self_dict = self.__dict__
-        del self_dict['sweep_frames']
-        del self_dict['sweep_order']
-        self_dict['stim'] = str(self_dict['stim'])
-        return wecanpicklethat(self_dict)
+MovieStim.package = package
 
 # setup main stim
 # -----------------------------------------------------------------------
@@ -96,7 +96,7 @@ cumulative_duration_sec = (
     main_sequence_start_sec
 ) = 0  # if stims are daisy-chained within one script, this should be the end of the prev stim
 for stim_file, duration_sec in segment_stim_secs:
-    segment = Stimulus_v2_MinusFrameArrays.from_file(stim_file, window)
+    segment = Stimulus_v2.from_file(stim_file, window) # stim file actually instantiates MovieStim
     segment_ds = [(cumulative_duration_sec, cumulative_duration_sec + duration_sec)]
     segment.set_display_sequence(segment_ds)
 
