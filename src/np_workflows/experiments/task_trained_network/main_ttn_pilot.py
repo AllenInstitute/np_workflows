@@ -166,7 +166,6 @@ class TTNMixin:
             )
             
             validate_or_overwrite(validate=stim_copy, src=vc_copy)
-            logger.debug("Validated %s script", label)
             
         return {
             label: str(self.script_root_on_stim / script) 
