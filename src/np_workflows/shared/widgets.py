@@ -29,7 +29,7 @@ def elapsed_time_widget() -> IPython.display.DisplayHandle | None:
     """Displays a clock showing the elapsed time since the cell was first run."""
 
     clock_widget = ipw.Label("")
-    reminder_widget = ipw.Label("Remember to restart the kernel for every experiment!")
+    reminder_widget = ipw.Label("Remember to restart JupyterLab and run update.bat before every experiment!")
     global start_time
     if "start_time" not in globals():
         start_time = time.time()
@@ -237,7 +237,9 @@ def check_hardware_widget() ->  None:
     check = "Stage checks:"
     checks = (
         "Cartridge raised (fully retract probes before raising!)",
-        "Water lines flushed",
+        "Water lines flushed if lick-spout required",
+        "Eye-tracking mirror is clean",
+        "Tail-cone is not loose",
     )
     IPython.display.display(widget := check_widget(check, *checks))
 
@@ -245,7 +247,7 @@ def check_mouse_widget() -> None:
     check = "Mouse checks before lowering cartridge:"
     checks = (
         "Stabilization screw",
-        ("Silicon oil applied" if npxc.RIG.idx == 1 else "Quickcast removed, agarose applied"),
+        ("Silicon oil applied" if npxc.RIG.idx == 0 else "Quickcast removed, agarose applied"),
         "Tail cone down",
         "Continuity/Resistance check",
     )
@@ -254,11 +256,12 @@ def check_mouse_widget() -> None:
 def pre_stim_check_widget() -> None:
     check = "Before running stim:"
     checks = (
-        "Clean eye-tracking mirror and install", 
+        "Behavior cameras are in focus",
+        "Eye-tracking mirror in place", 
         "Windows minimized on Stim computer (Win+D)",
         "Monitor closed",
         "Photodoc light off",
-        "Curtain down",     
+        "Curtain down",  
     )
     IPython.display.display(widget := check_widget(check, *checks))
     
