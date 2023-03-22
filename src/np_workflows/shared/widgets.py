@@ -5,7 +5,7 @@ import pathlib
 import re
 import threading
 import time
-from typing import NoReturn, Optional
+from typing import Literal, NoReturn, Optional, Type
 
 import IPython
 import IPython.display
@@ -345,6 +345,20 @@ def dye_widget(session_folder: pathlib.Path) -> IPython.display.DisplayHandle | 
     save_button.on_click(on_click)
     return IPython.display.display(ipw.VBox([dye_dropdown, save_button]))
 
+ISICoords = list[dict[Literal['x', 'y', 'z'], float]]
+ISISpaces = dict[Literal['image_space', 'reticle_space'], ISICoords | None]
+ISITargets = dict[Literal['insertion_targets', 'intended_insertion', 'actual_insertion'], ISISpaces]
+
+def isi_targets(
+    labtracks_mouse_id: str | int | np_session.LIMS2MouseInfo,
+)-> None | ISITargets: 
+    mouse = np_session.LIMS2MouseInfo(labtracks_mouse_id) if not isinstance(labtracks_mouse_id, np_session.LIMS2MouseInfo) else labtracks_mouse_id
+    if (exp_id := mouse.isi_id) is None:
+        return None
+    exps = mouse.isi_info['isi_experiments']
+    isi = [e for e in exps if e['id'] == exp_id]
+    return isi[0]['targets'] if isi else None
+    
 def isi_widget(
     labtracks_mouse_id: str | int | np_session.LIMS2MouseInfo, colormap: bool = False,
 ) -> IPython.display.DisplayHandle | None:
@@ -375,9 +389,16 @@ def isi_widget(
         path: pathlib.Path = np_config.normalize_path(lims_path)
         print(f"ISI map found for {mouse_info.np_id}:\n{path}")
         img = PIL.Image.open(path)
-        if coords := mouse_info.isi_targets:
-            draw = PIL.ImageDraw.Draw(img)
-            draw.line([(_['x'], _['y']) for _ in coords], fill=True, width=5)
+        if all_targets := isi_targets(mouse_info):
+            colors = {'insertion_targets': 'red', 'intended_insertion': 'yellow', 'actual_insertion': 'blue'}
+            for targets, spaces in all_targets.items():
+                coords = spaces['image_space']
+                if coords is None:
+                    continue
+                draw = PIL.ImageDraw.Draw(img)
+                draw.line([(_['x'], _['y']) for _ in coords], 
+                        fill=colors[targets],
+                        width=3)
         else: 
             logger.debug("No ISI targets found for %r in lims, ISI experiment id %s", mouse_info, mouse_info.isi_id)
         return IPython.display.display(img)
