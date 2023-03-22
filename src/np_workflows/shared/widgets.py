@@ -515,7 +515,7 @@ def photodoc_widget(img_name: str) -> IPython.display.DisplayHandle | None:
         image.value = b''
         image.layout.visibility = 'hidden'
         button.button_style = ''
-        button.description = 'Capturing image...'
+        button.description = 'Capturing new image...'
         button.disabled = True
         return npxc.photodoc(img_name)
     
@@ -523,7 +523,7 @@ def photodoc_widget(img_name: str) -> IPython.display.DisplayHandle | None:
         image.value = img_path.read_bytes()
         image.layout.visibility = 'visible'
         button.button_style = 'warning'
-        button.description = 'Capture'
+        button.description = 'Re-capture'
         button.disabled = False
         with console:
             print(img_path)
