@@ -507,7 +507,7 @@ def photodoc_widget(img_name: str) -> IPython.display.DisplayHandle | None:
     image = ipw.Image(value=b'', format='png', width='80%', layout=ipw.Layout(visibility='hidden'))
     widget = ipw.VBox([
         image,
-        button := ipw.Button(description="Capture", button_style='warning'),
+        button := ipw.Button(description="Re-capture", button_style='warning'),
         console := ipw.Output(),
     ])
     
