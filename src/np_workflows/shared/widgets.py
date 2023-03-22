@@ -368,6 +368,7 @@ def isi_widget(
         mouse_info = np_session.LIMS2MouseInfo(labtracks_mouse_id)
     else:
         mouse_info = labtracks_mouse_id
+        mouse_info.fetch() # refresh in case targets were updated recently
 
     if colormap:
         key = "isi_image_overlay_path"
