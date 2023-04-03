@@ -110,7 +110,8 @@ class TTNMixin:
                 self.session.project.state['latest_hab'] = self.session.id
             case TTNSession.EPHYS:
                 self.session.project.state['latest_ephys'] = self.session.id
-            
+                self.session.project.state['sessions'] = self.session.project.state.get('sessions', []) + [self.session.id]
+                
     def run_stim_scripts(self) -> None:
 
         self.update_state()
