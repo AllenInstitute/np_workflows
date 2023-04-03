@@ -301,7 +301,7 @@ def di_widget(session: np_session.Session) -> IPython.display.DisplayHandle | No
     )
     di_info.update(session.platform_json.DiINotes)
     
-    layout = ipw.Layout(max_width='130px')
+    layout = ipw.Layout(max_width='180px')
     dipped_counter = ipw.IntText(value=0, min=0, max=99, description="Dipped count", layout=layout)
     usage_counter = ipw.IntText(value=0, min=0, max=99, description="Previous uses", layout=layout)
     dye_dropdown = ipw.Dropdown(options=['CM-DiI 100%', 'DiO'], layout=layout)
