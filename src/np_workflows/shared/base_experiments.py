@@ -237,17 +237,20 @@ class WithLims(abc.ABC):
         folders = np_services.OpenEphys.data_files
         if not folders:
             logger.info('Renaming: no ephys folders have been recorded')
+        renamed_folders = []
         for name in set(_.name for _ in folders):
-            if length := len(split_folders := [_ for _ in folders if _.name == name]) != 2:
-                logger.info(f'Renaming: {length} folders found for {name}, expected 2 - aborted')
-                return
             if '_probeABC' in name or '_probeDEF' in name:
                 logger.debug(f'Renaming: {name} already has probe letter suffix - aborted')
-                return
+                continue
+            if length := len(split_folders := [_ for _ in folders if _.name == name]) != 2:
+                logger.info(f'Renaming: {length} folders found for {name}, expected 2 - aborted')
+                continue
             logger.debug('Renaming split ephys folders %r', split_folders)
             for folder, probe_letters in zip(sorted(split_folders, key=lambda x: x.as_posix()), ('ABC', 'DEF')):
-                folder.replace(folder.with_name(f'{name}_probe{probe_letters}'))
+                renamed = folder.replace(folder.with_name(f'{name}_probe{probe_letters}'))
+                renamed_folders.append(renamed)
             logger.info('Renamed split ephys folders %r', split_folders)
+        np_services.OpenEphys.data_files = renamed_folders
         
     def copy_data_files(self) -> None:
         """Copy data files from raw data storage to session folder for all services."""
