@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "np-workflows"
-version = "1.4.6"
+version = "1.4.9"
 description = "Ecephys and behavior workflows for the Mindscope Neuropixels team."
 authors = ["Ben Hardcastle <ben.hardcastle@alleninstitute.org>"]
 readme = "README.md"
@@ -8,8 +8,8 @@ packages = [{include = "np_workflows", from = "src"}]
 
 [tool.poetry.dependencies]
 python = "^3.11"
-np-services = ">= 0.1.43"
-np-session = ">=0.4.27"
+np-services = ">= 0.1.46"
+np-session = ">=0.5.1"
 np-probe-targets = "*"
 np-datajoint = "*"
 ipywidgets = "^7"
