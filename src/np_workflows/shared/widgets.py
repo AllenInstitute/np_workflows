@@ -292,10 +292,10 @@ def wheel_height_widget(session: np_session.Session) -> IPython.display.DisplayH
     save_button.on_click(on_click)
     return IPython.display.display(ipw.VBox([height_counter,save_button]))
     
-    
+
 def di_widget(session: np_session.Session) -> IPython.display.DisplayHandle | None:
     "Supply a path or a platform json instance. Saves a JSON file with the dye used in the session and a timestamp."
-
+    
     di_info: dict[str, int | str] = dict(
         EndTime=0, StartTime=npxc.now(), dii_description="", times_dipped=0, previous_uses="",
     )
@@ -325,6 +325,64 @@ def di_widget(session: np_session.Session) -> IPython.display.DisplayHandle | No
         usage_counter, save_button]))
 
     
+def dye_info_widget(session: np_session.Session) -> IPython.display.DisplayHandle | None:
+    """
+    - scan barcode or enter ID number for the dye used
+    - change dye description if incorrect (DiI, DiO)
+    - increment number of times probes were dipped this session
+    - hit `Save` to store info in platform.json
+    """
+    
+    di_info: dict[str, int | str] = dict(
+        EndTime=0, StartTime=npxc.now(), dii_description="", times_dipped=0, previous_uses="",
+    )
+    di_info.update(session.platform_json.DiINotes)
+    
+    width = lambda w: ipw.Layout(max_width=f'{w}px')
+    
+    dye_id_entry = ipw.Text(value=None, description='Dye ID', layout=width(250), placeholder='Enter ID or scan barcode')
+    dye_usage_button = ipw.Button(description='Record single use', button_style='warning', layout=width(180))
+    first_usage = ipw.Text(value='', description="First use", layout=width(250), disabled=True)
+    dye_dropdown = ipw.Dropdown(description="Description:", options=np_session.Dye.descriptions, layout=width(180))
+    dipped_counter = ipw.IntText(value=di_info['times_dipped'], min=0, max=99, description="Dipped count", layout=width(150))
+    usage_counter = ipw.IntText(value=int(di_info['previous_uses']), min=0, max=99, description="Previous uses", layout=width(180), disabled=True)
+    save_button = ipw.Button(description='Save', button_style='warning', layout=width(180))
+    if (desc := di_info['dii_description']) in np_session.Dye.descriptions:
+        dye_dropdown.value = desc
+        
+    def update_display(_):
+        with contextlib.suppress(Exception):
+            dye = np_session.Dye(int(str(dye_id_entry.value)))
+            dye_dropdown.value = dye.description
+            usage_counter.value = dye.previous_uses
+            first_usage.value = f'{dye.first_use}'
+    dye_id_entry.observe(update_display, 'value')
+    
+    def record_dye_usage():
+        with contextlib.suppress(Exception):
+            dye = np_session.Dye(int(str(dye_id_entry.value)))
+            dye.description = dye_dropdown.value
+            dye.increment_uses()
+        
+    def update_di_info():
+        di_info['EndTime'] = npxc.now()
+        di_info['times_dipped'] = str(dipped_counter.value)
+        di_info['dii_description'] = str(dye_dropdown.value)
+        di_info['previous_uses'] = str(usage_counter.value)
+        
+    def on_click(b):
+        update_di_info()
+        record_dye_usage()
+        session.platform_json.DiINotes = di_info
+        save_button.description = 'Saved'
+        save_button.button_style = 'success'
+        
+    save_button.on_click(on_click)
+    return IPython.display.display(ipw.VBox([
+        dye_id_entry,
+        dipped_counter, dye_dropdown, 
+        usage_counter, first_usage, save_button]))
+
 def dye_widget(session_folder: pathlib.Path) -> IPython.display.DisplayHandle | None:
     "Supply a path - saves a JSON file with the dye used in the session and a timestamp."
 
