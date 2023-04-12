@@ -321,21 +321,14 @@ class WithLims(abc.ABC):
         
     def copy_ephys(self) -> None:
         # copy ephys       
-        password = getpass.getpass(f'Enter password for svc_neuropix:')
+        self.rename_split_ephys_folders()
+        password = np_config.fetch('/logins')['svc_neuropix']['password']
         ssh = fabric.Connection(host=np_services.OpenEphys.host, user='svc_neuropix', connect_kwargs=dict(password=password))
         for ephys_folder in np_services.OpenEphys.data_files:
-
-            if ephys_folder.drive.endswith("A"):
-                probes = '_probeABC'
-            elif ephys_folder.drive.endswith("B"):
-                probes = '_probeDEF'
-            else:
-                probes = '_probes'
-                
             with contextlib.suppress(Exception):
                 with ssh:
                     ssh.run(
-                    f'robocopy "{ephys_folder}" "{self.session.npexp_path / (self.session.npexp_path.name + probes)}" /j /s /xo' 
+                    f'robocopy "{ephys_folder}" "{self.session.npexp_path / ephys_folder.name} /j /s /xo' 
                     # /j unbuffered, /s incl non-empty subdirs, /xo exclude src files older than dest
                     ) 
                            
