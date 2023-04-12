@@ -345,24 +345,22 @@ def dye_info_widget(session: np_session.Session) -> IPython.display.DisplayHandl
     first_usage = ipw.Text(value='', description="First use", layout=width(250), disabled=True)
     dye_dropdown = ipw.Dropdown(description="Description:", options=np_session.Dye.descriptions, layout=width(180))
     dipped_counter = ipw.IntText(value=di_info['times_dipped'], min=0, max=99, description="Dipped count", layout=width(150))
-    usage_counter = ipw.IntText(value=int(di_info['previous_uses']), min=0, max=99, description="Previous uses", layout=width(180), disabled=True)
+    usage_counter = ipw.IntText(value=int(di_info['previous_uses'] or 0), min=0, max=99, description="Previous uses", layout=width(180), disabled=True)
     save_button = ipw.Button(description='Save', button_style='warning', layout=width(180))
     if (desc := di_info['dii_description']) in np_session.Dye.descriptions:
         dye_dropdown.value = desc
         
     def update_display(_):
-        with contextlib.suppress(Exception):
-            dye = np_session.Dye(int(str(dye_id_entry.value)))
-            dye_dropdown.value = dye.description
-            usage_counter.value = dye.previous_uses
-            first_usage.value = f'{dye.first_use}'
+        dye = np_session.Dye(int(str(dye_id_entry.value)))
+        dye_dropdown.value = dye.description
+        usage_counter.value = dye.previous_uses
+        first_usage.value = f'{dye.first_use}'
     dye_id_entry.observe(update_display, 'value')
     
     def record_dye_usage():
-        with contextlib.suppress(Exception):
-            dye = np_session.Dye(int(str(dye_id_entry.value)))
-            dye.description = dye_dropdown.value
-            dye.increment_uses()
+        dye = np_session.Dye(int(str(dye_id_entry.value)))
+        dye.description = dye_dropdown.value
+        dye.increment_uses()
         
     def update_di_info():
         di_info['EndTime'] = npxc.now()
