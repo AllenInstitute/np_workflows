@@ -344,7 +344,7 @@ def dye_info_widget(session: np_session.Session) -> IPython.display.DisplayHandl
     dye_usage_button = ipw.Button(description='Record single use', button_style='warning', layout=width(180))
     first_usage = ipw.Text(value='', description="First use", layout=width(250), disabled=True)
     dye_dropdown = ipw.Dropdown(description="Description:", options=np_session.Dye.descriptions, layout=width(180))
-    dipped_counter = ipw.IntText(value=di_info['times_dipped'], min=0, max=99, description="Dipped count", layout=width(150))
+    dipped_counter = ipw.IntText(value=int(di_info['times_dipped'] or 0), min=0, max=99, description="Dipped count", layout=width(150))
     usage_counter = ipw.IntText(value=int(di_info['previous_uses'] or 0), min=0, max=99, description="Previous uses", layout=width(180), disabled=True)
     save_button = ipw.Button(description='Save', button_style='warning', layout=width(180))
     if (desc := di_info['dii_description']) in np_session.Dye.descriptions:

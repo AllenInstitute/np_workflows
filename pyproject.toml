@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "np-workflows"
-version = "1.4.9"
+version = "1.4.11"
 description = "Ecephys and behavior workflows for the Mindscope Neuropixels team."
 authors = ["Ben Hardcastle <ben.hardcastle@alleninstitute.org>"]
 readme = "README.md"
