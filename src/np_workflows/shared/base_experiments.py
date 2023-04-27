@@ -328,9 +328,9 @@ class WithLims(abc.ABC):
             with contextlib.suppress(Exception):
                 with ssh:
                     ssh.run(
-                    f'robocopy "{ephys_folder}" "{self.session.npexp_path / ephys_folder.name} /j /s /xo' 
+                    f'robocopy "{ephys_folder}" "{self.session.npexp_path / ephys_folder.name}" /j /s /xo' 
                     # /j unbuffered, /s incl non-empty subdirs, /xo exclude src files older than dest
-                    ) 
+                    )
                            
                            
 class Ephys(WithLims):
