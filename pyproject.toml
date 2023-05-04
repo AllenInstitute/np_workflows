@@ -6,7 +6,7 @@ authors = [
     {name="Ben Hardcastle", email="ben.hardcastle@alleninstitute.org"},
     ]
 readme = "README.md"
-requires-python = ">=3.11"
+requires-python = "==3.11.*"
 dependencies = [
     "np-services >= 0.1.46",
     "np-session >=0.5.2",
