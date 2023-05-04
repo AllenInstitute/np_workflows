@@ -124,12 +124,17 @@ def copy_files(services: Sequence[Service], session_folder: pathlib.Path):
                     print(files)
                     for file in files:
                         shutil.copy2(file, session_folder)
-                    
-    # copy ephys                    
-    for ephys_folder in OpenEphys.data_files:
-        fabric.Connection(host=OpenEphys.host, user='svc_neuropix', connect_kwargs=dict(password=password)).run(
-            f'robocopy "{ephys_folder}" "{session_folder}" /j /s /xo' # /j unbuffered, /s incl non-empty subdirs, /xo exclude src files older than dest
-        ) 
+    
+    password = np_config.fetch('/logins')['svc_neuropix']['password']
+    ssh = fabric.Connection(host=np_services.OpenEphys.host, user='svc_neuropix', connect_kwargs=dict(password=password))
+    for ephys_folder in np_services.OpenEphys.data_files:
+
+        with contextlib.suppress(Exception):
+            with ssh:
+                ssh.run(
+                f'robocopy "{ephys_folder}" "{session_folder / ephys_folder.name}" /j /s /xo' 
+                # /j unbuffered, /s incl non-empty subdirs, /xo exclude src files older than dest
+                )
             
             
 import warnings
