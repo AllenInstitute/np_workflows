@@ -179,7 +179,7 @@ class TTNMixin:
         return camstim_defaults()
     
     
-class Hab(TTNMixin, np_workflows.Hab):
+class Hab(TTNMixin, np_workflows.PipelineHab):
     def __init__(self, *args, **kwargs):
         self.services = (
             MouseDirector,
@@ -192,7 +192,7 @@ class Hab(TTNMixin, np_workflows.Hab):
         super().__init__(*args, **kwargs)
 
 
-class Ephys(TTNMixin, np_workflows.Ephys):
+class Ephys(TTNMixin, np_workflows.PipelineEphys):
     def __init__(self, *args, **kwargs):
         self.services = (
             MouseDirector,
