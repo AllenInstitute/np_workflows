@@ -275,7 +275,7 @@ def finishing_checks_widget() -> None:
     IPython.display.display(widget := check_widget(check, *checks))
     
     
-def wheel_height_widget(session: np_session.Session) -> IPython.display.DisplayHandle | None:
+def wheel_height_widget(session: np_session.PipelineSession) -> IPython.display.DisplayHandle | None:
     "Saves wheel height to platform_json and stores in `mouse.state['wheel_height']`."
     
     layout = ipw.Layout(max_width='130px')
@@ -293,7 +293,7 @@ def wheel_height_widget(session: np_session.Session) -> IPython.display.DisplayH
     return IPython.display.display(ipw.VBox([height_counter,save_button]))
     
 
-def di_widget(session: np_session.Session) -> IPython.display.DisplayHandle | None:
+def di_widget(session: np_session.PipelineSession) -> IPython.display.DisplayHandle | None:
     "Supply a path or a platform json instance. Saves a JSON file with the dye used in the session and a timestamp."
     
     di_info: dict[str, int | str] = dict(
@@ -325,7 +325,7 @@ def di_widget(session: np_session.Session) -> IPython.display.DisplayHandle | No
         usage_counter, save_button]))
 
     
-def dye_info_widget(session: np_session.Session) -> IPython.display.DisplayHandle | None:
+def dye_info_widget(session: np_session.PipelineSession) -> IPython.display.DisplayHandle | None:
     """
     - scan barcode or enter ID number for the dye used
     - change dye description if incorrect (DiI, DiO)
@@ -467,7 +467,7 @@ def isi_widget(
     # return IPython.display.display(ipw.VBox([ipw.Image(value=membuf.getvalue())]))
 
 
-def insertion_notes_widget(session: np_session.Session):
+def insertion_notes_widget(session: np_session.PipelineSession):
     
     probes = 'ABCDEF'
     probe = lambda _: f'Probe{_}'
@@ -522,7 +522,7 @@ def insertion_notes_widget(session: np_session.Session):
     return IPython.display.display(widget)
 
 
-def probe_depth_widget(session: np_session.Session):
+def probe_depth_widget(session: np_session.PipelineSession):
     
     probes = 'ABCDEF'
     
