@@ -13,15 +13,15 @@ import np_session
 import np_workflows
 from pyparsing import Any
 
-from .templeton_stim_config import TempletonSession
+from .barcode_stim_config import BarcodeSession
 
 # for widget, before creating a experiment --------------------------------------------- #
 
 
-class TempletonSelectedSession:
-    def __init__(self, session: str | TempletonSession, mouse: str | int | np_session.Mouse):
+class SelectedSession:
+    def __init__(self, session: str | BarcodeSession, mouse: str | int | np_session.Mouse):
         if isinstance(session, str):
-            session = TempletonSession(session)
+            session = BarcodeSession(session)
         self.session = session
         self.mouse = str(mouse)
 
@@ -31,7 +31,7 @@ class TempletonSelectedSession:
 
 def stim_session_select_widget(
     mouse: str | int | np_session.Mouse,
-) -> TempletonSelectedSession:
+) -> SelectedSession:
     """Select a stimulus session (hab, pretest, ephys) to run.
 
     An object with mutable attributes is returned, so the selected session can be
@@ -40,15 +40,15 @@ def stim_session_select_widget(
 
     """
 
-    selection = TempletonSelectedSession(TempletonSession.PRETEST, mouse)
+    selection = SelectedSession(BarcodeSession.PRETEST, mouse)
 
     session_dropdown = ipw.Select(
-        options=tuple(_.value for _ in TempletonSession),
+        options=tuple(_.value for _ in BarcodeSession),
         description="Session",
     )
     console = ipw.Output()
     with console:
-        if last_session := np_session.Mouse(selection.mouse).state.get('last_templeton_session'):
+        if last_session := np_session.Mouse(selection.mouse).state.get('last_barcode_session'):
             print(f"{mouse} last session: {last_session}")
         print(f"Selected: {selection.session}")
 

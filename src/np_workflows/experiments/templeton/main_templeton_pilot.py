@@ -46,7 +46,7 @@ logger = np_logging.getLogger(__name__)
 
 
 class TempletonMixin:
-    """Provides TTN-specific methods and attributes, mainly related to camstim scripts."""
+    """Provides project-specific methods and attributes, mainly related to camstim scripts."""
     
     templeton_session: TempletonSession
     """Enum for session type, e.g. PRETEST, HAB_AUD, HAB_VIS, EPHYS_ etc."""
