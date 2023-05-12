@@ -1374,7 +1374,7 @@ dependencies = [
 
 [[package]]
 name = "np-jobs"
-version = "0.0.2"
+version = "0.0.3"
 requires_python = ">=3.8"
 summary = "Interfaces for job queues used to coordinate distributed tasks for Mindscope Neuropixels workflows."
 dependencies = [
@@ -1405,7 +1405,7 @@ dependencies = [
 
 [[package]]
 name = "np-services"
-version = "0.1.46"
+version = "0.1.47"
 requires_python = ">=3.11,<4.0"
 summary = "Tools for interfacing with devices and services used in Mindscope Neuropixels experiments at the Allen Institute."
 dependencies = [
@@ -1423,7 +1423,7 @@ dependencies = [
 
 [[package]]
 name = "np-session"
-version = "0.6.2"
+version = "0.6.5"
 requires_python = ">=3.7"
 summary = "Tools for accessing data, metadata, and jobs related to ecephys and behavior sessions for the Mindscope Neuropixels team."
 dependencies = [
@@ -1441,7 +1441,7 @@ dependencies = [
 
 [[package]]
 name = "np-tools"
-version = "0.1.9"
+version = "0.1.14"
 requires_python = "<4,>=3.7"
 summary = "General-purpose tools for common tasks encountered in Mindscope Neuropixels workflows."
 dependencies = [
@@ -1450,6 +1450,7 @@ dependencies = [
     "invoke<2.1",
     "np-config>=0.4.17",
     "np-logging>=0.5.1",
+    "rich>=13.3.5",
 ]
 
 [[package]]
@@ -2246,7 +2247,7 @@ dependencies = [
 [metadata]
 lock_version = "4.2"
 groups = ["default", "dev"]
-content_hash = "sha256:9d187bd035bfd074979bc77255ad7db2ef3cfee78f20a452faf06d1efe7b9e9a"
+content_hash = "sha256:f52f6c197e363d031ee0b2e129a5e7db6da96cac452215add78423a819d0d2cd"
 
 [metadata.files]
 "aiobotocore 2.5.0" = [
@@ -3928,9 +3929,9 @@ content_hash = "sha256:9d187bd035bfd074979bc77255ad7db2ef3cfee78f20a452faf06d1ef
     {url = "https://files.pythonhosted.org/packages/26/5d/30eff01687db2177e3ec00d92eecf99382167db707b994096c75eb10157e/np_datajoint-0.0.6.tar.gz", hash = "sha256:74ebc9e061844d44d191f7ce5aeb7ac97ddf79b41aa708874e9a7d306f772fd2"},
     {url = "https://files.pythonhosted.org/packages/a2/f4/94e86918de6aa31cb0ef239120ffb9ed0ae44ec6053013aa31ac1d1bd39a/np_datajoint-0.0.6-py3-none-any.whl", hash = "sha256:3babad86224ef808905b563f29cc129f2c62438c1716d03fc186f72d2f4888f8"},
 ]
-"np-jobs 0.0.2" = [
-    {url = "https://files.pythonhosted.org/packages/22/f7/091fea458058e1b6a10015993824341e68159601f5795cd8592149affdcc/np_jobs-0.0.2-py3-none-any.whl", hash = "sha256:8afe51fa9994cfcd6978d59b8075c33e4db5db1fe87f6a61055ec13b31bf6e2b"},
-    {url = "https://files.pythonhosted.org/packages/72/28/08b81254291b602c1b10864f8bf2c41d7e895790ee74cbc82d030cc9a9a7/np_jobs-0.0.2.tar.gz", hash = "sha256:48a3692950bcd59e59087e36368efa359b0e5ba3f1d1be8fe5d21823d249e0ff"},
+"np-jobs 0.0.3" = [
+    {url = "https://files.pythonhosted.org/packages/37/64/def19ea0dcc803f6f2b69f41d7f76faf1105bc622f46423df3e433a1ce93/np_jobs-0.0.3.tar.gz", hash = "sha256:a6dba4495c04c8a3157dde74eecfa01b4dc51c3e03ea9d2c446d36f2abdf85da"},
+    {url = "https://files.pythonhosted.org/packages/d1/d1/6d53d88471be51e513912c2825f81fab3b0f43a8e32dc60d1706e5853d01/np_jobs-0.0.3-py3-none-any.whl", hash = "sha256:cd89cbaa10a53e2a882c09c6a347e58404e07508bc064f29223954f52c020f9a"},
 ]
 "np-logging 0.5.1" = [
     {url = "https://files.pythonhosted.org/packages/91/7b/9ba634f79c1267913f266444978f0672efdc8b9cb2b7c4fcd4358086875f/np_logging-0.5.1-py3-none-any.whl", hash = "sha256:b48435c17ba7182253c43666dbcab88472e14fabbd5089a248a08509572e1764"},
@@ -3940,17 +3941,17 @@ content_hash = "sha256:9d187bd035bfd074979bc77255ad7db2ef3cfee78f20a452faf06d1ef
     {url = "https://files.pythonhosted.org/packages/71/18/7623259a52e07b50102301a45379080379d45ac50dbd510e91ea02db2657/np_probe_targets-0.0.10.tar.gz", hash = "sha256:2e7b7f66801a8c1b8d343dd22c6b79f0b4656787e778dab51941004be24cf8dd"},
     {url = "https://files.pythonhosted.org/packages/7a/6c/40c9beee7f10ade0b0d5ae7fa13d339449e4545a7f84a63064a8fcd4a17e/np_probe_targets-0.0.10-py3-none-any.whl", hash = "sha256:4d0e2f3f2190ba46e15c00412c21830358a8faebb3a62208fb6014ac28a39d4a"},
 ]
-"np-services 0.1.46" = [
-    {url = "https://files.pythonhosted.org/packages/17/41/a3c5e44a194f8203e8a6acde8af50ce27f7091f73c360e2763eba22e791f/np_services-0.1.46-py3-none-any.whl", hash = "sha256:586f68bbabea75375b28f2e9f0823548ef5bcc47cd32b753589052146e16796b"},
-    {url = "https://files.pythonhosted.org/packages/2c/7f/65ea53f537923af99ea1d2773b0b4fc5df81554c851e833c4072a9a8e2d1/np_services-0.1.46.tar.gz", hash = "sha256:e65619933f558bbdd788d06a02606f9762ead7cfec4211958ef4d9bde1ec3bd7"},
+"np-services 0.1.47" = [
+    {url = "https://files.pythonhosted.org/packages/9b/ed/ea3e1e311d00e31170e793f53f21b43659ff276b9f0e4e9df20b8c224620/np_services-0.1.47.tar.gz", hash = "sha256:87154dce5690ead79e1dbfe6702d6734ec2767caa493dc14699377993b901081"},
+    {url = "https://files.pythonhosted.org/packages/bd/7b/f0f5c20139879e25660de80ca344c3da434ccfae1277a901596a8e9ef23f/np_services-0.1.47-py3-none-any.whl", hash = "sha256:c119d1692907646558ad56dad933e14d3dbcfd4be40d52c822fe8464532e067f"},
 ]
-"np-session 0.6.2" = [
-    {url = "https://files.pythonhosted.org/packages/84/6f/bb4fc8c85638c4889ed3e0f9aaf9bba48f54457463ba61da72dfd662eed5/np_session-0.6.2-py3-none-any.whl", hash = "sha256:0826b63f0b14453254335cdeca839fad444ba826c49e554c37d1695f39b66e89"},
-    {url = "https://files.pythonhosted.org/packages/c6/23/5872f8139c85ceeec3293ae48da61fde45a44b0a9746f5ccfac1ee5ab6d1/np-session-0.6.2.tar.gz", hash = "sha256:c3258172b7d51e4f367fe6e056ea713663eb0da75adfea2191bf05028e199d3c"},
+"np-session 0.6.5" = [
+    {url = "https://files.pythonhosted.org/packages/19/e9/6ab2057c63f3d5690f3d3d794007441bf4ed0dd443ae2c83a1c5fb7d6e0d/np-session-0.6.5.tar.gz", hash = "sha256:98216b670d52d7599e49a6614af509f5eeb1482da434a7bada2d568bb74bcc45"},
+    {url = "https://files.pythonhosted.org/packages/ca/2b/00950f72beec1d3f972dde8805300cd6cdcc10f12418825262b0a6060d10/np_session-0.6.5-py3-none-any.whl", hash = "sha256:addb0e2f4d5187ab9ee3e400aa7e343b33a86d2b2fe354db1ce16235157911e5"},
 ]
-"np-tools 0.1.9" = [
-    {url = "https://files.pythonhosted.org/packages/49/f6/302e0f284cc5625ad9f39e69a35d99fea540bb98f45dac2c8177909fffea/np_tools-0.1.9-py3-none-any.whl", hash = "sha256:d204e07afef768b0da2847118c93041e65cbcfed20553b82677e0c0b81b89e35"},
-    {url = "https://files.pythonhosted.org/packages/63/fb/c0aa437bbfc78ecde48c8fd50dc43e54d68497a94d2f9416445f466a76b6/np_tools-0.1.9.tar.gz", hash = "sha256:9e6f8ad5763670e8a6208860018ef38eb439765a7686172cbd294b7a03a62070"},
+"np-tools 0.1.14" = [
+    {url = "https://files.pythonhosted.org/packages/5f/23/706f3a8ce478b087dac1ca28a4e88b7b7fac345b6ab420be472c9f86a486/np_tools-0.1.14-py3-none-any.whl", hash = "sha256:322c8a34becf998285b7c8a104a59d972418fac3d125edab523736ae37e6e264"},
+    {url = "https://files.pythonhosted.org/packages/d3/17/0aef1bc2e5da0f9168ef516102474427a3f0756a81b29e1dc8c5872a8c36/np_tools-0.1.14.tar.gz", hash = "sha256:281b142e57580f509410625c079020f6c019710a173440ab6abf3e79ff767102"},
 ]
 "numexpr 2.8.4" = [
     {url = "https://files.pythonhosted.org/packages/0b/ed/9fff5c0b1942f67fa5ee96eefc08e8e69c3a4262469885ebb9d2776ff4f1/numexpr-2.8.4-cp37-cp37m-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:059546e8f6283ccdb47c683101a890844f667fa6d56258d48ae2ecf1b3875957"},
