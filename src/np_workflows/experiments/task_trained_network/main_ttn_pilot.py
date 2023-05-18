@@ -70,6 +70,16 @@ class TTNMixin:
         }
         
     @property
+    def stim_root_on_stim(self) -> pathlib.Path:
+        "Path to dev folder on Stim computer, as seen from local machine."
+        return np_config.local_to_unc(self.rig.stim, self.script_root_on_stim)
+    
+    @property
+    def stim_root_on_local(self) -> pathlib.Path:
+        "Path to version controlled stim files on local machine."
+        return self.script_root_on_local / 'stims'
+        
+    @property
     def recorders(self) -> tuple[Service, ...]:
         """Services to be started before stimuli run, and stopped after. Session-dependent."""
         match self.ttn_session:
@@ -97,6 +107,7 @@ class TTNMixin:
 
         super().initialize_and_test_services()
 
+
     def update_state(self) -> None:
         "Store useful but non-essential info."
         self.mouse.state['last_session'] = self.session.id
@@ -113,7 +124,7 @@ class TTNMixin:
                 self.session.project.state['sessions'] = self.session.project.state.get('sessions', []) + [self.session.id]
                 
     def run_stim_scripts(self) -> None:
-
+        self.validate_or_copy_stim_files()
         self.update_state()
         
         for stim in ('mapping', 'main', 'opto'):
@@ -141,7 +152,11 @@ class TTNMixin:
 
             with contextlib.suppress(Exception):
                 np_logging.web(f'ttn_{self.ttn_session.name.lower()}').info(f"{stim.capitalize()} stim finished")
-            
+    
+    def validate_or_copy_stim_files(self):
+        for vc_copy in self.stim_root_on_local.iterdir():
+            stim_copy = self.stim_root_on_stim / vc_copy.name
+            validate_or_overwrite(validate=stim_copy, src=vc_copy)
             
     @property
     def params(self) -> dict[Literal["main", "mapping", "opto", "system"], dict[str, Any]]:

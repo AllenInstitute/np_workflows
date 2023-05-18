@@ -1,0 +1,30 @@
+x = np.arange(-40,45,10)
+y = np.arange(-40,45,10)
+position = []
+for i in x:
+    for j in y:
+        position.append([i,j])
+
+
+stimulus = Stimulus(visual.GratingStim(window,
+                    units='deg',
+                    size=20,
+                    mask="circle",
+                    texRes=256,
+                    sf=0.1,
+                    ),
+    sweep_params={
+               'Pos':(position, 0),
+               'Contrast': ([0.8], 4),
+               'TF': ([4.0], 1),
+               'SF': ([0.08], 2),
+               'Ori': ([0,45,90], 3),
+               },
+    sweep_length=0.25,
+    start_time=0.0,
+    blank_length=0.0,
+    blank_sweeps=0,
+    runs=15,
+    shuffle=True,
+    save_sweep_table=True,
+    )

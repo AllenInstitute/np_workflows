@@ -131,7 +131,7 @@ def per_session_opto_params(
         return {"mouseID": str(mouse_id)}
 
     def opto_levels(session: TTNSession) -> dict[str, list[float]]:
-        default_opto_levels: list[float] = camstim_defaults()["Optogenetics"][
+        default_opto_levels: list[float] = camstim2_defaults()["Optogenetics"][
             "level_list"
         ]
         match session:

@@ -1,0 +1,20 @@
+stimulus = Stimulus(visual.GratingStim(window,
+    pos = (0, 0),
+    units = 'deg',
+    size = (300, 300),
+    mask = "None",
+    texRes = 256,
+    sf = 0,
+),
+    sweep_params = {
+        'Contrast': ([0.8], 0),
+        'Color': ([-1, 1], 1)
+    },
+    sweep_length = 0.25,
+    start_time = 0.0,
+    blank_length = 1.75,
+    blank_sweeps = 0,
+    runs = 75,
+    shuffle = True,
+    save_sweep_table = True,
+)
