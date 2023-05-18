@@ -1,4 +1,5 @@
 import abc
+import configparser
 import contextlib
 import functools
 import getpass
@@ -102,7 +103,7 @@ class WithSession(abc.ABC):
     @session_type.setter
     def session_type(self, value: Literal['ephys', 'hab']):
         if value not in ('ephys', 'hab'):
-            raise ValueError('Session type must be either "ephys" or "hab"')
+            raise ValueError(f'Session type must be either "ephys" or "hab": got {value!r}')
         self._session_type = value
         logger.debug('Set session_type to %r', value)
         
@@ -366,7 +367,34 @@ class PipelineExperiment(WithSession):
                     # /j unbuffered, /s incl non-empty subdirs, /xo exclude src files older than dest
                     )
     
-                           
+    @functools.cached_property
+    def system_camstim_params(self) -> dict[str, Any]:
+        """Try to load defaults from camstim config file on the Stim computer.
+        
+        May encounter permission error if not running as svc_neuropix.
+        """
+        with contextlib.suppress(OSError):
+            parser = configparser.RawConfigParser()
+            parser.read(
+                (self.rig.paths["Camstim"].parent / "config" / "stim.cfg").as_posix()
+            )
+
+            camstim_default_config = {}
+            for section in parser.sections():
+                camstim_default_config[section] = {}
+                for k, v in parser[section].items():
+                    try:
+                        value = eval(
+                            v
+                        )  # this removes comments in config and converts values to expected datatype
+                    except:
+                        continue
+                    else:
+                        camstim_default_config[section][k] = value
+            return camstim_default_config
+        logger.warning("Could not load camstim defaults from config file on Stim computer.")
+        return {}
+
 class PipelineEphys(PipelineExperiment):
     default_session_type = 'ephys'
 
