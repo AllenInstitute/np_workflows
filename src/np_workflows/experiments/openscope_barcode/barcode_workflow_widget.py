@@ -13,10 +13,9 @@ import np_session
 import np_workflows
 from pyparsing import Any
 
-from .barcode_stim_config import BarcodeSession
+from np_workflows.experiments.openscope_barcode.main_barcode_pilot import BarcodeSession
 
 # for widget, before creating a experiment --------------------------------------------- #
-
 
 class SelectedSession:
     def __init__(self, session: str | BarcodeSession, mouse: str | int | np_session.Mouse):
@@ -29,7 +28,7 @@ class SelectedSession:
         return f"{self.__class__.__name__}({self.session}, {self.mouse})"
 
 
-def stim_session_select_widget(
+def barcode_workflow_widget(
     mouse: str | int | np_session.Mouse,
 ) -> SelectedSession:
     """Select a stimulus session (hab, pretest, ephys) to run.
