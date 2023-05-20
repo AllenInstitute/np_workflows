@@ -35,6 +35,16 @@ from np_services import (
 
 logger = np_logging.getLogger(__name__)
 
+class WithSessionInfo(Protocol):
+    @property
+    def session(self) -> np_session.Session: ...
+    @property
+    def mouse(self) -> np_session.Mouse: ...
+    @property
+    def user(self) -> np_session.User: ...
+    @property
+    def rig(self) -> np_config.Rig: ...
+    
 
 class WithSession(abc.ABC):
     
