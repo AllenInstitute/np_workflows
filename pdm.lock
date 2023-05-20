@@ -1423,7 +1423,7 @@ dependencies = [
 
 [[package]]
 name = "np-session"
-version = "0.6.5"
+version = "0.6.10"
 requires_python = ">=3.7"
 summary = "Tools for accessing data, metadata, and jobs related to ecephys and behavior sessions for the Mindscope Neuropixels team."
 dependencies = [
@@ -3945,9 +3945,9 @@ content_hash = "sha256:f52f6c197e363d031ee0b2e129a5e7db6da96cac452215add78423a81
     {url = "https://files.pythonhosted.org/packages/9b/ed/ea3e1e311d00e31170e793f53f21b43659ff276b9f0e4e9df20b8c224620/np_services-0.1.47.tar.gz", hash = "sha256:87154dce5690ead79e1dbfe6702d6734ec2767caa493dc14699377993b901081"},
     {url = "https://files.pythonhosted.org/packages/bd/7b/f0f5c20139879e25660de80ca344c3da434ccfae1277a901596a8e9ef23f/np_services-0.1.47-py3-none-any.whl", hash = "sha256:c119d1692907646558ad56dad933e14d3dbcfd4be40d52c822fe8464532e067f"},
 ]
-"np-session 0.6.5" = [
-    {url = "https://files.pythonhosted.org/packages/19/e9/6ab2057c63f3d5690f3d3d794007441bf4ed0dd443ae2c83a1c5fb7d6e0d/np-session-0.6.5.tar.gz", hash = "sha256:98216b670d52d7599e49a6614af509f5eeb1482da434a7bada2d568bb74bcc45"},
-    {url = "https://files.pythonhosted.org/packages/ca/2b/00950f72beec1d3f972dde8805300cd6cdcc10f12418825262b0a6060d10/np_session-0.6.5-py3-none-any.whl", hash = "sha256:addb0e2f4d5187ab9ee3e400aa7e343b33a86d2b2fe354db1ce16235157911e5"},
+"np-session 0.6.10" = [
+    {url = "https://files.pythonhosted.org/packages/41/66/4059b39261e81cc1b7bdeeec13045d9a60c43b1404cc7a4b2f46d65ba83d/np-session-0.6.10.tar.gz", hash = "sha256:afc1bc3b919e5f34442c953995126ad8ecce6a0071eba01a63bf2b66f25994f3"},
+    {url = "https://files.pythonhosted.org/packages/fc/18/6316afafdc40e630463df425ef89df2e6b5c501347974501fbfc55333896/np_session-0.6.10-py3-none-any.whl", hash = "sha256:2eee31aa05115fcdebbc8b1b19078645eb5d6b9b3b407847f1b4574c2f7b9648"},
 ]
 "np-tools 0.1.14" = [
     {url = "https://files.pythonhosted.org/packages/5f/23/706f3a8ce478b087dac1ca28a4e88b7b7fac345b6ab420be472c9f86a486/np_tools-0.1.14-py3-none-any.whl", hash = "sha256:322c8a34becf998285b7c8a104a59d972418fac3d125edab523736ae37e6e264"},
