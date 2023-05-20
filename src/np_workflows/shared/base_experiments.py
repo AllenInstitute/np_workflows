@@ -118,7 +118,9 @@ class WithSession(abc.ABC):
     
     @property
     def mouse(self) -> np_session.Mouse:
-        return self.session.mouse
+        if isinstance(self.session.mouse, str | int):
+            return np_session.Mouse(self.session.mouse)
+        return self.session.mouse 
     
     @property
     def user(self) -> np_session.User | None:
