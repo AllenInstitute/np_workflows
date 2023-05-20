@@ -16,15 +16,15 @@ from typing import Any
 logger = np_logging.getLogger(__name__)
 
 
-class TempletonSession(enum.Enum):
-    """Enum for the different TTN sessions available, each with different param sets."""
+class TempletonWorkflow(enum.Enum):
+    """Enum for the different TTN sessions available, each with a different task."""
+    PRETEST = "test"
+    HAB_AUD = "hab: stage 2 aud"
+    EPHYS_AUD = "ephys: stage 2 aud"
+    HAB_VIS = "hab: stage 2 vis"
+    EPHYS_VIS = "ephys: stage 2 vis"
 
-    PRETEST = "pretest"
-    HAB_AUD = "hab auditory"
-    HAB_VIS = "hab visual"
-    EPHYS_AUD = "ephys auditory"
-    EPHYS_VIS = "ephys visual"
-
+AVAILABLE_TASK_NAMES = tuple(_.value for _ in TempletonWorkflow)
 
 def camstim_defaults() -> dict:
     """Try to load defaults from camstim config file on the Stim computer.

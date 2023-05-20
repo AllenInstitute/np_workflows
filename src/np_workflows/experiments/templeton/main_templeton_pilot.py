@@ -11,7 +11,7 @@ import shutil
 import threading
 import time
 import zlib
-from typing import ClassVar, Literal, NamedTuple, NoReturn, Optional, TypedDict
+from typing import ClassVar, Literal, NamedTuple, NoReturn, Optional, Type, TypedDict
 
 import IPython
 import IPython.display
@@ -37,39 +37,53 @@ from np_services import (
     MouseDirector,
 )
 
-from .templeton_stim_config import (
-    TempletonSession,
+from np_workflows.shared.base_experiments import WithSessionInfo
+from np_workflows.experiments.templeton.templeton_stim_config import (
+    TempletonWorkflow,
     camstim_defaults,
 )
 
 logger = np_logging.getLogger(__name__)
 
-
 class TempletonMixin:
     """Provides project-specific methods and attributes, mainly related to camstim scripts."""
     
-    templeton_session: TempletonSession
-    """Enum for session type, e.g. PRETEST, HAB_AUD, HAB_VIS, EPHYS_ etc."""
+    default_session_subclass: Type[np_session.Session] = np_session.TempletonPilotSession
     
-    services = (Sync, VideoMVR, ImageMVR, OpenEphys, NewScaleCoordinateRecorder, ScriptCamstim)
+    workflow: TempletonWorkflow
+    """Enum for workflow type, e.g. PRETEST, HAB_AUD, HAB_VIS, EPHYS_ etc."""
+    
+    services = (Sync, VideoMVR, ImageMVR, OpenEphys, NewScaleCoordinateRecorder, ScriptCamstim, MouseDirector)
     stims = (ScriptCamstim,)
     
     @property
     def recorders(self) -> tuple[Service, ...]:
         """Services to be started before stimuli run, and stopped after. Session-dependent."""
-        match self.templeton_session:
-            case TempletonSession.PRETEST | TempletonSession.EPHYS_AUD | TempletonSession.EPHYS_VIS:
+        match self.workflow:
+            case TempletonWorkflow.PRETEST | TempletonWorkflow.EPHYS_AUD | TempletonWorkflow.EPHYS_VIS:
                 return (Sync, VideoMVR, OpenEphys)
-            case TempletonSession.HAB_AUD | TempletonSession.HAB_VIS:
+            case TempletonWorkflow.HAB_AUD | TempletonWorkflow.HAB_VIS:
                 return (Sync, VideoMVR)
 
     @property
     def task_name(self) -> str:
-        match self.templeton_session:
-            case TempletonSession.PRETEST | TempletonSession.EPHYS_AUD | TempletonSession.EPHYS_VIS:
-                return NotImplemented # TODO
-            case TempletonSession.HAB_AUD | TempletonSession.HAB_VIS:
-                return NotImplemented # TODO
+        if hasattr(self, '_task_name'): 
+            return self._task_name 
+        match self.workflow:
+            case TempletonWorkflow.PRETEST:
+                return 'templeton test'
+            case TempletonWorkflow.HAB_AUD | TempletonWorkflow.EPHYS_AUD:
+                return 'templeton stage 2 aud'
+            case TempletonWorkflow.HAB_VIS | TempletonWorkflow.EPHYS_VIS:
+                return 'templeton stage 2 vis'
+
+    @task_name.setter
+    def task_name(self, value:str) -> None:
+        try:
+            TempletonWorkflow(value)
+        except ValueError:
+            print(f"Not a recognized task, but the attribute is updated!")
+        self._task_name = value
 
     @property
     def task_params(self) -> dict[str, str]:
@@ -81,7 +95,7 @@ class TempletonMixin:
         )
 
     @property
-    def mapping_params(self) -> dict[str, str]:
+    def mapping_params(self: WithSessionInfo) -> dict[str, str]:
         return dict(
                 rigName = str(self.rig).replace('.',''),
                 subjectName = str(self.mouse),
@@ -117,36 +131,26 @@ class TempletonMixin:
     def update_state(self) -> None:
         "Store useful but non-essential info."
         self.mouse.state['last_session'] = self.session.id
-        self.mouse.state['last_templeton_session'] = str(self.templeton_session)
-
-
-    def run_sound_test(self) -> None:
-        ScriptCamstim.params = self.sound_test_params
-        ScriptCamstim.start()
-
-        while not ScriptCamstim.is_ready_to_start():
-            time.sleep(1)
-
-        # re-initialize in case sound test produces pkl files that we don't want:
-        ScriptCamstim.initialize()
+        self.mouse.state['last_workflow'] = str(self.workflow.name)
+        self.mouse.state['last_task'] = str(self.task_name)
 
     
     def run_script(self, stim: Literal['sound_test', 'mapping', 'task']) -> None:
         ScriptCamstim.params = getattr(self, f'{stim}')
 
         with contextlib.suppress(Exception):
-            np_logging.web(f'templeton_{self.templeton_session.name.lower()}').info(f"{stim} started")
+            np_logging.web(f'templeton_{self.workflow.name.lower()}').info(f"{stim} started")
 
         ScriptCamstim.start()
 
         while not ScriptCamstim.is_ready_to_start():
-            time.sleep(10)
+            time.sleep(1)
 
         if isinstance(ScriptCamstim, Finalizable):
             ScriptCamstim.finalize()
 
         with contextlib.suppress(Exception):
-            np_logging.web(f'templeton_{self.templeton_session.name.lower()}').info(f"{stim} complete")
+            np_logging.web(f'templeton_{self.workflow.name.lower()}').info(f"{stim} complete")
     
     
     def run_mapping(self) -> None:
@@ -228,20 +232,20 @@ class Ephys(TempletonMixin, np_workflows.WithSession):
 def new_experiment(
     mouse: int | str | np_session.Mouse,
     user: str | np_session.User,
-    session: TempletonSession,
+    workflow: TempletonWorkflow,
 ) -> Ephys | Hab:
     """Create a new experiment for the given mouse and user."""
-    match session:
-        case TempletonSession.PRETEST | TempletonSession.EPHYS_AUD | TempletonSession.EPHYS_VIS:
+    match workflow:
+        case TempletonWorkflow.PRETEST | TempletonWorkflow.EPHYS_AUD | TempletonWorkflow.EPHYS_VIS:
             experiment = Ephys(mouse, user)
-        case TempletonSession.HAB_AUD | TempletonSession.HAB_VIS:
+        case TempletonWorkflow.HAB_AUD | TempletonWorkflow.HAB_VIS:
             experiment = Hab(mouse, user)
         case _:
-            raise ValueError(f"Invalid session type: {session}")
-    experiment.templeton_session = session
+            raise ValueError(f"Invalid session type: {workflow}")
+    experiment.workflow = workflow
     
     with contextlib.suppress(Exception):
-        np_logging.web(f'templeton_{experiment.templeton_session.name.lower()}').info(f"{experiment} created")
+        np_logging.web(f'templeton_{experiment.workflow.name.lower()}').info(f"{experiment} created")
     
     experiment.session.npexp_path.mkdir(parents=True, exist_ok=True)
             
