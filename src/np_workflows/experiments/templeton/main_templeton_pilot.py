@@ -136,7 +136,7 @@ class TempletonMixin:
 
     
     def run_script(self, stim: Literal['sound_test', 'mapping', 'task']) -> None:
-        ScriptCamstim.params = getattr(self, f'{stim}')
+        ScriptCamstim.params = getattr(self, f'{stim}_params')
 
         with contextlib.suppress(Exception):
             np_logging.web(f'templeton_{self.workflow.name.lower()}').info(f"{stim} started")
