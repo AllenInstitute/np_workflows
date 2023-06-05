@@ -51,8 +51,14 @@ class BarcodeMixin:
     """Provides project-specific methods and attributes, mainly related to camstim scripts."""
     
     workflow: BarcodeSession
-    """Enum for particular workflow/session, e.g. PRETEST, HAB_60, HAB_90, EPHYS."""
-
+    """Enum for particular workflow/session, e.g. PRETEST, HAB_60, HAB_90,
+    EPHYS."""
+    
+    session: np_session.PipelineSession
+    mouse: np_session.Mouse
+    user: np_session.User
+    platform_json: np_session.PlatformJson
+    
     @property
     def recorders(self) -> tuple[Service, ...]:
         """Services to be started before stimuli run, and stopped after. Session-dependent."""
