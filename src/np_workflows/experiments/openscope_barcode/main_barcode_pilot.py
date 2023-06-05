@@ -118,8 +118,36 @@ class BarcodeMixin:
 
         with contextlib.suppress(Exception):
             np_logging.web(f'barcode_{self.workflow.name.lower()}').info(f"Finished session {self.mouse.mtrain.stage['name']}")
-            
-
+    
+    
+    def copy_data_files(self) -> None: 
+        super().copy_data_files()
+        
+        # When all processing completes, camstim Agent class passes data and uuid to
+        # /camstim/lims BehaviorSession class, and write_behavior_data() writes a
+        # final .pkl with default name YYYYMMDDSSSS_mouseID_foragingID.pkl
+        # - if we have a foraging ID, we can search for that
+        if None == (stim_pkl := next(self.session.npexp_path.glob(f'{self.session.date:%y%m%d}*_{self.session.mouse}_*.pkl'), None)):
+            logger.warning('Did not find stim file on npexp matching the format `YYYYMMDDSSSS_mouseID_foragingID.pkl`')
+            return
+        assert stim_pkl
+        if not self.session.platform_json.foraging_id:
+            self.session.platform_json.foraging_id = stim_pkl.stem.split('_')[-1]
+        new_stem = f'{self.session.folder}.stim'
+        logger.debug(f'Renaming stim file copied to npexp: {stim_pkl} -> {new_stem}')
+        stim_pkl = stim_pkl.rename(stim_pkl.with_stem(new_stem))
+        
+        # remove other stim pkl, which is nearly identical, if it was also copied
+        for pkl in self.session.npexp_path.glob('*.pkl'):
+            if (
+                self.session.folder not in pkl.stem
+                and 
+                abs(pkl.stat().st_size - stim_pkl.stat().st_size) < 1e6
+            ):
+                logger.debug(f'Deleting extra stim pkl copied to npexp: {pkl.stem}')
+                pkl.unlink()
+        
+        
 def validate_selected_workflow(session: BarcodeSession, mouse: np_session.Mouse) -> None:
     for workflow in ('hab', 'ephys'):
         if (
