@@ -24,6 +24,8 @@ logger = np_logging.getLogger(__name__)
 np_logging.getLogger('Comm').propagate = False
 np_logging.getLogger('PIL').propagate = False
 
+global_state = {}
+"""Global variable for persisting widget states."""
 
 def elapsed_time_widget() -> IPython.display.DisplayHandle | None:
     """Displays a clock showing the elapsed time since the cell was first run."""
@@ -55,18 +57,24 @@ def elapsed_time_widget() -> IPython.display.DisplayHandle | None:
 
 
 def user_and_mouse_widget() -> tuple[np_session.User, np_session.Mouse]:
+    console = ipw.Output()
     user_description = "User:"
     mouse_description = "Mouse:"
     user_widget = ipw.Select(options=npxc.lims_user_ids, description=user_description)
     mouse_widget = ipw.Text(value=str(npxc.default_mouse_id), description=mouse_description)
+    for widget, string in zip((user_widget, mouse_widget), ('user', 'mouse')):
+        if (selected := global_state.get(f'selected_{string}')):
+            widget.value = selected
+            with console:
+                print(f'Current {string}: {selected}')
     user = np_session.User(str(user_widget.value))
     mouse = np_session.Mouse(str(mouse_widget.value))
-    console = ipw.Output()
 
     def update_user(new_user: str):
         if str(user) == (new := str(new_user).strip()):
             return
         user.__init__(new)
+        global_state['selected_user'] = new
         with console:
             print(f"User updated: {user}")
 
@@ -75,6 +83,7 @@ def user_and_mouse_widget() -> tuple[np_session.User, np_session.Mouse]:
             return
         if len(new) < 6:
             return
+        global_state['selected_mouse'] = new
         mouse.__init__(new)
         with console:
             print(f"Mouse updated: {mouse}")
@@ -504,12 +513,12 @@ def insertion_notes_widget(session: np_session.PipelineSession):
             p = d.get(probe(letter), {})
             for widget in row.children:
                 v = widget.value
-                if v in (None, False, ''):
-                    continue
                 if isinstance(widget, ipw.Text):
                     p['Notes'] = widget.value
-                if isinstance(widget, ipw.Checkbox):
+                elif isinstance(widget, ipw.Checkbox):
                     p[save_str(widget.description)] = widget.value
+                else:
+                    continue
             if p:
                 d[probe(letter)] = p  
         
