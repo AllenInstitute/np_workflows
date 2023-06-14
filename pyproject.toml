@@ -1,6 +1,6 @@
 [project]
 name = "np-workflows"
-version = "1.4.23"
+version = "1.4.24"
 description = "Ecephys and behavior workflows for the Mindscope Neuropixels team."
 authors = [
     {name="Ben Hardcastle", email="ben.hardcastle@alleninstitute.org"},
@@ -11,9 +11,9 @@ dependencies = [
     "np-services>=0.1.47",
     "np-session>=0.6.5",
     "np-config >=0.4.20",
-    "np-probe-targets >= 0.0.10",
+    "np-probe-targets >= 0.0.11",
     "np-datajoint",
-    "ipywidgets >=7, < 8",
+    "ipywidgets >=7",
     "pydantic >=1, < 2",
     "jupyterlab >= 3.6",
     "jupyterlab-git >= 0.41.0",
