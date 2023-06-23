@@ -195,12 +195,16 @@ class WithSession(abc.ABC):
                     recorder.verify()
     
     def stop_recording_after_stim_finished(self, 
-            recorders: Optional[Iterable[Startable]] = None, 
-            stims: Optional[Iterable[Startable]] = None,
+            recorders: Optional[Iterable[Stoppable]] = None, 
+            stims: Optional[Iterable[Stoppable]] = None,
         ) -> None:
-        """Stop recording after all stims have finished."""
+        """Stop recording after all stims have finished.
+        
+        - object's `.recorders` attr used by default, stopped in reverse order.
+        - stims will be awaited
+        """
         if not recorders and hasattr(self, 'recorders'):
-            recorders = self.recorders
+            recorders = reversed(self.recorders)
         if not stims and hasattr(self, 'stims'):
             stims = self.stims
         while not all(_.is_ready_to_start() for _ in stims):
@@ -278,7 +282,14 @@ class WithSession(abc.ABC):
     def save_current_notebook(self) -> None:
         app = ipylab.JupyterFrontEnd()
         app.commands.execute('docmanager:save')
-        
+        # TODO use the following to export to html (shows input to widgets and
+        # output of cells)
+        #! currently can't be run automatically as save as path dialog opens 
+        # app.commands.execute('notebook:export-to-format', {
+        #     'format': 'html',
+        #     # 'download': 'false',
+        #     # 'path': 'c:/users/svc_neuropix/documents/github/np_notebooks/task_trained_network/ttn_pilot.html',
+        # })       
         
 class PipelineExperiment(WithSession):
     @property
@@ -293,8 +304,8 @@ class PipelineExperiment(WithSession):
 
 
     def stop_recording_after_stim_finished(self, 
-            recorders: Optional[Iterable[Startable]] = None, 
-            stims: Optional[Iterable[Startable]] = None,
+            recorders: Optional[Iterable[Stoppable]] = None, 
+            stims: Optional[Iterable[Stoppable]] = None,
         ) -> None:
         """Stop recording after all stims have finished."""
         super().stop_recording_after_stim_finished(recorders, stims)
