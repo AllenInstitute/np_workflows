@@ -87,23 +87,57 @@ class TempletonMixin:
 
     @property
     def task_params(self) -> dict[str, str]:
+        """For sending to runTask.py"""
         return dict(
                 rigName = str(self.rig).replace('.',''),
                 subjectName = str(self.mouse),
                 taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/DynamicRouting1.py',
                 taskVersion = self.task_name,
         )
+        
+    @property
+    def spontaneous_rewards(self) -> dict[str, str]:
+        """For sending to runTask.py"""
+        return dict(
+                rigName = str(self.rig).replace('.',''),
+                subjectName = str(self.mouse),
+                taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/TaskControl.py',
+                taskVersion = 'spontaneous',
+        )
+        
+    @property
+    def spontaneous_rewards_params(self) -> dict[str, str]:
+        """For sending to runTask.py"""
+        return dict(
+                rigName = str(self.rig).replace('.',''),
+                subjectName = str(self.mouse),
+                taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/TaskControl.py',
+                taskVersion = 'spontaneous rewards',
+        )
+        
+    @property
+    def optotagging_params(self) -> dict[str, str]:
+        """For sending to runTask.py"""
+        return dict(
+                rigName = str(self.rig).replace('.',''),
+                subjectName = str(self.mouse),
+                taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/TaskControl.py',
+                taskVersion = 'optotagging',
+        )
 
     @property
     def mapping_params(self: WithSessionInfo) -> dict[str, str]:
+        """For sending to runTask.py"""
         return dict(
                 rigName = str(self.rig).replace('.',''),
                 subjectName = str(self.mouse),
                 taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/RFMapping.py'
             )
 
+
     @property
     def sound_test_params(self) -> dict[str, str]:
+        """For sending to runTask.py"""
         return dict(
                 rigName = str(self.rig).replace('.',''),
                 subjectName = 'sound',
@@ -135,8 +169,8 @@ class TempletonMixin:
         self.mouse.state['last_task'] = str(self.task_name)
 
     
-    def run_script(self, stim: Literal['sound_test', 'mapping', 'task']) -> None:
-        ScriptCamstim.params = getattr(self, f'{stim}_params')
+    def run_script(self, stim: Literal['sound_test', 'mapping', 'task', 'optotagging', 'spontaneous', 'spontaneous_rewards']) -> None:
+        ScriptCamstim.params = getattr(self, f'{stim.replace(" ", "_")}_params')
 
         with contextlib.suppress(Exception):
             np_logging.web(f'templeton_{self.workflow.name.lower()}').info(f"{stim} started")
@@ -162,8 +196,16 @@ class TempletonMixin:
     def run_task(self) -> None:
         self.update_state()
         self.run_script('task')    
+        
+    def run_optotagging(self) -> None:
+        self.run_script('optotagging')
+        
+    def run_spontaneous(self) -> None:
+        self.run_script('spontaneous')
                 
-
+    def run_spontaneous_rewards(self) -> None:
+        self.run_script('spontaneous_rewards')
+                
     @functools.cached_property
     def system_camstim_params(self) -> dict[str, Any]:
         "System config on Stim computer, if accessible."
