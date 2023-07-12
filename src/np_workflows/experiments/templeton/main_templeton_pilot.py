@@ -212,7 +212,8 @@ class TempletonMixin:
         return camstim_defaults()
     
     def copy_data_files(self) -> None:
-        """Copy files from raw data storage to session folder for all services."""
+        """Copy files from raw data storage to session folder for all services
+        except Open Ephys."""
         password = input(f'Enter password for svc_neuropix:')
         for service in self.services:
             match service.__class__.__name__:

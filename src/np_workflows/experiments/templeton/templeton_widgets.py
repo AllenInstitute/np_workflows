@@ -50,7 +50,7 @@ def workflow_select_widget(
     console = ipw.Output()
     with console:
         if last_workflow := np_session.Mouse(selection.mouse).state.get('last_workflow'):
-            print(f"{mouse} last workflow: {TempletonWorkflow(last_workflow).value}")
+            print(f"{mouse} last workflow: {TempletonWorkflow[last_workflow].value}")
         print(f"Selected: {selection.workflow.name}")
 
     def update(change):
