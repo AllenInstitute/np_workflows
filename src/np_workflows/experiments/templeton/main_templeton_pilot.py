@@ -96,11 +96,11 @@ class TempletonMixin:
         )
         
     @property
-    def spontaneous_rewards(self) -> dict[str, str]:
+    def spontaneous_params(self) -> dict[str, str]:
         """For sending to runTask.py"""
         return dict(
                 rigName = str(self.rig).replace('.',''),
-                subjectName = str(self.mouse),
+                subjectName = str(self.mouse) if self.workflow != TempletonWorkflow.PRETEST else 'test',
                 taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/TaskControl.py',
                 taskVersion = 'spontaneous',
         )
@@ -110,19 +110,23 @@ class TempletonMixin:
         """For sending to runTask.py"""
         return dict(
                 rigName = str(self.rig).replace('.',''),
-                subjectName = str(self.mouse),
+                subjectName = str(self.mouse) if self.workflow != TempletonWorkflow.PRETEST else 'test',
                 taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/TaskControl.py',
                 taskVersion = 'spontaneous rewards',
+                # rewardSound = "device",
         )
         
     @property
     def optotagging_params(self) -> dict[str, str]:
         """For sending to runTask.py"""
+        locs_root = pathlib.Path("//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/OptoGui/optolocs")
+        locs = sorted(tuple(locs_root.glob(f"optolocs_{self.mouse.id}_{str(self.rig).replace('.', '')}_*")), reverse=True)[0]
         return dict(
                 rigName = str(self.rig).replace('.',''),
-                subjectName = str(self.mouse),
+                subjectName = str(self.mouse) if self.workflow != TempletonWorkflow.PRETEST else 'test',
                 taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/TaskControl.py',
                 taskVersion = 'optotagging',
+                optoTaggingLocs = locs.as_posix(),
         )
 
     @property
@@ -133,7 +137,6 @@ class TempletonMixin:
                 subjectName = str(self.mouse),
                 taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/RFMapping.py'
             )
-
 
     @property
     def sound_test_params(self) -> dict[str, str]:
@@ -170,6 +173,7 @@ class TempletonMixin:
 
     
     def run_script(self, stim: Literal['sound_test', 'mapping', 'task', 'optotagging', 'spontaneous', 'spontaneous_rewards']) -> None:
+        ScriptCamstim.script = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/runTask.py'
         ScriptCamstim.params = getattr(self, f'{stim.replace(" ", "_")}_params')
 
         with contextlib.suppress(Exception):
@@ -206,6 +210,21 @@ class TempletonMixin:
     def run_spontaneous_rewards(self) -> None:
         self.run_script('spontaneous_rewards')
                 
+    def set_grey_desktop_on_stim(self) -> None:
+        ScriptCamstim.script = '//allen/programs/mindscope/workgroups/dynamicrouting/ben/change_desktop.py'
+        ScriptCamstim.params = {'selection': 'grey'}
+        ScriptCamstim.start()
+        
+    def set_dark_desktop_on_stim(self) -> None:
+        ScriptCamstim.script = '//allen/programs/mindscope/workgroups/dynamicrouting/ben/change_desktop.py'
+        ScriptCamstim.params = {'selection': 'dark'}
+        ScriptCamstim.start()
+        
+    def reset_desktop_on_stim(self) -> None:
+        ScriptCamstim.script = '//allen/programs/mindscope/workgroups/dynamicrouting/ben/change_desktop.py'
+        ScriptCamstim.params = {'selection': 'reset'}
+        ScriptCamstim.start()
+        
     @functools.cached_property
     def system_camstim_params(self) -> dict[str, Any]:
         "System config on Stim computer, if accessible."
