@@ -1,6 +1,6 @@
 [project]
 name = "np-workflows"
-version = "1.5.3"
+version = "1.5.4"
 description = "Ecephys and behavior workflows for the Mindscope Neuropixels team."
 authors = [
     {name="Ben Hardcastle", email="ben.hardcastle@alleninstitute.org"},
@@ -62,7 +62,7 @@ ruff = "ruff check src --fix-only"
 blue = "blue src"
 pytest = "pytest --cov"
 prebuild = {composite = ["blue", "ruff", "pytest"]}
-bump = "bump -p pyproject.toml" # defaults to patch; `pdm run bump -m` to bump minor
+bump = "pdm bump -p pyproject.toml" # defaults to patch; `pdm run bump -m` to bump minor
 build = {composite = ["prebuild", "pdm build"]}
 dry-run = {composite = ["prebuild", "pdm build", "pdm publish --no-build --repository https://test.pypi.org/simple"]}
 publish = {composite = ["prebuild", "pdm build", "pdm publish --no-build"]}
