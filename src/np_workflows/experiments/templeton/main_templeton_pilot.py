@@ -147,6 +147,47 @@ class TempletonMixin:
                 taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/TaskControl.py',
                 taskVersion = 'sound test',
         )
+    
+    def run_script(self, stim: Literal['sound_test', 'mapping', 'task', 'optotagging', 'spontaneous', 'spontaneous_rewards']) -> None:
+        ScriptCamstim.script = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/runTask.py'
+        ScriptCamstim.params = getattr(self, f'{stim.replace(" ", "_")}_params')
+
+        with contextlib.suppress(Exception):
+            np_logging.web(f'templeton_{self.workflow.name.lower()}').info(f"{stim} started")
+
+        ScriptCamstim.start()
+
+        while not ScriptCamstim.is_ready_to_start():
+            time.sleep(1)
+
+        if isinstance(ScriptCamstim, Finalizable):
+            ScriptCamstim.finalize()
+
+        with contextlib.suppress(Exception):
+            np_logging.web(f'templeton_{self.workflow.name.lower()}').info(f"{stim} complete")
+    
+    
+    run_mapping = functools.partialmethod(run_script, 'mapping')
+    run_sound_test = functools.partialmethod(run_script, 'sound_test')
+    run_optotagging = functools.partialmethod(run_script, 'optotagging')
+    run_spontaneous = functools.partialmethod(run_script, 'spontaneous')
+    run_spontaneous_rewards = functools.partialmethod(run_script, 'spontaneous_rewards')
+    
+    def run_task(self) -> None:
+        self.update_state()
+        self.run_script('task')    
+           
+    def run_stim_desktop_theme_script(self, selection: str) -> None:     
+        ScriptCamstim.script = '//allen/programs/mindscope/workgroups/dynamicrouting/ben/change_desktop.py'
+        ScriptCamstim.params = {'selection': selection}
+        ScriptCamstim.start()
+        while not ScriptCamstim.is_ready_to_start():
+            time.sleep(0.1)
+
+    set_grey_desktop_on_stim = functools.partialmethod(run_stim_desktop_theme_script, 'grey')
+    set_dark_desktop_on_stim = functools.partialmethod(run_stim_desktop_theme_script, 'dark')
+    reset_desktop_on_stim = functools.partialmethod(run_stim_desktop_theme_script, 'reset')
+        
 
     def initialize_and_test_services(self) -> None:
         """Configure, initialize (ie. reset), then test all services."""
@@ -171,60 +212,6 @@ class TempletonMixin:
         self.mouse.state['last_workflow'] = str(self.workflow.name)
         self.mouse.state['last_task'] = str(self.task_name)
 
-    
-    def run_script(self, stim: Literal['sound_test', 'mapping', 'task', 'optotagging', 'spontaneous', 'spontaneous_rewards']) -> None:
-        ScriptCamstim.script = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/runTask.py'
-        ScriptCamstim.params = getattr(self, f'{stim.replace(" ", "_")}_params')
-
-        with contextlib.suppress(Exception):
-            np_logging.web(f'templeton_{self.workflow.name.lower()}').info(f"{stim} started")
-
-        ScriptCamstim.start()
-
-        while not ScriptCamstim.is_ready_to_start():
-            time.sleep(1)
-
-        if isinstance(ScriptCamstim, Finalizable):
-            ScriptCamstim.finalize()
-
-        with contextlib.suppress(Exception):
-            np_logging.web(f'templeton_{self.workflow.name.lower()}').info(f"{stim} complete")
-    
-    
-    def run_mapping(self) -> None:
-        self.run_script('mapping')    
-            
-    def run_sound_test(self) -> None:
-        self.run_script('sound_test')    
-            
-    def run_task(self) -> None:
-        self.update_state()
-        self.run_script('task')    
-        
-    def run_optotagging(self) -> None:
-        self.run_script('optotagging')
-        
-    def run_spontaneous(self) -> None:
-        self.run_script('spontaneous')
-                
-    def run_spontaneous_rewards(self) -> None:
-        self.run_script('spontaneous_rewards')
-                
-    def set_grey_desktop_on_stim(self) -> None:
-        ScriptCamstim.script = '//allen/programs/mindscope/workgroups/dynamicrouting/ben/change_desktop.py'
-        ScriptCamstim.params = {'selection': 'grey'}
-        ScriptCamstim.start()
-        
-    def set_dark_desktop_on_stim(self) -> None:
-        ScriptCamstim.script = '//allen/programs/mindscope/workgroups/dynamicrouting/ben/change_desktop.py'
-        ScriptCamstim.params = {'selection': 'dark'}
-        ScriptCamstim.start()
-        
-    def reset_desktop_on_stim(self) -> None:
-        ScriptCamstim.script = '//allen/programs/mindscope/workgroups/dynamicrouting/ben/change_desktop.py'
-        ScriptCamstim.params = {'selection': 'reset'}
-        ScriptCamstim.start()
-        
     @functools.cached_property
     def system_camstim_params(self) -> dict[str, Any]:
         "System config on Stim computer, if accessible."
