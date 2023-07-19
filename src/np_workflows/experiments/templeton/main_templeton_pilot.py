@@ -160,9 +160,6 @@ class TempletonMixin:
         while not ScriptCamstim.is_ready_to_start():
             time.sleep(1)
 
-        if isinstance(ScriptCamstim, Finalizable):
-            ScriptCamstim.finalize()
-
         with contextlib.suppress(Exception):
             np_logging.web(f'templeton_{self.workflow.name.lower()}').info(f"{stim} complete")
     
