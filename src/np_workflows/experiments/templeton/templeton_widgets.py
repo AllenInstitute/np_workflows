@@ -73,4 +73,4 @@ def workflow_select_widget(
 
 
 def photodoc_widget(session: np_session.Session, reminder: str) -> None: 
-    print(f'Take an image in Vimba Viewer and save as:\n{session.npexp_path / reminder}.png')
+    print(f'Take an image in Vimba Viewer and save as:\n{session.npexp_path.name}_{reminder}.png')
