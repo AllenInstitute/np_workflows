@@ -37,33 +37,33 @@ from np_services import (
     MouseDirector,
 )
 
-from np_workflows.shared.base_experiments import WithSessionInfo
-from np_workflows.experiments.templeton.templeton_stim_config import (
-    TempletonWorkflow,
-    camstim_defaults,
-)
+from np_workflows.shared import base_experiments
 
 logger = np_logging.getLogger(__name__)
 
-class TempletonMixin:
+class TempletonWorkflow(enum.Enum):
+    """Enum for the different TTN sessions available, each with a different task."""
+    PRETEST = "test"
+    HAB_AUD = "hab: stage 2 aud"
+    EPHYS_AUD = "ephys: stage 2 aud"
+    HAB_VIS = "hab: stage 2 vis"
+    EPHYS_VIS = "ephys: stage 2 vis"
+
+class TempletonPilot(base_experiments.DynamicRoutingExperiment):
     """Provides project-specific methods and attributes, mainly related to camstim scripts."""
     
     default_session_subclass: Type[np_session.Session] = np_session.TempletonPilotSession
     
     workflow: TempletonWorkflow
     """Enum for workflow type, e.g. PRETEST, HAB_AUD, HAB_VIS, EPHYS_ etc."""
-    
-    services = (Sync, VideoMVR, ImageMVR, OpenEphys, NewScaleCoordinateRecorder, ScriptCamstim, MouseDirector)
-    stims = (ScriptCamstim,)
+
+    @property
+    def is_pretest(self) -> bool:
+        return self.workflow == TempletonWorkflow.PRETEST
     
     @property
-    def recorders(self) -> tuple[Service, ...]:
-        """Services to be started before stimuli run, and stopped after. Session-dependent."""
-        match self.workflow:
-            case TempletonWorkflow.PRETEST | TempletonWorkflow.EPHYS_AUD | TempletonWorkflow.EPHYS_VIS:
-                return (Sync, VideoMVR, OpenEphys)
-            case TempletonWorkflow.HAB_AUD | TempletonWorkflow.HAB_VIS:
-                return (Sync, VideoMVR)
+    def is_hab(self) -> bool:
+        return self.workflow == TempletonWorkflow.HAB_AUD or self.workflow == TempletonWorkflow.HAB_VIS
 
     @property
     def task_name(self) -> str:
@@ -82,170 +82,16 @@ class TempletonMixin:
         try:
             TempletonWorkflow(value)
         except ValueError:
-            print(f"Not a recognized task, but the attribute is updated!")
+            print(f"Not a known task name, but the attribute is updated anyway!")
         self._task_name = value
 
-    @property
-    def task_params(self) -> dict[str, str]:
-        """For sending to runTask.py"""
-        return dict(
-                rigName = str(self.rig).replace('.',''),
-                subjectName = str(self.mouse),
-                taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/DynamicRouting1.py',
-                taskVersion = self.task_name,
-        )
-        
-    @property
-    def spontaneous_params(self) -> dict[str, str]:
-        """For sending to runTask.py"""
-        return dict(
-                rigName = str(self.rig).replace('.',''),
-                subjectName = str(self.mouse) if self.workflow != TempletonWorkflow.PRETEST else 'test',
-                taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/TaskControl.py',
-                taskVersion = 'spontaneous',
-        )
-        
-    @property
-    def spontaneous_rewards_params(self) -> dict[str, str]:
-        """For sending to runTask.py"""
-        return dict(
-                rigName = str(self.rig).replace('.',''),
-                subjectName = str(self.mouse) if self.workflow != TempletonWorkflow.PRETEST else 'test',
-                taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/TaskControl.py',
-                taskVersion = 'spontaneous rewards',
-                # rewardSound = "device",
-        )
-        
-    @property
-    def optotagging_params(self) -> dict[str, str]:
-        """For sending to runTask.py"""
-        locs_root = pathlib.Path("//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/OptoGui/optolocs")
-        locs = sorted(tuple(locs_root.glob(f"optolocs_{self.mouse.id}_{str(self.rig).replace('.', '')}_*")), reverse=True)[0]
-        return dict(
-                rigName = str(self.rig).replace('.',''),
-                subjectName = str(self.mouse) if self.workflow != TempletonWorkflow.PRETEST else 'test',
-                taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/TaskControl.py',
-                taskVersion = 'optotagging',
-                optoTaggingLocs = locs.as_posix(),
-        )
+    def log(self, message: str, weblog_name: Optional[str] = None):
+        if weblog_name is None:
+            weblog_name = f'templeton_{self.workflow.name.lower()}'
+        super().log(message, weblog_name)
 
-    @property
-    def mapping_params(self: WithSessionInfo) -> dict[str, str]:
-        """For sending to runTask.py"""
-        return dict(
-                rigName = str(self.rig).replace('.',''),
-                subjectName = str(self.mouse),
-                taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/RFMapping.py'
-            )
-
-    @property
-    def sound_test_params(self) -> dict[str, str]:
-        """For sending to runTask.py"""
-        return dict(
-                rigName = str(self.rig).replace('.',''),
-                subjectName = 'sound',
-                taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/TaskControl.py',
-                taskVersion = 'sound test',
-        )
     
-    def run_script(self, stim: Literal['sound_test', 'mapping', 'task', 'optotagging', 'spontaneous', 'spontaneous_rewards']) -> None:
-        ScriptCamstim.script = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/runTask.py'
-        ScriptCamstim.params = getattr(self, f'{stim.replace(" ", "_")}_params')
-
-        with contextlib.suppress(Exception):
-            np_logging.web(f'templeton_{self.workflow.name.lower()}').info(f"{stim} started")
-
-        ScriptCamstim.start()
-
-        while not ScriptCamstim.is_ready_to_start():
-            time.sleep(1)
-
-        with contextlib.suppress(Exception):
-            np_logging.web(f'templeton_{self.workflow.name.lower()}').info(f"{stim} complete")
-    
-    
-    run_mapping = functools.partialmethod(run_script, 'mapping')
-    run_sound_test = functools.partialmethod(run_script, 'sound_test')
-    run_optotagging = functools.partialmethod(run_script, 'optotagging')
-    run_spontaneous = functools.partialmethod(run_script, 'spontaneous')
-    run_spontaneous_rewards = functools.partialmethod(run_script, 'spontaneous_rewards')
-    
-    def run_task(self) -> None:
-        self.update_state()
-        self.run_script('task')    
-           
-    def run_stim_desktop_theme_script(self, selection: str) -> None:     
-        ScriptCamstim.script = '//allen/programs/mindscope/workgroups/dynamicrouting/ben/change_desktop.py'
-        ScriptCamstim.params = {'selection': selection}
-        ScriptCamstim.start()
-        while not ScriptCamstim.is_ready_to_start():
-            time.sleep(0.1)
-
-    set_grey_desktop_on_stim = functools.partialmethod(run_stim_desktop_theme_script, 'grey')
-    set_dark_desktop_on_stim = functools.partialmethod(run_stim_desktop_theme_script, 'dark')
-    reset_desktop_on_stim = functools.partialmethod(run_stim_desktop_theme_script, 'reset')
-        
-
-    def initialize_and_test_services(self) -> None:
-        """Configure, initialize (ie. reset), then test all services."""
-        
-        ScriptCamstim.script = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/runTask.py'
-        ScriptCamstim.data_root = pathlib.Path('//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/Data') / str(self.mouse)
-
-        MouseDirector.user = self.user.id
-        MouseDirector.mouse = self.mouse.id
-
-        OpenEphys.folder = self.session.folder
-
-        NewScaleCoordinateRecorder.log_root = self.session.npexp_path
-
-        self.configure_services()
-
-        super().initialize_and_test_services()
-
-    def update_state(self) -> None:
-        "Store useful but non-essential info."
-        self.mouse.state['last_session'] = self.session.id
-        self.mouse.state['last_workflow'] = str(self.workflow.name)
-        self.mouse.state['last_task'] = str(self.task_name)
-
-    @functools.cached_property
-    def system_camstim_params(self) -> dict[str, Any]:
-        "System config on Stim computer, if accessible."
-        return camstim_defaults()
-    
-    def copy_data_files(self) -> None:
-        """Copy files from raw data storage to session folder for all services
-        except Open Ephys."""
-        password = input(f'Enter password for svc_neuropix:')
-        for service in self.services:
-            match service.__class__.__name__:
-                case "OpenEphys" | "open_ephys":
-                    continue # copy ephys separately
-                case _:
-                    with contextlib.suppress(AttributeError):
-                        files = service.data_files or service.get_latest_data('*')
-                        if not files:
-                            continue
-                        files = set(files)
-                        print(files)
-                        for file in files:
-                            shutil.copy2(file, self.npexp_path)
-        
-    def copy_ephys(self) -> None:
-        password = np_config.fetch('/logins')['svc_neuropix']['password']
-        ssh = fabric.Connection(host=np_services.OpenEphys.host, user='svc_neuropix', connect_kwargs=dict(password=password))
-        for ephys_folder in np_services.OpenEphys.data_files:
-
-            with contextlib.suppress(Exception):
-                with ssh:
-                    ssh.run(
-                        f'robocopy "{ephys_folder}" "{self.npexp_path}" /j /s /xo' 
-                        # /j unbuffered, /s incl non-empty subdirs, /xo exclude src files older than dest
-                    )
-        
-    
-class Hab(TempletonMixin, np_workflows.WithSession):
+class Hab(TempletonPilot):
     def __init__(self, *args, **kwargs):
         self.services = (
             MouseDirector,
@@ -258,7 +104,7 @@ class Hab(TempletonMixin, np_workflows.WithSession):
         super().__init__(*args, **kwargs)
 
 
-class Ephys(TempletonMixin, np_workflows.WithSession):
+class Ephys(TempletonPilot):
     def __init__(self, *args, **kwargs):
         self.services = (
             MouseDirector,
@@ -290,8 +136,7 @@ def new_experiment(
             raise ValueError(f"Invalid session type: {workflow}")
     experiment.workflow = workflow
     
-    with contextlib.suppress(Exception):
-        np_logging.web(f'templeton_{experiment.workflow.name.lower()}').info(f"{experiment} created")
+    experiment.log(f"{experiment} created")
     
     experiment.session.npexp_path.mkdir(parents=True, exist_ok=True)
             
@@ -300,15 +145,3 @@ def new_experiment(
 
 # --------------------------------------------------------------------------------------
 
-def validate_or_overwrite(validate: str | pathlib.Path, src: str | pathlib.Path):
-    "Checksum validate against `src`, (over)write `validate` as `src` if different."
-    validate, src = pathlib.Path(validate), pathlib.Path(src)
-    def copy():
-        logger.debug("Copying %s to %s", src, validate)
-        shutil.copy2(src, validate)
-    while (
-        validate.exists() == False
-        or (v := zlib.crc32(validate.read_bytes())) != (c := zlib.crc32(pathlib.Path(src).read_bytes()))
-        ):
-        copy()
-    logger.debug("Validated %s CRC32: %08X", validate, (v & 0xFFFFFFFF) )

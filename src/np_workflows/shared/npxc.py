@@ -6,6 +6,7 @@ import shutil
 import sys
 import time
 from typing import Any, Generator, Sequence, Type
+import zlib
 
 import fabric
 import np_config
@@ -171,3 +172,16 @@ with contextlib.suppress(RuntimeError):
         
 def now() -> str:
     return np_services.utils.normalize_time(time.time())
+
+def validate_or_overwrite(validate: str | pathlib.Path, src: str | pathlib.Path):
+    "Checksum validate against `src`, (over)write `validate` as `src` if different."
+    validate, src = pathlib.Path(validate), pathlib.Path(src)
+    def copy():
+        logger.debug("Copying %s to %s", src, validate)
+        shutil.copy2(src, validate)
+    while (
+        validate.exists() == False
+        or (v := zlib.crc32(validate.read_bytes())) != (c := zlib.crc32(pathlib.Path(src).read_bytes()))
+        ):
+        copy()
+    logger.debug("Validated %s CRC32: %08X", validate, (v & 0xFFFFFFFF) )
