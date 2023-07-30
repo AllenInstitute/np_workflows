@@ -1,6 +1,6 @@
 [project]
 name = "np-workflows"
-version = "1.6.3"
+version = "1.6.8"
 description = "Ecephys and behavior workflows for the Mindscope Neuropixels team."
 authors = [
     {name="Ben Hardcastle", email="ben.hardcastle@alleninstitute.org"},
@@ -9,7 +9,7 @@ readme = "README.md"
 requires-python = "==3.11.*"
 dependencies = [
     "np-services>=0.1.53",
-    "np-session>=0.6.5",
+    "np-session>=0.6.32",
     "np-config >=0.4.20",
     "np-probe-targets >= 0.0.11",
     "np-datajoint",
