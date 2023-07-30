@@ -13,8 +13,7 @@ import np_session
 import np_workflows
 from pyparsing import Any
 
-from np_workflows.experiments.templeton.templeton_stim_config import TempletonWorkflow, AVAILABLE_TASK_NAMES
-from np_workflows.experiments.templeton.main_templeton_pilot import Ephys, Hab
+from np_workflows.experiments.templeton.main_templeton_pilot import Ephys, Hab, TempletonWorkflow
 
 # for widget, before creating a experiment --------------------------------------------- #
 
