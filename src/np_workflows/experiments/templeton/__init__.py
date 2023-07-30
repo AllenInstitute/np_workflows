@@ -1,2 +1,2 @@
-from np_workflows.experiments.templeton.main_templeton_pilot import new_experiment, Hab, Ephys
-from np_workflows.experiments.templeton.templeton_widgets import workflow_select_widget, photodoc_widget
+from np_workflows.experiments.templeton.main import *
+from np_workflows.experiments.templeton.widgets import *

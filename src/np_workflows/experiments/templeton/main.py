@@ -41,7 +41,7 @@ from np_workflows.shared import base_experiments
 
 logger = np_logging.getLogger(__name__)
 
-class TempletonWorkflow(enum.Enum):
+class Workflow(enum.Enum):
     """Enum for the different TTN sessions available, each with a different task."""
     PRETEST = "test"
     HAB_AUD = "hab: stage 2 aud"
@@ -54,33 +54,33 @@ class TempletonPilot(base_experiments.DynamicRoutingExperiment):
     
     default_session_subclass: Type[np_session.Session] = np_session.TempletonPilotSession
     
-    workflow: TempletonWorkflow
+    workflow: Workflow
     """Enum for workflow type, e.g. PRETEST, HAB_AUD, HAB_VIS, EPHYS_ etc."""
 
     @property
     def is_pretest(self) -> bool:
-        return self.workflow == TempletonWorkflow.PRETEST
+        return self.workflow == Workflow.PRETEST
     
     @property
     def is_hab(self) -> bool:
-        return self.workflow == TempletonWorkflow.HAB_AUD or self.workflow == TempletonWorkflow.HAB_VIS
+        return self.workflow == Workflow.HAB_AUD or self.workflow == Workflow.HAB_VIS
 
     @property
     def task_name(self) -> str:
         if hasattr(self, '_task_name'): 
             return self._task_name 
         match self.workflow:
-            case TempletonWorkflow.PRETEST:
+            case Workflow.PRETEST:
                 return 'templeton test'
-            case TempletonWorkflow.HAB_AUD | TempletonWorkflow.EPHYS_AUD:
+            case Workflow.HAB_AUD | Workflow.EPHYS_AUD:
                 return 'templeton stage 2 aud'
-            case TempletonWorkflow.HAB_VIS | TempletonWorkflow.EPHYS_VIS:
+            case Workflow.HAB_VIS | Workflow.EPHYS_VIS:
                 return 'templeton stage 2 vis'
 
     @task_name.setter
     def task_name(self, value:str) -> None:
         try:
-            TempletonWorkflow(value)
+            Workflow(value)
         except ValueError:
             print(f"Not a known task name, but the attribute is updated anyway!")
         self._task_name = value
@@ -124,14 +124,14 @@ class Ephys(TempletonPilot):
 def new_experiment(
     mouse: int | str | np_session.Mouse,
     user: str | np_session.User,
-    workflow: TempletonWorkflow,
+    workflow: Workflow,
 ) -> Ephys | Hab:
     """Create a new experiment for the given mouse and user."""
     match workflow:
-        case TempletonWorkflow.PRETEST | TempletonWorkflow.EPHYS_AUD | TempletonWorkflow.EPHYS_VIS:
-            experiment = Ephys(mouse, user)
-        case TempletonWorkflow.HAB_AUD | TempletonWorkflow.HAB_VIS:
-            experiment = Hab(mouse, user)
+        case Workflow.PRETEST | Workflow.EPHYS_AUD | Workflow.EPHYS_VIS:
+            experiment = Ephys(str(mouse), user)
+        case Workflow.HAB_AUD | Workflow.HAB_VIS:
+            experiment = Hab(str(mouse), user)
         case _:
             raise ValueError(f"Invalid session type: {workflow}")
     experiment.workflow = workflow

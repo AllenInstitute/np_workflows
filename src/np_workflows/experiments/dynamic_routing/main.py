@@ -41,7 +41,7 @@ from np_workflows.shared import base_experiments
 
 logger = np_logging.getLogger(__name__)
 
-class DRWorkflow(enum.Enum):
+class Workflow(enum.Enum):
     """Enum for the different sessions available, each with a different task."""
     PRETEST = "test"
     HAB = "hab" #: stage 2 aud etc
@@ -50,27 +50,27 @@ class DRWorkflow(enum.Enum):
 class DRTask(base_experiments.DynamicRoutingExperiment):
     """Provides project-specific methods and attributes, mainly related to camstim scripts."""
     
-    default_session_subclass: Type[np_session.Session] = np_session.DynamicRoutingPilotSession
+    default_session_subclass: Type[np_session.Session] = np_session.DRPilotSession
     
-    workflow: DRWorkflow
+    workflow: Workflow
     """Enum for workflow type, e.g. PRETEST, HAB_AUD, HAB_VIS, EPHYS_ etc."""
 
     @property
     def is_pretest(self) -> bool:
-        return self.workflow == DRWorkflow.PRETEST
+        return self.workflow == Workflow.PRETEST
     
     @property
     def is_hab(self) -> bool:
-        return self.workflow == DRWorkflow.HAB
+        return self.workflow == Workflow.HAB
 
     @property
     def task_name(self) -> str:
         # if hasattr(self, '_task_name'): 
         return self._task_name 
         # match self.workflow:
-        #     case DRWorkflow.PRETEST:
+        #     case Workflow.PRETEST:
         #         return 'templeton test'
-        #     case DRWorkflow.HAB:
+        #     case Workflow.HAB:
         #         return 'templeton stage 2 aud'
 
 
@@ -117,13 +117,13 @@ class Ephys(DRTask):
 def new_experiment(
     mouse: int | str | np_session.Mouse,
     user: str | np_session.User,
-    workflow: DRWorkflow,
+    workflow: Workflow,
 ) -> Ephys | Hab:
     """Create a new experiment for the given mouse and user."""
     match workflow:
-        case DRWorkflow.PRETEST | DRWorkflow.EPHYS:
+        case Workflow.PRETEST | Workflow.EPHYS:
             experiment = Ephys(mouse, user)
-        case DRWorkflow.HAB:
+        case Workflow.HAB:
             experiment = Hab(mouse, user)
         case _:
             raise ValueError(f"Invalid session type: {workflow}")

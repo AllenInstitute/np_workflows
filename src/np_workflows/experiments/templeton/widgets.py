@@ -13,15 +13,15 @@ import np_session
 import np_workflows
 from pyparsing import Any
 
-from np_workflows.experiments.templeton.main_templeton_pilot import Ephys, Hab, TempletonWorkflow
+from np_workflows.experiments.templeton.main import Ephys, Hab, Workflow
 
 # for widget, before creating a experiment --------------------------------------------- #
 
 
 class TempletonSelectedWorkflow:
-    def __init__(self, workflow: str | TempletonWorkflow, mouse: str | int | np_session.Mouse):
+    def __init__(self, workflow: str | Workflow, mouse: str | int | np_session.Mouse):
         if isinstance(workflow, str):
-            workflow = TempletonWorkflow(workflow)
+            workflow = Workflow(workflow)
         self.workflow = workflow
         self.mouse = str(mouse)
 
@@ -40,16 +40,16 @@ def workflow_select_widget(
 
     """
 
-    selection = TempletonSelectedWorkflow(TempletonWorkflow.PRETEST, mouse)
+    selection = TempletonSelectedWorkflow(Workflow.PRETEST, mouse)
 
     workflow_dropdown = ipw.Select(
-        options=tuple(_.value for _ in TempletonWorkflow),
+        options=tuple(_.value for _ in Workflow),
         description="Workflow",
     )
     console = ipw.Output()
     with console:
         if last_workflow := np_session.Mouse(selection.mouse).state.get('last_workflow'):
-            print(f"{mouse} last workflow: {TempletonWorkflow[last_workflow].value}")
+            print(f"{mouse} last workflow: {Workflow[last_workflow].value}")
         print(f"Selected: {selection.workflow.name}")
 
     def update(change):
