@@ -601,33 +601,39 @@ class DynamicRoutingExperiment(WithSession):
                 # /j unbuffered, /s incl non-empty subdirs, /xo exclude src files older than dest
                 )
                 
+
     def copy_data_files(self) -> None:
         """Copy files from raw data storage to session folder for all services
         except Open Ephys."""
+        
         for service in self.services:
             if service == self.imager:
                 # copy vimba files:
-                for file in np_services.get_files_created_between(
-                    path=np_services.config_from_zk()['ImageVimba']['data'],
-                    start=self.imager.initialization,
-                ): 
+                for file in pathlib.Path(
+                    np_services.config_from_zk()['ImageVimba']['data']
+                ).glob('*'):
+                    if file.stat().st_mtime < self.imager.initialization:
+                        continue
                     shutil.copy2(file, self.session.npexp_path)
                     npxc.validate_or_overwrite(self.session.npexp_path / file.name, file)
-            if service is np_services.ScriptCamstim:
-                np_services.ScriptCamstim.data_root = self.hdf5_dir
+                    continue
             match service.__name__:
+                case "ScriptCamstim" | "SessionCamstim":
+                    files = tuple(_ for _ in self.hdf5_dir.glob('*') if _.stat().st_ctime > self.stims[0].initialization)
                 case "np_services.open_ephys":
                     continue # copy ephys after other files
+                case "NewScaleCoordinateRecorder":
+                    files = np_services.NewScaleCoordinateRecorder.data_root.glob('*')
                 case _:
                     files: Iterable[pathlib.Path] = service.data_files or service.get_latest_data('*')
-                    if not files:
-                        continue
-                    files = set(files)
-                    print(files)
-                    for file in files:
-                        shutil.copy2(file, self.session.npexp_path)
-                        npxc.validate_or_overwrite(self.session.npexp_path / file.name, file)
-    
+            if not files:
+                continue
+            files = set(files)
+            print(files)
+            for file in files:
+                shutil.copy2(file, self.session.npexp_path)
+                npxc.validate_or_overwrite(self.session.npexp_path / file.name, file)
+
     #TODO move this to a dedicated np_service class instead of using ScriptCamstim
     def run_stim_desktop_theme_script(self, selection: str) -> None:     
         np_services.ScriptCamstim.script = '//allen/programs/mindscope/workgroups/dynamicrouting/ben/change_desktop.py'
