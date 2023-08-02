@@ -45,9 +45,9 @@ class Workflow(enum.Enum):
     """Enum for the different TTN sessions available, each with a different task."""
     PRETEST = "test"
     HAB_AUD = "hab: stage 2 aud"
-    EPHYS_AUD = "ephys: stage 2 aud"
+    EPHYS_AUD = "ephys: stage 2 aud opto stim"
     HAB_VIS = "hab: stage 2 vis"
-    EPHYS_VIS = "ephys: stage 2 vis"
+    EPHYS_VIS = "ephys: stage 2 vis opto stim"
 
 class TempletonPilot(base_experiments.DynamicRoutingExperiment):
     """Provides project-specific methods and attributes, mainly related to camstim scripts."""
@@ -129,9 +129,9 @@ def new_experiment(
     """Create a new experiment for the given mouse and user."""
     match workflow:
         case Workflow.PRETEST | Workflow.EPHYS_AUD | Workflow.EPHYS_VIS:
-            experiment = Ephys(str(mouse), str(user))
+            experiment = Ephys(mouse, user)
         case Workflow.HAB_AUD | Workflow.HAB_VIS:
-            experiment = Hab(str(mouse), str(user))
+            experiment = Hab(mouse, user)
         case _:
             raise ValueError(f"Invalid session type: {workflow}")
     experiment.workflow = workflow

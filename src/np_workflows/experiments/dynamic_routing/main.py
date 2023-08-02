@@ -122,9 +122,9 @@ def new_experiment(
     """Create a new experiment for the given mouse and user."""
     match workflow:
         case Workflow.PRETEST | Workflow.EPHYS:
-            experiment = Ephys(str(mouse), str(user))
+            experiment = Ephys(mouse, user)
         case Workflow.HAB:
-            experiment = Hab(str(mouse), str(user))
+            experiment = Hab(mouse, user)
         case _:
             raise ValueError(f"Invalid session type: {workflow}")
     experiment.workflow = workflow
