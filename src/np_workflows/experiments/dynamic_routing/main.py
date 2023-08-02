@@ -42,12 +42,31 @@ from np_workflows.shared import base_experiments
 logger = np_logging.getLogger(__name__)
 
 class Workflow(enum.Enum):
-    """Enum for the different sessions available, each with a different task."""
+    """Enum for the different sessions available, each with a different
+    task."""
+    #! update in new_experiment and in main class
     PRETEST = "test"
     HAB_ori_AMN = "hab | stage 5 ori AMN moving" 
     EPHYS_ori_AMN = "ephys | stage 5 ori AMN moving"
     HAB_AMN_ori = "hab | stage 5 AMN ori moving" 
     EPHYS_AMN_ori = "ephys | stage 5 AMN ori moving"
+
+def new_experiment(
+    mouse: int | str | np_session.Mouse,
+    user: str | np_session.User,
+    workflow: Workflow,
+) -> 'Ephys' | 'Hab':
+    """Create a new experiment for the given mouse and user."""
+    if workflow.value.startswith('ephys') or  workflow.value.startswith('test'):
+        experiment = Ephys(mouse, user)
+    elif workflow.value.startswith('hab'):
+        experiment = Hab(mouse, user)
+    else:
+        raise ValueError(f"Unknown {workflow = }. Create an experiment with e.g.\n\n\texperiment = Ephys(mouse, user)\nexperiment.session.npexp_path.mkdir()")
+    experiment.workflow = workflow
+    experiment.log(f"{experiment} created")
+    experiment.session.npexp_path.mkdir(parents=True, exist_ok=True) 
+    return experiment
 
 class DRTask(base_experiments.DynamicRoutingExperiment):
     """Provides project-specific methods and attributes, mainly related to camstim scripts."""
@@ -115,27 +134,6 @@ class Ephys(DRTask):
 
 # --------------------------------------------------------------------------------------
 
-
-def new_experiment(
-    mouse: int | str | np_session.Mouse,
-    user: str | np_session.User,
-    workflow: Workflow,
-) -> Ephys | Hab:
-    """Create a new experiment for the given mouse and user."""
-    match workflow:
-        case Workflow.PRETEST | Workflow.EPHYS:
-            experiment = Ephys(mouse, user)
-        case Workflow.HAB:
-            experiment = Hab(mouse, user)
-        case _:
-            raise ValueError(f"Invalid session type: {workflow}")
-    experiment.workflow = workflow
-    
-    experiment.log(f"{experiment} created")
-    
-    experiment.session.npexp_path.mkdir(parents=True, exist_ok=True)
-            
-    return experiment
 
 
 # --------------------------------------------------------------------------------------
