@@ -44,8 +44,10 @@ logger = np_logging.getLogger(__name__)
 class Workflow(enum.Enum):
     """Enum for the different sessions available, each with a different task."""
     PRETEST = "test"
-    HAB = "hab" #: stage 2 aud etc
-    EPHYS = "ephys"
+    HAB_ori_AMN = "hab | stage 5 ori AMN moving" 
+    EPHYS_ori_AMN = "ephys | stage 5 ori AMN moving"
+    HAB_AMN_ori = "hab | stage 5 AMN ori moving" 
+    EPHYS_AMN_ori = "ephys | stage 5 AMN ori moving"
 
 class DRTask(base_experiments.DynamicRoutingExperiment):
     """Provides project-specific methods and attributes, mainly related to camstim scripts."""
@@ -61,17 +63,17 @@ class DRTask(base_experiments.DynamicRoutingExperiment):
     
     @property
     def is_hab(self) -> bool:
-        return self.workflow == Workflow.HAB
+        return self.workflow in (Workflow.HAB_ori_AMN, Workflow.HAB_AMN_ori)
 
     @property
     def task_name(self) -> str:
-        # if hasattr(self, '_task_name'): 
-        return self._task_name 
-        # match self.workflow:
-        #     case Workflow.PRETEST:
-        #         return 'templeton test'
-        #     case Workflow.HAB:
-        #         return 'templeton stage 2 aud'
+        if hasattr(self, '_task_name'): 
+            return self._task_name 
+        match self.workflow:
+            case Workflow.PRETEST:
+                return 'test'
+            case _:
+                return self.workflow.value.split('|')[-1].strip()
 
 
     @task_name.setter
