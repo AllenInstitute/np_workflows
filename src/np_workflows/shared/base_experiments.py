@@ -10,6 +10,7 @@ import time
 from typing import Any, ClassVar, Iterable, Literal, Optional, Protocol, Type
 
 import fabric
+import invoke
 import ipylab
 import np_config
 import np_logging
@@ -611,28 +612,27 @@ class DynamicRoutingExperiment(WithSession):
         for ephys_folder in np_services.OpenEphys.data_files:
             if isinstance(self.session, np_session.TempletonPilotSession):
                 ephys_folder = next(ephys_folder.glob('Record Node*'))
-            with ssh:
+            with ssh, contextlib.suppress(invoke.UnexpectedExit):
                 ssh.run(
                 f'robocopy "{ephys_folder}" "{self.session.npexp_path / ephys_folder.name}" /j /s /xo' 
                 # /j unbuffered, /s incl non-empty subdirs, /xo exclude src files older than dest
                 )
-                
+            
 
     def copy_data_files(self) -> None:
         """Copy files from raw data storage to session folder for all services
         except Open Ephys."""
         
+        # copy vimba files:
+        for file in pathlib.Path(
+            np_services.config_from_zk()['ImageVimba']['data']
+        ).glob(f'{self.session.npexp_path.name}*'):
+            shutil.copy2(file, self.session.npexp_path)
+            npxc.validate_or_overwrite(self.session.npexp_path / file.name, file)
+            print(file)
+            continue
+
         for service in self.services:
-            if service == self.imager:
-                # copy vimba files:
-                for file in pathlib.Path(
-                    np_services.config_from_zk()['ImageVimba']['data']
-                ).glob('*'):
-                    if file.stat().st_mtime < self.imager.initialization:
-                        continue
-                    shutil.copy2(file, self.session.npexp_path)
-                    npxc.validate_or_overwrite(self.session.npexp_path / file.name, file)
-                    continue
             match service.__name__:
                 case "ScriptCamstim" | "SessionCamstim":
                     files = tuple(_ for _ in self.hdf5_dir.glob('*') if _.stat().st_ctime > self.stims[0].initialization)
@@ -649,7 +649,7 @@ class DynamicRoutingExperiment(WithSession):
             for file in files:
                 shutil.copy2(file, self.session.npexp_path)
                 npxc.validate_or_overwrite(self.session.npexp_path / file.name, file)
-
+    
     #TODO move this to a dedicated np_service class instead of using ScriptCamstim
     def run_stim_desktop_theme_script(self, selection: str) -> None:     
         np_services.ScriptCamstim.script = '//allen/programs/mindscope/workgroups/dynamicrouting/ben/change_desktop.py'
