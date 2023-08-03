@@ -478,13 +478,14 @@ class DynamicRoutingExperiment(WithSession):
         return pathlib.Path('//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/Data') /  str(self.mouse)
     
     @property
-    def task_params(self) -> dict[str, str]:
+    def task_params(self) -> dict[str, str | bool]:
         """For sending to runTask.py"""
         return dict(
                 rigName = str(self.rig).replace('.',''),
                 subjectName = str(self.mouse),
                 taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/DynamicRouting1.py',
                 taskVersion = self.task_name,
+                saveSoundArray = True,
         )
         
     @property
@@ -522,12 +523,13 @@ class DynamicRoutingExperiment(WithSession):
         )
 
     @property
-    def mapping_params(self: WithSessionInfo) -> dict[str, str]:
+    def mapping_params(self: WithSessionInfo) -> dict[str, str | bool]:
         """For sending to runTask.py"""
         return dict(
                 rigName = str(self.rig).replace('.',''),
                 subjectName = str(self.mouse),
-                taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/RFMapping.py'
+                taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/RFMapping.py',
+                saveSoundArray = True,
             )
 
     @property
