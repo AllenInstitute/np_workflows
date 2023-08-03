@@ -44,51 +44,23 @@ logger = np_logging.getLogger(__name__)
 class Workflow(enum.Enum):
     """Enum for the different TTN sessions available, each with a different task."""
     PRETEST = "test"
-    HAB_AUD = "hab: stage 2 aud"
-    EPHYS_AUD = "ephys: stage 2 aud opto stim"
-    HAB_VIS = "hab: stage 2 vis"
-    EPHYS_VIS = "ephys: stage 2 vis opto stim"
+    HAB_AUD = "stage 2 aud"
+    EPHYS_AUD = "stage 2 aud opto stim"
+    HAB_VIS = "stage 2 vis"
+    EPHYS_VIS = "stage 2 vis opto stim"
 
 class TempletonPilot(base_experiments.DynamicRoutingExperiment):
     """Provides project-specific methods and attributes, mainly related to camstim scripts."""
     
-    default_session_subclass: Type[np_session.Session] = np_session.TempletonPilotSession
+    default_session_subclass = np_session.TempletonPilotSession
     
     workflow: Workflow
     """Enum for workflow type, e.g. PRETEST, HAB_AUD, HAB_VIS, EPHYS_ etc."""
 
-    @property
-    def is_pretest(self) -> bool:
-        return self.workflow == Workflow.PRETEST
-    
-    @property
-    def is_hab(self) -> bool:
-        return self.workflow == Workflow.HAB_AUD or self.workflow == Workflow.HAB_VIS
-
-    @property
     def task_name(self) -> str:
-        if hasattr(self, '_task_name'): 
-            return self._task_name 
-        match self.workflow:
-            case Workflow.PRETEST:
-                return 'templeton test'
-            case Workflow.HAB_AUD | Workflow.EPHYS_AUD:
-                return 'templeton stage 2 aud'
-            case Workflow.HAB_VIS | Workflow.EPHYS_VIS:
-                return 'templeton stage 2 vis'
+        task_name = super().task_name
+        return f'templeton {task_name}' if 'templeton' not in task_name else task_name
 
-    @task_name.setter
-    def task_name(self, value:str) -> None:
-        try:
-            Workflow(value)
-        except ValueError:
-            print(f"Not a known task name, but the attribute is updated anyway!")
-        self._task_name = value
-
-    def log(self, message: str, weblog_name: Optional[str] = None):
-        if weblog_name is None:
-            weblog_name = f'templeton_{self.workflow.name.lower()}'
-        super().log(message, weblog_name)
 
     
 class Hab(TempletonPilot):
@@ -98,8 +70,8 @@ class Hab(TempletonPilot):
             Sync,
             VideoMVR,
             self.imager,
-            NewScaleCoordinateRecorder,
             ScriptCamstim,
+            NewScaleCoordinateRecorder,
         )
         super().__init__(*args, **kwargs)
 
@@ -111,9 +83,9 @@ class Ephys(TempletonPilot):
             Sync,
             VideoMVR,
             self.imager,
-            NewScaleCoordinateRecorder,
             ScriptCamstim,
             OpenEphys,
+            NewScaleCoordinateRecorder,
         )
         super().__init__(*args, **kwargs)
 

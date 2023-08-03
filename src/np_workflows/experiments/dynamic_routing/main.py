@@ -44,12 +44,11 @@ logger = np_logging.getLogger(__name__)
 class Workflow(enum.Enum):
     """Enum for the different sessions available, each with a different
     task."""
-    #! update in new_experiment and in main class
     PRETEST = "test"
-    HAB_ori_AMN = "hab | stage 5 ori AMN moving" 
-    EPHYS_ori_AMN = "ephys | stage 5 ori AMN moving"
-    HAB_AMN_ori = "hab | stage 5 AMN ori moving" 
-    EPHYS_AMN_ori = "ephys | stage 5 AMN ori moving"
+    HAB_ori_AMN = "stage 5 ori AMN moving" 
+    EPHYS_ori_AMN = "stage 5 ori AMN moving"
+    HAB_AMN_ori = "stage 5 AMN ori moving" 
+    EPHYS_AMN_ori = "stage 5 AMN ori moving"
 
 def new_experiment(
     mouse: int | str | np_session.Mouse,
@@ -57,9 +56,9 @@ def new_experiment(
     workflow: Workflow,
 ) -> 'Ephys' | 'Hab':
     """Create a new experiment for the given mouse and user."""
-    if workflow.value.startswith('ephys') or  workflow.value.startswith('test'):
+    if workflow.name.startswith('EPHYS') or  workflow.name == 'PRETEST'
         experiment = Ephys(mouse, user)
-    elif workflow.value.startswith('hab'):
+    elif workflow.name.startswith('HAB'):
         experiment = Hab(mouse, user)
     else:
         raise ValueError(f"Unknown {workflow = }. Create an experiment with e.g.\n\n\texperiment = Ephys(mouse, user)\nexperiment.session.npexp_path.mkdir()")
@@ -68,43 +67,16 @@ def new_experiment(
     experiment.session.npexp_path.mkdir(parents=True, exist_ok=True) 
     return experiment
 
+
 class DRTask(base_experiments.DynamicRoutingExperiment):
     """Provides project-specific methods and attributes, mainly related to camstim scripts."""
     
-    default_session_subclass: Type[np_session.Session] = np_session.DRPilotSession
+    default_session_subclass = np_session.DRPilotSession
     
     workflow: Workflow
     """Enum for workflow type, e.g. PRETEST, HAB_AUD, HAB_VIS, EPHYS_ etc."""
 
-    @property
-    def is_pretest(self) -> bool:
-        return self.workflow == Workflow.PRETEST
-    
-    @property
-    def is_hab(self) -> bool:
-        return self.workflow in (Workflow.HAB_ori_AMN, Workflow.HAB_AMN_ori)
 
-    @property
-    def task_name(self) -> str:
-        if hasattr(self, '_task_name'): 
-            return self._task_name 
-        match self.workflow:
-            case Workflow.PRETEST:
-                return 'test'
-            case _:
-                return self.workflow.value.split('|')[-1].strip()
-
-
-    @task_name.setter
-    def task_name(self, value:str) -> None:
-        self._task_name = value
-
-    def log(self, message: str, weblog_name: Optional[str] = None):
-        if weblog_name is None:
-            weblog_name = f'{self.__class__.__name__}_{self.workflow.name.lower()}'
-        super().log(message, weblog_name)
-
-    
 class Hab(DRTask):
     def __init__(self, *args, **kwargs):
         self.services = (

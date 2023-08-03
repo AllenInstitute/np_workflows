@@ -434,26 +434,40 @@ class PipelineHab(PipelineExperiment):
 
 class DynamicRoutingExperiment(WithSession):
     
-    default_session_subclass: Type[np_session.Session]
+    default_session_subclass: ClassVar[Type[np_session.Session]]
     
     workflow: enum.Enum
     
+
     @property
-    @abc.abstractmethod
     def is_pretest(self) -> bool:
-        return NotImplemented
+        return self.workflow.name == 'PRETEST'
     
     @property
-    @abc.abstractmethod
     def is_hab(self) -> bool:
-        return NotImplemented
+        return self.workflow.name.startswith('HAB')
     
+            
     @property
-    @abc.abstractmethod
     def task_name(self) -> str:
         """For sending to runTask.py and controlling implementation details of the task."""
-        return NotImplemented
-            
+        if hasattr(self, '_task_name'): 
+            return self._task_name 
+        return self.workflow.value
+
+
+    @task_name.setter
+    def task_name(self, task_name: str) -> None:
+        try:
+            self.workflow.__class__(task_name)
+        except ValueError:
+            print(f"{task_name = !r} doesn't correspond to a preset value, but the attribute is updated anyway!")
+        self._task_name = task_name
+
+    def log(self, message: str, weblog_name: Optional[str] = None):
+        if weblog_name is None:
+            weblog_name = f'{self.__class__.__name__}_{self.workflow.name.lower()}'        
+        
     services = (
         np_services.Sync,
         np_services.VideoMVR,
