@@ -439,7 +439,34 @@ class DynamicRoutingExperiment(WithSession):
     
     workflow: enum.Enum
     
-
+    use_github: bool = True
+    
+    @property
+    def commit_hash(self) -> str:
+        if hasattr(self, '_commit_hash'):
+            return self._commit_hash
+        return self.rig.config['dynamicrouting_task_script']['commit_hash']
+    
+    @commit_hash.setter
+    def commit_hash(self, value: str):
+        self._commit_hash = value
+        
+    @property
+    def github_url(self) -> str:
+        if hasattr(self, '_github_url'):
+            return self._github_url
+        return self.rig.config['dynamicrouting_task_script']['url']
+    
+    @github_url.setter
+    def github_url(self, value: str):
+        self._github_url = value
+    
+    @property
+    def task_script_base_path(self) -> str:
+        if self.use_github:
+            return f'{self.github_url}{self.commit_hash}'
+        return '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/'
+    
     @property
     def is_pretest(self) -> bool:
         return self.workflow.name == 'PRETEST'
@@ -496,7 +523,7 @@ class DynamicRoutingExperiment(WithSession):
         return dict(
                 rigName = str(self.rig).replace('.',''),
                 subjectName = str(self.mouse),
-                taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/DynamicRouting1.py',
+                taskScript = 'DynamicRouting1.py',
                 taskVersion = self.task_name,
                 saveSoundArray = True,
         )
@@ -507,7 +534,7 @@ class DynamicRoutingExperiment(WithSession):
         return dict(
                 rigName = str(self.rig).replace('.',''),
                 subjectName = str(self.mouse) if not self.is_pretest else 'test',
-                taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/TaskControl.py',
+                taskScript = 'TaskControl.py',
                 taskVersion = 'spontaneous',
         )
         
@@ -517,21 +544,26 @@ class DynamicRoutingExperiment(WithSession):
         return dict(
                 rigName = str(self.rig).replace('.',''),
                 subjectName = str(self.mouse) if not self.is_pretest else 'test',
-                taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/TaskControl.py',
+                taskScript = 'TaskControl.py',
                 taskVersion = 'spontaneous rewards',
                 # rewardSound = "device",
         )
+    
+    
         
     @property
     def optotagging_params(self) -> dict[str, str]:
         """For sending to runTask.py"""
-        locs_root = pathlib.Path("//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/OptoGui/optolocs")
-        locs = sorted(tuple(locs_root.glob(f"optolocs_{self.mouse.id}_{str(self.rig).replace('.', '')}_*")), reverse=True)[0]
+        rig = str(self.rig).replace('.', '')
+        locs_root = pathlib.Path("//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/OptoGui/optotagging")
+        locs = sorted(tuple(locs_root.glob(f"optotagging_{self.mouse.id}_{rig}_*")), reverse=True)
+        if not locs:
+            raise FileNotFoundError(f"No optotagging locs found for {self.mouse}/{rig}- have you run OptoGui?")
+        assert isinstance(locs, pathlib.Path)
         return dict(
                 rigName = str(self.rig).replace('.',''),
                 subjectName = str(self.mouse) if not self.is_pretest else 'test',
-                taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/TaskControl.py',
-                taskVersion = 'optotagging',
+                taskScript = 'OptoTagging.py',
                 optoTaggingLocs = locs.as_posix(),
         )
 
@@ -541,7 +573,7 @@ class DynamicRoutingExperiment(WithSession):
         return dict(
                 rigName = str(self.rig).replace('.',''),
                 subjectName = str(self.mouse),
-                taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/RFMapping.py',
+                taskScript = 'RFMapping.py',
                 saveSoundArray = True,
             )
 
@@ -551,14 +583,32 @@ class DynamicRoutingExperiment(WithSession):
         return dict(
                 rigName = str(self.rig).replace('.',''),
                 subjectName = 'sound',
-                taskScript = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/TaskControl.py',
+                taskScript = 'TaskControl.py',
                 taskVersion = 'sound test',
         )
         
     def run_script(self, stim: Literal['sound_test', 'mapping', 'task', 'optotagging', 'spontaneous', 'spontaneous_rewards']) -> None:
-        np_services.ScriptCamstim.script = '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/runTask.py'
-        np_services.ScriptCamstim.params = getattr(self, f'{stim.replace(" ", "_")}_params')
-
+        
+        params = getattr(self, f'{stim.replace(" ", "_")}_params')
+        params['taskScript'] = self.task_script_base_path + params['taskScript']
+        if self.use_github:
+        
+            params['GHTaskScriptParams'] =  {
+                'taskScript': params['taskScript'],
+                'taskControl': self.task_script_base_path + 'TaskControl.py',
+                }
+        
+            import requests
+            response = requests.get(self.task_script_base_path + 'runTask.py')
+            if not response.status_code in (200, ):
+                response.raise_for_status()
+                
+            np_services.ScriptCamstim.script = response.content
+        else:
+            np_services.ScriptCamstim.script = self.task_script_base_path + 'runTask.py'
+            
+        np_services.ScriptCamstim.params = params
+        
         self.log(f"{stim} started")
 
         np_services.ScriptCamstim.start()
