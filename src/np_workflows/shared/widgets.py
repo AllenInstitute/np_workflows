@@ -1,19 +1,19 @@
-import contextlib
 import datetime
+import io
 import logging
 import pathlib
 import re
 import threading
 import time
-from typing import Literal, NoReturn, Optional, Type
+from typing import Literal, NoReturn
 
 import IPython
 import IPython.display
 import ipywidgets as ipw
 import np_config
 import np_logging
-import np_session
 import np_services
+import np_session
 import PIL.Image
 import PIL.ImageDraw
 
@@ -228,7 +228,7 @@ def check_widget(check: str, *checks: str) -> ipw.Widget:
     return widget
 
 def await_all_checkboxes(widget: ipw.Box) -> None:
-    while any(_.value == False for _ in widget.children if isinstance(_, ipw.Checkbox)):
+    while any(_.value is False for _ in widget.children if isinstance(_, ipw.Checkbox)):
         time.sleep(0.1)
     
     
@@ -347,10 +347,11 @@ def dye_info_widget(session: np_session.PipelineSession) -> IPython.display.Disp
     )
     di_info.update(session.platform_json.DiINotes)
     
-    width = lambda w: ipw.Layout(max_width=f'{w}px')
+    def width(w):
+        return ipw.Layout(max_width=f'{w}px')
     
     dye_id_entry = ipw.Text(value=None, description='Dye ID', layout=width(250), placeholder='Enter ID or scan barcode')
-    dye_usage_button = ipw.Button(description='Record single use', button_style='warning', layout=width(180))
+    ipw.Button(description='Record single use', button_style='warning', layout=width(180))
     first_usage = ipw.Text(value='', description="First use", layout=width(250), disabled=True)
     dye_dropdown = ipw.Dropdown(description="Description:", options=np_session.Dye.descriptions, layout=width(180))
     dipped_counter = ipw.IntText(value=int(di_info['times_dipped'] or 0), min=0, max=99, description="Dipped count", layout=width(150))
@@ -393,7 +394,7 @@ def dye_info_widget(session: np_session.PipelineSession) -> IPython.display.Disp
 def dye_widget(session_folder: pathlib.Path) -> IPython.display.DisplayHandle | None:
     "Supply a path - saves a JSON file with the dye used in the session and a timestamp."
 
-    di_info: dict[str, int | str] = dict(
+    dict(
         EndTime=0, StartTime=0, dii_description="DiI", times_dipped=0,
     )
         
@@ -467,19 +468,19 @@ def isi_widget(
                         width=3)
         else: 
             logger.debug("No ISI targets found for %r in lims, ISI experiment id %s", mouse_info, mouse_info.isi_id)
-        return IPython.display.display(img)
-    
-    # alternative to use ipw with toggle button -------------------------------------------- #
-    # import io
-    # membuf = io.BytesIO()
-    # img.save(membuf, format="png") 
-    # return IPython.display.display(ipw.VBox([ipw.Image(value=membuf.getvalue())]))
+        ## displaying img directly no longer works (due to jupyterlab 4.0?)
+        # return IPython.display.display(img)
+        membuf = io.BytesIO()
+        img.save(membuf, format="png") 
+        return IPython.display.display(ipw.VBox([ipw.Image(value=membuf.getvalue())]))
+        
 
 
 def insertion_notes_widget(session: np_session.PipelineSession):
     
     probes = 'ABCDEF'
-    probe = lambda _: f'Probe{_}'
+    def probe(_):
+        return f'Probe{_}'
     fields = (
         "FailedToInsert",
         # "ProbeLocationChanged",
@@ -488,19 +489,21 @@ def insertion_notes_widget(session: np_session.PipelineSession):
     )
     # "NumAgarInsertions",
     
-    get_notes = lambda _: session.platform_json.InsertionNotes.get(probe(_), {}).get('Notes', '')
-    get_field = lambda _, field: session.platform_json.InsertionNotes.get(probe(_), {}).get(field, None)
+    def get_notes(_):
+        return session.platform_json.InsertionNotes.get(probe(_), {}).get('Notes', '')
+    def get_field(_, field):
+        return session.platform_json.InsertionNotes.get(probe(_), {}).get(field, None)
     
     def disp_str(s): # split PascalCase fieldname into 'Title case' words
         matches = re.finditer('.+?(?:(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])|$)', s)
         return ' '.join([m.group(0) for m in matches]).lower().capitalize()
-    save_str = lambda s: ''.join([_.capitalize() for _ in s.split(' ')])
+    def save_str(s):
+        return ''.join([_.capitalize() for _ in s.split(' ')])
     
-    row = lambda *args: ipw.HBox([*args])
-    probe_row = lambda p: row(
-        ipw.Text(value=get_notes(p), placeholder='Insertion notes', description=disp_str(probe(p).strip('Probe ')), layout=ipw.Layout(width='auto', min_width='400px')),
-        *(ipw.Checkbox(value=get_field(p, field), description=disp_str(field)) for field in fields),
-        )
+    def row(*args):
+        return ipw.HBox([*args])
+    def probe_row(p):
+        return row(ipw.Text(value=get_notes(p), placeholder='Insertion notes', description=disp_str(probe(p).strip('Probe ')), layout=ipw.Layout(width='auto', min_width='400px')), *(ipw.Checkbox(value=get_field(p, field), description=disp_str(field)) for field in fields))
     button = ipw.Button(description="Save", button_style='warning')
     console = ipw.Output()
     
@@ -512,7 +515,6 @@ def insertion_notes_widget(session: np_session.PipelineSession):
         for letter, row in zip(probes, rows):
             p = d.get(probe(letter), {})
             for widget in row.children:
-                v = widget.value
                 if isinstance(widget, ipw.Text):
                     p['Notes'] = widget.value
                 elif isinstance(widget, ipw.Checkbox):
@@ -535,13 +537,16 @@ def probe_depth_widget(session: np_session.PipelineSession):
     
     probes = 'ABCDEF'
     
-    coords = lambda: session.platform_json.manipulator_coordinates
+    def coords():
+        return session.platform_json.manipulator_coordinates
     
     if not coords():
         logger.warning("No photodocs have been captured yet.")
     
-    probe_coords = lambda img: coords().get(img, dict.fromkeys(probes, dict(x=None, y=None, z=None)))
-    field_str = lambda s: '_'.join(s.split(' ')).lower() + '_surface_image' if s else ''
+    def probe_coords(img):
+        return coords().get(img, dict.fromkeys(probes, dict(x=None, y=None, z=None)))
+    def field_str(s):
+        return '_'.join(s.split(' ')).lower() + '_surface_image' if s else ''
     
     selection = ipw.ToggleButtons(
     options=[' '.join(_.strip('_surface_image').split('_')).capitalize() for _ in coords().keys()],
