@@ -476,6 +476,14 @@ class DynamicRoutingExperiment(WithSession):
         return self.workflow.name.startswith('HAB')
     
     @property
+    def is_opto(self) -> bool:
+        return self.workflow.name.startswith('OPTO')
+    
+    @property
+    def is_ephys(self) -> bool:
+        return self.workflow.name.startswith('EPHYS')
+    
+    @property
     def task_name(self) -> str:
         """For sending to runTask.py and controlling implementation details of the task."""
         if hasattr(self, '_task_name'): 
@@ -549,8 +557,7 @@ class DynamicRoutingExperiment(WithSession):
                 # rewardSound = "device",
         )
     
-    
-        
+
     @property
     def optotagging_params(self) -> dict[str, str]:
         """For sending to runTask.py"""
@@ -558,7 +565,7 @@ class DynamicRoutingExperiment(WithSession):
         locs_root = pathlib.Path("//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/OptoGui/optotagging")
         locs = sorted(tuple(locs_root.glob(f"optotagging_{self.mouse.id}_{rig}_*")), reverse=True)
         if not locs:
-            raise FileNotFoundError(f"No optotagging locs found for {self.mouse}/{rig}- have you run OptoGui?")
+            raise FileNotFoundError(f"No optotagging locs found for {self.mouse}/{rig} - have you run OptoGui?")
         assert isinstance(locs, pathlib.Path)
         return dict(
                 rigName = str(self.rig).replace('.',''),
@@ -566,6 +573,21 @@ class DynamicRoutingExperiment(WithSession):
                 taskScript = 'OptoTagging.py',
                 optoTaggingLocs = locs.as_posix(),
         )
+
+    @property
+    def opto_params(self: WithSessionInfo) -> dict[str, str | bool]:
+        """For sending to runTask.py"""
+        rig = str(self.rig).replace('.', '')
+        locs_root = pathlib.Path("//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/OptoGui/optoParams")
+        locs = sorted(tuple(locs_root.glob(f"optoParams_{self.mouse.id}_{rig}_*")), reverse=True)
+        if not locs:
+            raise FileNotFoundError(f"No opto params found for {self.mouse}/{rig} - have you run OptoGui?")
+        return dict(
+                rigName = str(self.rig).replace('.',''),
+                subjectName = str(self.mouse),
+                taskScript = 'DynamicRouting1.py',
+                saveSoundArray = True,
+            )
 
     @property
     def mapping_params(self: WithSessionInfo) -> dict[str, str | bool]:
