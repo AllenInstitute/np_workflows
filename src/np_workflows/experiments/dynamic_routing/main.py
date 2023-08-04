@@ -49,20 +49,24 @@ class Workflow(enum.Enum):
     PRETEST = "test"
     HAB_ori_AMN = "stage 5 ori AMN moving" 
     EPHYS_ori_AMN = "stage 5 ori AMN moving"
+    OPTO_ori_AMN = "opto stim ori AMN moving"
     HAB_AMN_ori = "stage 5 AMN ori moving" 
     EPHYS_AMN_ori = "stage 5 AMN ori moving"
-
+    OPTO_AMN_ori = "opto stim AMN ori moving"
+    
 def new_experiment(
     mouse: int | str | np_session.Mouse,
     user: str | np_session.User,
     workflow: Workflow,
-) -> 'Ephys' | 'Hab':
+) -> DRTask:
     """Create a new experiment for the given mouse and user."""
-    experiment: Ephys | Hab
+    experiment: DRTask
     if workflow.name.startswith('EPHYS') or  workflow.name == 'PRETEST':
         experiment = Ephys(mouse, user)
     elif workflow.name.startswith('HAB'):
         experiment = Hab(mouse, user)
+    elif workflow.name.startswith('OPTO'):
+        experiment = Opto(mouse, user)
     else:
         raise ValueError(f"Unknown {workflow = }. Create an experiment with e.g.\n\n\texperiment = Ephys(mouse, user)\nexperiment.session.npexp_path.mkdir()")
     experiment.workflow = workflow
@@ -79,6 +83,18 @@ class DRTask(base_experiments.DynamicRoutingExperiment):
     """Enum for workflow type, e.g. PRETEST, HAB_AUD, HAB_VIS, EPHYS_ etc."""
 
 class Hab(DRTask):
+    def __init__(self, *args, **kwargs):
+        self.services = (
+            MouseDirector,
+            Sync,
+            VideoMVR,
+            self.imager,
+            NewScaleCoordinateRecorder,
+            ScriptCamstim,
+        )
+        super().__init__(*args, **kwargs)
+        
+class Opto(DRTask):
     def __init__(self, *args, **kwargs):
         self.services = (
             MouseDirector,
