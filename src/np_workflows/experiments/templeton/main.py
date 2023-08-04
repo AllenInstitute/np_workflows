@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import configparser
 import contextlib
 import copy
@@ -49,6 +51,24 @@ class Workflow(enum.Enum):
     HAB_VIS = "stage 2 vis"
     EPHYS_VIS = "stage 2 vis opto stim"
 
+def new_experiment(
+    mouse: int | str | np_session.Mouse,
+    user: str | np_session.User,
+    workflow: Workflow,
+) -> 'Ephys' | 'Hab':
+    """Create a new experiment for the given mouse and user."""
+    experiment: Ephys | Hab
+    if workflow.name.startswith('EPHYS') or  workflow.name == 'PRETEST':
+        experiment = Ephys(mouse, user)
+    elif workflow.name.startswith('HAB'):
+        experiment = Hab(mouse, user)
+    else:
+        raise ValueError(f"Unknown {workflow = }. Create an experiment with e.g.\n\n\texperiment = Ephys(mouse, user)\nexperiment.session.npexp_path.mkdir()")
+    experiment.workflow = workflow
+    experiment.log(f"{experiment} created")
+    experiment.session.npexp_path.mkdir(parents=True, exist_ok=True) 
+    return experiment
+
 class TempletonPilot(base_experiments.DynamicRoutingExperiment):
     """Provides project-specific methods and attributes, mainly related to camstim scripts."""
     
@@ -57,12 +77,15 @@ class TempletonPilot(base_experiments.DynamicRoutingExperiment):
     workflow: Workflow
     """Enum for workflow type, e.g. PRETEST, HAB_AUD, HAB_VIS, EPHYS_ etc."""
 
+    @property
     def task_name(self) -> str:
         task_name = super().task_name
         return f'templeton {task_name}' if 'templeton' not in task_name else task_name
-
-
     
+    @task_name.setter
+    def task_name(self, value: str):
+        super().task_name = value
+        
 class Hab(TempletonPilot):
     def __init__(self, *args, **kwargs):
         self.services = (
@@ -88,32 +111,3 @@ class Ephys(TempletonPilot):
             NewScaleCoordinateRecorder,
         )
         super().__init__(*args, **kwargs)
-
-
-# --------------------------------------------------------------------------------------
-
-
-def new_experiment(
-    mouse: int | str | np_session.Mouse,
-    user: str | np_session.User,
-    workflow: Workflow,
-) -> Ephys | Hab:
-    """Create a new experiment for the given mouse and user."""
-    match workflow:
-        case Workflow.PRETEST | Workflow.EPHYS_AUD | Workflow.EPHYS_VIS:
-            experiment = Ephys(mouse, user)
-        case Workflow.HAB_AUD | Workflow.HAB_VIS:
-            experiment = Hab(mouse, user)
-        case _:
-            raise ValueError(f"Invalid session type: {workflow}")
-    experiment.workflow = workflow
-    
-    experiment.log(f"{experiment} created")
-    
-    experiment.session.npexp_path.mkdir(parents=True, exist_ok=True)
-            
-    return experiment
-
-
-# --------------------------------------------------------------------------------------
-

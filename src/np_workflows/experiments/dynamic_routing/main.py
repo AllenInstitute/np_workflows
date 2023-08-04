@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import configparser
 import contextlib
 import copy
@@ -56,7 +58,8 @@ def new_experiment(
     workflow: Workflow,
 ) -> 'Ephys' | 'Hab':
     """Create a new experiment for the given mouse and user."""
-    if workflow.name.startswith('EPHYS') or  workflow.name == 'PRETEST'
+    experiment: Ephys | Hab
+    if workflow.name.startswith('EPHYS') or  workflow.name == 'PRETEST':
         experiment = Ephys(mouse, user)
     elif workflow.name.startswith('HAB'):
         experiment = Hab(mouse, user)
@@ -67,7 +70,6 @@ def new_experiment(
     experiment.session.npexp_path.mkdir(parents=True, exist_ok=True) 
     return experiment
 
-
 class DRTask(base_experiments.DynamicRoutingExperiment):
     """Provides project-specific methods and attributes, mainly related to camstim scripts."""
     
@@ -75,7 +77,6 @@ class DRTask(base_experiments.DynamicRoutingExperiment):
     
     workflow: Workflow
     """Enum for workflow type, e.g. PRETEST, HAB_AUD, HAB_VIS, EPHYS_ etc."""
-
 
 class Hab(DRTask):
     def __init__(self, *args, **kwargs):
@@ -102,11 +103,3 @@ class Ephys(DRTask):
             OpenEphys,
         )
         super().__init__(*args, **kwargs)
-
-
-# --------------------------------------------------------------------------------------
-
-
-
-# --------------------------------------------------------------------------------------
-

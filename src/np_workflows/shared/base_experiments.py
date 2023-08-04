@@ -448,14 +448,12 @@ class DynamicRoutingExperiment(WithSession):
     def is_hab(self) -> bool:
         return self.workflow.name.startswith('HAB')
     
-            
     @property
     def task_name(self) -> str:
         """For sending to runTask.py and controlling implementation details of the task."""
         if hasattr(self, '_task_name'): 
             return self._task_name 
         return self.workflow.value
-
 
     @task_name.setter
     def task_name(self, task_name: str) -> None:
