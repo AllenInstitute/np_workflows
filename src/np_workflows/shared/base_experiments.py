@@ -445,7 +445,8 @@ class DynamicRoutingExperiment(WithSession):
     def commit_hash(self) -> str:
         if hasattr(self, '_commit_hash'):
             return self._commit_hash
-        return self.rig.config['dynamicrouting_task_script']['commit_hash']
+        self._commit_hash = self.config['dynamicrouting_task_script']['commit_hash']
+        return self.commit_hash
     
     @commit_hash.setter
     def commit_hash(self, value: str):
@@ -455,17 +456,20 @@ class DynamicRoutingExperiment(WithSession):
     def github_url(self) -> str:
         if hasattr(self, '_github_url'):
             return self._github_url
-        return self.rig.config['dynamicrouting_task_script']['url']
+        self._github_url = self.config['dynamicrouting_task_script']['url']
+        return self.github_url
     
     @github_url.setter
     def github_url(self, value: str):
         self._github_url = value
     
     @property
-    def task_script_base_path(self) -> str:
-        if self.use_github:
-            return f'{self.github_url}{self.commit_hash}'
-        return '//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/'
+    def base_url(self) -> pathlib.Path:
+        return pathlib.Path(self.github_url) / self.commit_hash
+    
+    @property
+    def base_path(self) -> pathlib.Path:
+        return pathlib.Path('//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/')
     
     @property
     def is_pretest(self) -> bool:
@@ -477,7 +481,7 @@ class DynamicRoutingExperiment(WithSession):
     
     @property
     def is_opto(self) -> bool:
-        return self.workflow.name.startswith('OPTO')
+        return 'opto' in self.task_name
     
     @property
     def is_ephys(self) -> bool:
@@ -523,14 +527,18 @@ class DynamicRoutingExperiment(WithSession):
     
     @property
     def hdf5_dir(self) -> pathlib.Path:
-        return pathlib.Path('//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/Data') /  str(self.mouse)
+        return self.base_path / 'Data' /  str(self.mouse)
+    
+    @property
+    def task_script_base(self) -> pathlib.Path:
+        return self.base_url if self.use_github else self.base_path
     
     @property
     def task_params(self) -> dict[str, str | bool]:
         """For sending to runTask.py"""
         return dict(
                 rigName = str(self.rig).replace('.',''),
-                subjectName = str(self.mouse),
+                subjectName = str(self.mouse) if not self.is_pretest else 'test',
                 taskScript = 'DynamicRouting1.py',
                 taskVersion = self.task_name,
                 saveSoundArray = True,
@@ -562,7 +570,7 @@ class DynamicRoutingExperiment(WithSession):
     def optotagging_params(self) -> dict[str, str]:
         """For sending to runTask.py"""
         rig = str(self.rig).replace('.', '')
-        locs_root = pathlib.Path("//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/OptoGui/optotagging")
+        locs_root = self.base_path / 'OptoGui' / 'optotagging'
         locs = sorted(tuple(locs_root.glob(f"optotagging_{self.mouse.id}_{rig}_*")), reverse=True)
         if not locs:
             raise FileNotFoundError(f"No optotagging locs found for {self.mouse}/{rig} - have you run OptoGui?")
@@ -575,26 +583,28 @@ class DynamicRoutingExperiment(WithSession):
         )
 
     @property
-    def opto_params(self: WithSessionInfo) -> dict[str, str | bool]:
-        """For sending to runTask.py"""
+    def opto_params(self) -> dict[str, str | bool]:
+        """Opto params are handled by runTask.py and don't need to be passed from
+        here. Just check they exist on disk here.
+        """
         rig = str(self.rig).replace('.', '')
-        locs_root = pathlib.Path("//allen/programs/mindscope/workgroups/dynamicrouting/DynamicRoutingTask/OptoGui/optoParams")
+        locs_root = self.base_path / 'OptoGui' / 'optoParams'
         locs = sorted(tuple(locs_root.glob(f"optoParams_{self.mouse.id}_{rig}_*")), reverse=True)
         if not locs:
             raise FileNotFoundError(f"No opto params found for {self.mouse}/{rig} - have you run OptoGui?")
         return dict(
                 rigName = str(self.rig).replace('.',''),
-                subjectName = str(self.mouse),
+                subjectName = str(self.mouse) if not self.is_pretest else 'test',
                 taskScript = 'DynamicRouting1.py',
                 saveSoundArray = True,
             )
 
     @property
-    def mapping_params(self: WithSessionInfo) -> dict[str, str | bool]:
+    def mapping_params(self) -> dict[str, str | bool]:
         """For sending to runTask.py"""
         return dict(
                 rigName = str(self.rig).replace('.',''),
-                subjectName = str(self.mouse),
+                subjectName = str(self.mouse) if not self.is_pretest else 'test',
                 taskScript = 'RFMapping.py',
                 saveSoundArray = True,
             )
@@ -604,33 +614,36 @@ class DynamicRoutingExperiment(WithSession):
         """For sending to runTask.py"""
         return dict(
                 rigName = str(self.rig).replace('.',''),
-                subjectName = 'sound',
+                subjectName = 'sound' if not self.is_pretest else 'test',
                 taskScript = 'TaskControl.py',
                 taskVersion = 'sound test',
         )
         
-    def run_script(self, stim: Literal['sound_test', 'mapping', 'task', 'optotagging', 'spontaneous', 'spontaneous_rewards']) -> None:
+    def get_github_file_content(self, address: str) -> str:
+        import requests
+        response = requests.get(address)
+        if not response.status_code in (200, ):
+            response.raise_for_status()
+        return response.content.decode("utf-8")
+    
+    def run_script(self, stim: Literal['sound_test', 'mapping', 'task', 'opto', 'optotagging', 'spontaneous', 'spontaneous_rewards']) -> None:
         
         params = getattr(self, f'{stim.replace(" ", "_")}_params')
-        params['taskScript'] = self.task_script_base_path + params['taskScript']
+        params['taskScript'] = (self.task_script_base / params['taskScript']).as_posix()
         if self.use_github:
         
             params['GHTaskScriptParams'] =  {
                 'taskScript': params['taskScript'],
-                'taskControl': self.task_script_base_path + 'TaskControl.py',
+                'taskControl': (self.task_script_base / 'TaskControl.py').as_posix(),
                 }
         
-            import requests
-            response = requests.get(self.task_script_base_path + 'runTask.py')
-            if not response.status_code in (200, ):
-                response.raise_for_status()
-                
-            np_services.ScriptCamstim.script = response.content
+            np_services.ScriptCamstim.script = self.get_github_file_content((self.base_url / 'runTask.py').as_posix())
         else:
-            np_services.ScriptCamstim.script = self.task_script_base_path + 'runTask.py'
+            np_services.ScriptCamstim.script = (self.task_script_base / 'runTask.py').as_posix()
             
         np_services.ScriptCamstim.params = params
         
+        self.update_state()
         self.log(f"{stim} started")
 
         np_services.ScriptCamstim.start()
@@ -644,13 +657,12 @@ class DynamicRoutingExperiment(WithSession):
         
     run_mapping = functools.partialmethod(run_script, 'mapping')
     run_sound_test = functools.partialmethod(run_script, 'sound_test')
+    run_task = functools.partialmethod(run_script, 'task')
+    run_opto = functools.partialmethod(run_script, 'opto') # if opto params are handled by runTask then this is the same as run_task
     run_optotagging = functools.partialmethod(run_script, 'optotagging')
     run_spontaneous = functools.partialmethod(run_script, 'spontaneous')
     run_spontaneous_rewards = functools.partialmethod(run_script, 'spontaneous_rewards')
     
-    def run_task(self) -> None:
-        self.update_state()
-        self.run_script('task')    
         
     def update_state(self) -> None:
         "Persist useful but non-essential info."
