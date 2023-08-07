@@ -28,6 +28,7 @@ from np_services import (
     Validatable,
     Verifiable,
 )
+import upath
 
 import np_workflows.shared.npxc as npxc
 
@@ -464,8 +465,8 @@ class DynamicRoutingExperiment(WithSession):
         self._github_url = value
     
     @property
-    def base_url(self) -> pathlib.Path:
-        return pathlib.Path(self.github_url) / self.commit_hash
+    def base_url(self) -> upath.UPath:
+        return upath.UPath(self.github_url) / self.commit_hash
     
     @property
     def base_path(self) -> pathlib.Path:
@@ -530,8 +531,8 @@ class DynamicRoutingExperiment(WithSession):
         return self.base_path / 'Data' /  str(self.mouse)
     
     @property
-    def task_script_base(self) -> pathlib.Path:
-        return self.base_url if self.use_github else self.base_path
+    def task_script_base(self) -> upath.UPath:
+        return self.base_url if self.use_github else upath.UPath(self.base_path)
     
     @property
     def task_params(self) -> dict[str, str | bool]:
@@ -626,20 +627,27 @@ class DynamicRoutingExperiment(WithSession):
             response.raise_for_status()
         return response.content.decode("utf-8")
     
+    @property
+    def camstim_script(self) -> upath.UPath:
+        return self.task_script_base / 'runTask.py'
+    
     def run_script(self, stim: Literal['sound_test', 'mapping', 'task', 'opto', 'optotagging', 'spontaneous', 'spontaneous_rewards']) -> None:
         
         params = getattr(self, f'{stim.replace(" ", "_")}_params')
-        params['taskScript'] = (self.task_script_base / params['taskScript']).as_posix()
+        
+        script: str = params['taskScript']
+        params['taskScript'] = (self.task_script_base / script).as_posix()
+        
         if self.use_github:
         
             params['GHTaskScriptParams'] =  {
-                'taskScript': params['taskScript'],
+                'taskScript': script,
                 'taskControl': (self.task_script_base / 'TaskControl.py').as_posix(),
                 }
         
-            np_services.ScriptCamstim.script = self.get_github_file_content((self.base_url / 'runTask.py').as_posix())
+            np_services.ScriptCamstim.script = self.camstim_script.read_text()
         else:
-            np_services.ScriptCamstim.script = (self.task_script_base / 'runTask.py').as_posix()
+            np_services.ScriptCamstim.script = self.camstim_script.as_posix()
             
         np_services.ScriptCamstim.params = params
         
