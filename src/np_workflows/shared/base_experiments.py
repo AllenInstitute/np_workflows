@@ -641,7 +641,7 @@ class DynamicRoutingExperiment(WithSession):
         if self.use_github:
         
             params['GHTaskScriptParams'] =  {
-                'taskScript': script,
+                'taskScript': params['taskScript'],
                 'taskControl': (self.task_script_base / 'TaskControl.py').as_posix(),
                 }
         
