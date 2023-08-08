@@ -47,12 +47,12 @@ class Workflow(enum.Enum):
     """Enum for the different sessions available, each with a different
     task."""
     PRETEST = "test"
-    HAB_ori_AMN = "stage 5 ori AMN moving" 
-    EPHYS_ori_AMN = "stage 5 ori AMN moving"
-    OPTO_ori_AMN = "opto stim ori AMN moving"
-    HAB_AMN_ori = "stage 5 AMN ori moving" 
-    EPHYS_AMN_ori = "stage 5 AMN ori moving"
-    OPTO_AMN_ori = "opto stim AMN ori moving"
+    HAB_ori_AMN = "hab | stage 5 ori AMN moving" 
+    EPHYS_ori_AMN = "ephys | stage 5 ori AMN moving"
+    OPTO_ori_AMN = "behavior | opto stim ori AMN moving"
+    HAB_AMN_ori = "hab | stage 5 AMN ori moving" 
+    EPHYS_AMN_ori = "ephys | stage 5 AMN ori moving"
+    OPTO_AMN_ori = "behavior | opto stim AMN ori moving"
     
 def new_experiment(
     mouse: int | str | np_session.Mouse,

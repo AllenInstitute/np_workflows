@@ -46,28 +46,10 @@ logger = np_logging.getLogger(__name__)
 class Workflow(enum.Enum):
     """Enum for the different TTN sessions available, each with a different task."""
     PRETEST = "test"
-    HAB_AUD = "stage 2 aud"
-    EPHYS_AUD = "stage 2 aud opto stim"
-    HAB_VIS = "stage 2 vis"
-    EPHYS_VIS = "stage 2 vis opto stim"
-
-def new_experiment(
-    mouse: int | str | np_session.Mouse,
-    user: str | np_session.User,
-    workflow: Workflow,
-) -> 'Ephys' | 'Hab':
-    """Create a new experiment for the given mouse and user."""
-    experiment: Ephys | Hab
-    if workflow.name.startswith('EPHYS') or  workflow.name == 'PRETEST':
-        experiment = Ephys(mouse, user)
-    elif workflow.name.startswith('HAB'):
-        experiment = Hab(mouse, user)
-    else:
-        raise ValueError(f"Unknown {workflow = }. Create an experiment with e.g.\n\n\texperiment = Ephys(mouse, user)\nexperiment.session.npexp_path.mkdir()")
-    experiment.workflow = workflow
-    experiment.log(f"{experiment} created")
-    experiment.session.npexp_path.mkdir(parents=True, exist_ok=True) 
-    return experiment
+    HAB_AUD = "hab | stage 2 aud"
+    EPHYS_AUD = "ephys | stage 2 aud opto stim"
+    HAB_VIS = "hab | stage 2 vis"
+    EPHYS_VIS = "ephys | stage 2 vis opto stim"
 
 class TempletonPilot(base_experiments.DynamicRoutingExperiment):
     """Provides project-specific methods and attributes, mainly related to camstim scripts."""
@@ -85,7 +67,25 @@ class TempletonPilot(base_experiments.DynamicRoutingExperiment):
     @task_name.setter
     def task_name(self, value: str):
         super().task_name = value
-        
+       
+def new_experiment(
+    mouse: int | str | np_session.Mouse,
+    user: str | np_session.User,
+    workflow: Workflow,
+) -> TempletonPilot:
+    """Create a new experiment for the given mouse and user."""
+    experiment: Ephys | Hab
+    if workflow.name.startswith('EPHYS') or  workflow.name == 'PRETEST':
+        experiment = Ephys(mouse, user)
+    elif workflow.name.startswith('HAB'):
+        experiment = Hab(mouse, user)
+    else:
+        raise ValueError(f"Unknown {workflow = }. Create an experiment with e.g.\n\n\texperiment = Ephys(mouse, user)\nexperiment.session.npexp_path.mkdir()")
+    experiment.workflow = workflow
+    experiment.log(f"{experiment} created")
+    experiment.session.npexp_path.mkdir(parents=True, exist_ok=True) 
+    return experiment
+
 class Hab(TempletonPilot):
     def __init__(self, *args, **kwargs):
         self.services = (
