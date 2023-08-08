@@ -668,7 +668,9 @@ class DynamicRoutingExperiment(WithSession):
                 'taskScript': params['taskScript'],
                 'taskControl': (self.task_script_base / 'TaskControl.py').as_posix(),
                 }
-        
+            if stim in ('opto', 'optotagging'):
+                params['GHTaskScriptParams']['optoParams'] = (self.task_script_base / 'OptoParams.py').as_posix()
+
             np_services.ScriptCamstim.script = self.camstim_script.read_text()
         else:
             np_services.ScriptCamstim.script = self.camstim_script.as_posix()
