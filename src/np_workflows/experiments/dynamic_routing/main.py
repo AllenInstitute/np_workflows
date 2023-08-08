@@ -43,29 +43,18 @@ from np_workflows.shared import base_experiments
 
 logger = np_logging.getLogger(__name__)
 
-class Workflow(enum.Enum):
-    """Enum for the different sessions available, each with a different
-    task."""
-    PRETEST = "test"
-    HAB_ori_AMN = "hab | stage 5 ori AMN moving" 
-    EPHYS_ori_AMN = "ephys | stage 5 ori AMN moving"
-    OPTO_ori_AMN = "behavior | opto stim ori AMN moving"
-    HAB_AMN_ori = "hab | stage 5 AMN ori moving" 
-    EPHYS_AMN_ori = "ephys | stage 5 AMN ori moving"
-    OPTO_AMN_ori = "behavior | opto stim AMN ori moving"
-    
 def new_experiment(
     mouse: int | str | np_session.Mouse,
     user: str | np_session.User,
-    workflow: Workflow,
+    workflow: base_experiments.DynamicRoutingExperiment.Workflow,
 ) -> DRTask:
     """Create a new experiment for the given mouse and user."""
     experiment: DRTask
-    if workflow.name.startswith('EPHYS') or  workflow.name == 'PRETEST':
+    if any(tag in workflow.name for tag in ('EPHYS', 'PRETEST')):
         experiment = Ephys(mouse, user)
-    elif workflow.name.startswith('HAB'):
+    elif 'HAB' in workflow.name:
         experiment = Hab(mouse, user)
-    elif workflow.name.startswith('OPTO'):
+    elif 'OPTO' in workflow.name:
         experiment = Opto(mouse, user)
     else:
         raise ValueError(f"Unknown {workflow = }. Create an experiment with e.g.\n\n\texperiment = Ephys(mouse, user)\nexperiment.session.npexp_path.mkdir()")
@@ -79,7 +68,7 @@ class DRTask(base_experiments.DynamicRoutingExperiment):
     
     default_session_subclass = np_session.DRPilotSession
     
-    workflow: Workflow
+    workflow: base_experiments.DynamicRoutingExperiment.Workflow
     """Enum for workflow type, e.g. PRETEST, HAB_AUD, HAB_VIS, EPHYS_ etc."""
 
 class Hab(DRTask):

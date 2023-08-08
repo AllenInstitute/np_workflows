@@ -657,3 +657,47 @@ def quiet_mode_widget() -> IPython.display.DisplayHandle | None:
      
     return IPython.display.display(debug_mode_toggle)
 
+
+def task_select_widget(
+    experiment,
+) -> None:
+    """Select a task name for controlling behavior of TaskControl.
+    """
+    task_dropdown = ipw.Select(
+        options=tuple(set(task for task in experiment.preset.values())),
+        description="Presets",
+    )
+    task_input_box = ipw.Text(
+        value=experiment.task_name if isinstance(experiment.task_name, str) else "",
+        continuous_update=False,
+    )
+    console = ipw.Output()
+    with console:
+        if last_task:= experiment.mouse.state.get('last_task'):
+            print(f"{experiment.mouse} last task: {last_task}")
+
+    def update(change):
+        if change["name"] != "value":
+            return
+        if (options := getattr(change["owner"], "options", None)) and change[
+            "new"
+        ] not in options:
+            return
+        if change["new"] == change["old"]:
+            return
+        print(change)
+        if change["owner"] is task_dropdown:
+            experiment.task_name = str(task_dropdown.value)
+            task_input_box.value = experiment.task_name
+            return
+        elif change["owner"] is task_input_box:
+            experiment.task_name = str(task_input_box.value)
+            if str(task_dropdown.value) != experiment.task_name:
+                task_dropdown.value = None
+        with console:
+            print(f"Updated task: {experiment.task_name}")
+    task_dropdown.observe(update, names='value')
+    task_input_box.observe(update, names='value')
+
+    IPython.display.display(ipw.VBox([ipw.HBox([task_dropdown, task_input_box]), console]))
+    

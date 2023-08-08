@@ -7,7 +7,7 @@ import pathlib
 import re
 import shutil
 import time
-from typing import Any, ClassVar, Iterable, Literal, Optional, Protocol, Type
+from typing import Any, ClassVar, Iterable, Literal, Optional, Protocol, Sequence, Type
 
 import fabric
 import invoke
@@ -16,6 +16,7 @@ import np_config
 import np_logging
 import np_services
 import np_session
+import upath
 from np_services import (
     Finalizable,
     Initializable,
@@ -28,7 +29,6 @@ from np_services import (
     Validatable,
     Verifiable,
 )
-import upath
 
 import np_workflows.shared.npxc as npxc
 
@@ -85,7 +85,7 @@ class WithSession(abc.ABC):
         elif operator and mouse:
             logger.debug('%s | Creating new session for mouse %r, operator %r', self.__class__.__name__, mouse, operator)
             session = self.generate_session(mouse, operator, session_type or self.default_session_type)
-        else:
+        elif not session:
             raise ValueError('Must specify either a mouse + operator, or an existing session')
 
         self.session = session
@@ -438,10 +438,31 @@ class DynamicRoutingExperiment(WithSession):
     
     default_session_subclass: ClassVar[Type[np_session.Session]]
     
-    workflow: enum.Enum
     
     use_github: bool = True
     
+    class Workflow(enum.Enum):
+        """Enum for the different sessions available. 
+        
+        Used in the workflow to determine branches (e.g. HAB workflow should
+        skip set up and use of OpenEphys).
+        
+        Can also be used to switch different task names, scripts, etc. 
+        
+        - names are used to set the experiment subclass
+        - values must be unique! 
+        """
+        PRETEST = "test EPHYS"
+        HAB = "EPHYS minus probes"
+        EPHYS = "opto in task optional"
+        OPTO = "opto in task, no ephys"
+    
+    workflow: Workflow
+    
+    @property
+    def preset_task_names(self) -> tuple[str, ...]:
+        return tuple(np_config.fetch('/projects/dynamicrouting')['preset_task_names'])
+        
     @property
     def commit_hash(self) -> str:
         if hasattr(self, '_commit_hash'):
@@ -474,34 +495,36 @@ class DynamicRoutingExperiment(WithSession):
     
     @property
     def is_pretest(self) -> bool:
-        return self.workflow.name == 'PRETEST'
+        return 'PRETEST' in self.workflow.name
     
     @property
     def is_hab(self) -> bool:
-        return self.workflow.name.startswith('HAB')
+        return 'HAB' in self.workflow.name
     
     @property
     def is_opto(self) -> bool:
+        """Opto will run during behavior task trials - independent of `is_ephys`."""
         return 'opto' in self.task_name
     
     @property
     def is_ephys(self) -> bool:
-        return self.workflow.name.startswith('EPHYS')
+        return 'EPHYS' in self.workflow.name
     
     @property
     def task_name(self) -> str:
         """For sending to runTask.py and controlling implementation details of the task."""
         if hasattr(self, '_task_name'): 
             return self._task_name 
-        return self.workflow.value
+        return ""
 
     @task_name.setter
     def task_name(self, task_name: str) -> None:
-        try:
-            self.workflow.__class__(task_name)
-        except ValueError:
-            print(f"{task_name = !r} doesn't correspond to a preset value, but the attribute is updated anyway!")
         self._task_name = task_name
+        if task_name not in self.preset_task_names:
+            print(f"{task_name = !r} doesn't correspond to a preset value, but the attribute is updated anyway!")
+        else:
+            print(f"Updated {self.__class__.__name__}.{task_name = !r}")
+
 
     def log(self, message: str, weblog_name: Optional[str] = None):
         if weblog_name is None:
@@ -566,21 +589,26 @@ class DynamicRoutingExperiment(WithSession):
                 # rewardSound = "device",
         )
     
-
+    def get_latest_optogui_txt(self, opto_or_optotagging: Literal['opto', 'optotagging']) -> pathlib.Path:
+        dirname = dict(opto='optoParams', optotagging='optotagging')[opto_or_optotagging]
+        file_prefix = dirname
+        
+        rig = str(self.rig).replace('.', '')
+        locs_root = self.base_path / 'OptoGui' / f'{dirname}'
+        available_locs = sorted(tuple(locs_root.glob(f"{file_prefix}_{self.mouse.id}_{rig}_*")), reverse=True)
+        if not available_locs:
+            raise FileNotFoundError(f"No optotagging locs found for {self.mouse}/{rig} - have you run OptoGui?")
+        return available_locs[0]
+        
+        
     @property
     def optotagging_params(self) -> dict[str, str]:
         """For sending to runTask.py"""
-        rig = str(self.rig).replace('.', '')
-        locs_root = self.base_path / 'OptoGui' / 'optotagging'
-        available_locs = sorted(tuple(locs_root.glob(f"optotagging_{self.mouse.id}_{rig}_*")), reverse=True)
-        if not available_locs:
-            raise FileNotFoundError(f"No optotagging locs found for {self.mouse}/{rig} - have you run OptoGui?")
-        locs = available_locs[0]
         return dict(
                 rigName = str(self.rig).replace('.',''),
                 subjectName = str(self.mouse) if not self.is_pretest else 'test',
                 taskScript = 'OptoTagging.py',
-                optoTaggingLocs = locs.as_posix(),
+                optoTaggingLocs = self.get_latest_optogui_txt('optotagging').as_posix(),
         )
 
     @property
@@ -588,11 +616,7 @@ class DynamicRoutingExperiment(WithSession):
         """Opto params are handled by runTask.py and don't need to be passed from
         here. Just check they exist on disk here.
         """
-        rig = str(self.rig).replace('.', '')
-        locs_root = self.base_path / 'OptoGui' / 'optoParams'
-        locs = sorted(tuple(locs_root.glob(f"optoParams_{self.mouse.id}_{rig}_*")), reverse=True)
-        if not locs:
-            raise FileNotFoundError(f"No opto params found for {self.mouse}/{rig} - have you run OptoGui?")
+        _ = self.get_latest_optogui_txt('opto') # raises FileNotFoundError if not found
         return dict(
                 rigName = str(self.rig).replace('.',''),
                 subjectName = str(self.mouse) if not self.is_pretest else 'test',
@@ -623,7 +647,7 @@ class DynamicRoutingExperiment(WithSession):
     def get_github_file_content(self, address: str) -> str:
         import requests
         response = requests.get(address)
-        if not response.status_code in (200, ):
+        if response.status_code not in (200, ):
             response.raise_for_status()
         return response.content.decode("utf-8")
     

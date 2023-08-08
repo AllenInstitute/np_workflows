@@ -43,20 +43,12 @@ from np_workflows.shared import base_experiments
 
 logger = np_logging.getLogger(__name__)
 
-class Workflow(enum.Enum):
-    """Enum for the different TTN sessions available, each with a different task."""
-    PRETEST = "test"
-    HAB_AUD = "hab | stage 2 aud"
-    EPHYS_AUD = "ephys | stage 2 aud opto stim"
-    HAB_VIS = "hab | stage 2 vis"
-    EPHYS_VIS = "ephys | stage 2 vis opto stim"
-
 class TempletonPilot(base_experiments.DynamicRoutingExperiment):
     """Provides project-specific methods and attributes, mainly related to camstim scripts."""
     
     default_session_subclass = np_session.TempletonPilotSession
     
-    workflow: Workflow
+    workflow: base_experiments.DynamicRoutingExperiment.Workflow
     """Enum for workflow type, e.g. PRETEST, HAB_AUD, HAB_VIS, EPHYS_ etc."""
 
     @property
@@ -71,13 +63,13 @@ class TempletonPilot(base_experiments.DynamicRoutingExperiment):
 def new_experiment(
     mouse: int | str | np_session.Mouse,
     user: str | np_session.User,
-    workflow: Workflow,
+    workflow: base_experiments.DynamicRoutingExperiment.Workflow,
 ) -> TempletonPilot:
     """Create a new experiment for the given mouse and user."""
     experiment: Ephys | Hab
-    if workflow.name.startswith('EPHYS') or  workflow.name == 'PRETEST':
+    if any(tag in workflow.name for tag in ('EPHYS', 'PRETEST')):
         experiment = Ephys(mouse, user)
-    elif workflow.name.startswith('HAB'):
+    elif 'HAB' in workflow.name:
         experiment = Hab(mouse, user)
     else:
         raise ValueError(f"Unknown {workflow = }. Create an experiment with e.g.\n\n\texperiment = Ephys(mouse, user)\nexperiment.session.npexp_path.mkdir()")
