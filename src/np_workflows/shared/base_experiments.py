@@ -572,10 +572,10 @@ class DynamicRoutingExperiment(WithSession):
         """For sending to runTask.py"""
         rig = str(self.rig).replace('.', '')
         locs_root = self.base_path / 'OptoGui' / 'optotagging'
-        locs = sorted(tuple(locs_root.glob(f"optotagging_{self.mouse.id}_{rig}_*")), reverse=True)
-        if not locs:
+        available_locs = sorted(tuple(locs_root.glob(f"optotagging_{self.mouse.id}_{rig}_*")), reverse=True)
+        if not available_locs:
             raise FileNotFoundError(f"No optotagging locs found for {self.mouse}/{rig} - have you run OptoGui?")
-        assert isinstance(locs, pathlib.Path)
+        locs = available_locs[0]
         return dict(
                 rigName = str(self.rig).replace('.',''),
                 subjectName = str(self.mouse) if not self.is_pretest else 'test',
