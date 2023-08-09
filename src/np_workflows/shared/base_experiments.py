@@ -525,11 +525,6 @@ class DynamicRoutingExperiment(WithSession):
         else:
             print(f"Updated {self.__class__.__name__}.{task_name = !r}")
 
-
-    def log(self, message: str, weblog_name: Optional[str] = None):
-        if weblog_name is None:
-            weblog_name = f'{self.__class__.__name__}_{self.workflow.name.lower()}'        
-        
     services = (
         np_services.Sync,
         np_services.VideoMVR,
