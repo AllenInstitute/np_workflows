@@ -663,6 +663,8 @@ def task_select_widget(
 ) -> None:
     """Select a task name for controlling behavior of TaskControl.
     """
+    experiment.task_name = experiment.preset_task_names[0]
+    
     task_dropdown = ipw.Select(
         options=tuple(experiment.preset_task_names),
         description="Presets",
