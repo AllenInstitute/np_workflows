@@ -666,6 +666,7 @@ def task_select_widget(
     task_dropdown = ipw.Select(
         options=tuple(experiment.preset_task_names),
         description="Presets",
+        layout=ipw.Layout(min_width="500px", max_height="400px"),
     )
     task_input_box = ipw.Text(
         value=experiment.task_name if isinstance(experiment.task_name, str) else "",

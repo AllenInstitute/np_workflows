@@ -50,7 +50,6 @@ def workflow_select_widget(
     )
     workflow_descriptions = ipw.Select(
         options=tuple(_.value for _ in DynamicRoutingExperiment.Workflow),
-        description="Description",
         disabled=True,
         value=None,
     )
