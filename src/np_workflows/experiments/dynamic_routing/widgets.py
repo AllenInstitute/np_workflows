@@ -23,7 +23,7 @@ from np_workflows.shared.base_experiments import DynamicRoutingExperiment
 class SelectedWorkflow:
     def __init__(self, workflow: str | DynamicRoutingExperiment.Workflow, mouse: str | int | np_session.Mouse):
         if isinstance(workflow, str):
-            workflow = DynamicRoutingExperiment.Workflow(workflow)
+            workflow = DynamicRoutingExperiment.Workflow[workflow] # uses enum name (not value)
         self.workflow = workflow
         self.mouse = str(mouse)
 
@@ -52,6 +52,7 @@ def workflow_select_widget(
         options=tuple(_.value for _ in DynamicRoutingExperiment.Workflow),
         description="Description",
         disabled=True,
+        value=None,
     )
     console = ipw.Output()
     with console:
