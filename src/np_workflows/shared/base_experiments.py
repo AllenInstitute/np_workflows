@@ -393,6 +393,9 @@ class PipelineExperiment(WithSession):
                                     renamed = f'{self.session.folder}.{"stim" if _ == "main" else _}.pkl'
                         elif file.suffix in ('.json', '.mp4') and (cam_label := re.match('Behavior|Eye|Face',file.name)):
                             renamed = f'{self.session.folder}.{cam_label.group().lower()}{file.suffix}'
+                        elif file.suffix in ('.json', '.mp4') and (cam_label := re.match('BEH|EYE|FACE',file.name)):
+                            file_label = {'BEH':'behavior', 'EYE':'eye', 'FACE':'face'}
+                            renamed = f'{self.session.folder}.{file_label[cam_label.group()]}{file.suffix}'
                         elif service in (np_services.NewScaleCoordinateRecorder, ):
                             renamed = f'{self.session.folder}.motor-locs.csv'
                         elif service in (np_services.Cam3d, np_services.MVR):
