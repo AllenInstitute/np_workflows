@@ -657,6 +657,10 @@ class DynamicRoutingExperiment(WithSession):
         
         params = getattr(self, f'{stim.replace(" ", "_")}_params')
         
+        # add mouse and user info for MPE
+        params['mouse_id'] = str(self.mouse.id)
+        params['user_id'] = self.user.id if self.user else 'ben.hardcastle'
+        
         script: str = params['taskScript']
         params['taskScript'] = (self.task_script_base / script).as_posix()
         
@@ -666,13 +670,14 @@ class DynamicRoutingExperiment(WithSession):
                 'taskScript': params['taskScript'],
                 'taskControl': (self.task_script_base / 'TaskControl.py').as_posix(),
                 }
+            params['task_script_commit_hash'] = self.commit_hash
             if stim in ('opto', 'optotagging'):
                 params['GHTaskScriptParams']['optoParams'] = (self.task_script_base / 'OptoParams.py').as_posix()
 
             np_services.ScriptCamstim.script = self.camstim_script.read_text()
         else:
             np_services.ScriptCamstim.script = self.camstim_script.as_posix()
-            
+        
         np_services.ScriptCamstim.params = params
         
         self.update_state()
