@@ -161,6 +161,8 @@ class TTNMixin:
     @property
     def params(self) -> dict[Literal["main", "mapping", "opto", "system"], dict[str, Any]]:
         params = copy.deepcopy(DEFAULT_STIM_PARAMS)
+        params["mouse_id"] = str(self.mouse)
+        params["user_id"] = str(self.user)
         if system := self.system_camstim_params:
             params["system"] = system
         params["main"] = per_session_main_stim_params(self.ttn_session)
