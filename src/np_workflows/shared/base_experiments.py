@@ -584,7 +584,7 @@ class DynamicRoutingExperiment(WithSession):
                 subjectName = str(self.mouse) if not self.is_pretest else 'test',
                 taskScript = 'TaskControl.py',
                 taskVersion = 'spontaneous rewards',
-                # rewardSound = "device",
+                rewardSound = "device",
         )
     
     def get_latest_optogui_txt(self, opto_or_optotagging: Literal['opto', 'optotagging']) -> pathlib.Path:
