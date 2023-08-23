@@ -1,0 +1,60 @@
+# This workflow will bump version, publish to PYPI, commit with version tag,
+# push to remote.
+# For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
+
+name: Publish Python package
+
+on:
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
+    
+concurrency:
+  group: ${{ github.ref }}
+  cancel-in-progress: ${{ github.ref != 'refs/heads/master' }}
+      
+jobs:
+  package:
+
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        python-version: ["3.9"]
+    permissions: write-all
+
+    steps:
+    - uses: actions/checkout@v3
+    
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v3
+      with:
+        python-version: ${{ matrix.python-version }}
+        
+    - uses: pdm-project/setup-pdm@v3
+      with:
+        version: 'head' 
+        
+    - name: Install packaging dependencies
+      run: |
+        pip install "pdm-bump>=0.7.3"
+        
+    - name: Bump project version
+      run: |
+        pdm bump micro
+
+    - name: Publish
+      run: |
+        pdm publish
+        
+    - name: Commit changes
+      uses: EndBug/add-and-commit@v9
+      with:
+        default_author: github_actions
+        message: "Bump [skip actions]"
+        
+    - name: Tag commit
+      run: |
+        pdm bump tag
+        git push --tags
