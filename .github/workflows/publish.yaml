@@ -39,6 +39,10 @@ jobs:
     - name: Install packaging dependencies
       run: |
         pip install "pdm-bump>=0.7.3"
+
+    - name: Install package
+      run: |
+        pdm install
         
     - name: Bump project version
       run: |
