@@ -744,7 +744,7 @@ class DynamicRoutingExperiment(WithSession):
         
         # copy vimba files:
         for file in pathlib.Path(
-            np_services.config_from_zk()['ImageVimba']['data']
+            np_config.local_to_unc(self.rig.mon, np_services.config_from_zk()['ImageVimba']['data'])
         ).glob(f'{self.session.npexp_path.name}*'):
             shutil.copy2(file, self.session.npexp_path)
             npxc.validate_or_overwrite(self.session.npexp_path / file.name, file)
