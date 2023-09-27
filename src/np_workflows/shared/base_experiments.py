@@ -220,7 +220,11 @@ class WithSession(abc.ABC):
             time.sleep(5)
         for stoppable in (_ for _ in recorders if isinstance(_, Stoppable)):
             stoppable.stop()
-                
+            if isinstance(stoppable, np_services.MVR):
+                t0 = time.time()
+                while (time.time() - t0 < 3) and not stoppable.is_ready_to_start():
+                    time.sleep(1)
+                    
     def start_services(self, *services: Service) -> None:
         if not services:
             services = self.services
