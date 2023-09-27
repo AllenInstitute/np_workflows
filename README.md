@@ -1,6 +1,14 @@
 # np_workflows
 
-This package contains all the Python code required to run Mindscope Neuropixels experiments.
+This package contains all the Python code required to run Mindscope Neuropixels
+experiments.
+
+[![PyPI](https://img.shields.io/pypi/v/np-workflows.svg?label=PyPI&color=blue)](https://pypi.org/project/np-workflows/)
+[![Python version](https://img.shields.io/pypi/pyversions/np-workflows)](https://pypi.org/project/np-workflows/)
+
+<!-- [![Coverage](https://img.shields.io/codecov/c/github/alleninstitute/np_workflows?logo=codecov)](https://app.codecov.io/github/AllenInstitute/np_workflows) -->
+[![CI/CD](https://img.shields.io/github/actions/workflow/status/alleninstitute/np_workflows/publish.yml?label=CI/CD&logo=github)](https://github.com/alleninstitute/np_workflows/actions/workflows/publish.yml)
+[![GitHub issues](https://img.shields.io/github/issues/alleninstitute/np_workflows?logo=github)](https://github.com/alleninstitute/np_workflows/issues)
 
 Experiment workflows and related tasks are coordinated by Jupyter notebooks maintained here:
 https://github.com/AllenInstitute/np_notebooks
