@@ -672,8 +672,6 @@ class DynamicRoutingExperiment(WithSession):
                 'taskUtils': (self.task_script_base / 'TaskUtils.py').as_posix(),
                 }
             params['task_script_commit_hash'] = self.commit_hash
-            if stim in ('opto', 'optotagging'):
-                params['GHTaskScriptParams']['optoParams'] = (self.task_script_base / 'OptoParams.py').as_posix()
 
             np_services.ScriptCamstim.script = self.camstim_script.read_text()
         else:
