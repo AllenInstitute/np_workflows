@@ -7,8 +7,8 @@ name: Publish Python package
 on:
   push:
     branches: [ "main" ]
-  pull_request:
-    branches: [ "main" ]
+  # pull_request:
+  #   branches: [ "main" ]
     
 concurrency:
   group: ${{ github.ref }}
@@ -21,21 +21,19 @@ jobs:
     strategy:
       fail-fast: true
       matrix:
-        python-version: ["3.9"]
+        python-version: ["3.11"]
     permissions: write-all
 
     steps:
     - uses: actions/checkout@v3
-    
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
-      with:
-        python-version: ${{ matrix.python-version }}
         
     - uses: pdm-project/setup-pdm@v3
       with:
-        version: 'head' 
-        
+        version: 'head'     
+        python-version: ${{ matrix.python-version }}
+        update-python: true
+        cache: true
+
     - name: Install packaging dependencies
       run: |
         pip install "pdm-bump>=0.7.3"
