@@ -669,6 +669,7 @@ class DynamicRoutingExperiment(WithSession):
             params['GHTaskScriptParams'] =  {
                 'taskScript': params['taskScript'],
                 'taskControl': (self.task_script_base / 'TaskControl.py').as_posix(),
+                'taskUtils': (self.task_script_base / 'TaskUtils.py').as_posix(),
                 }
             params['task_script_commit_hash'] = self.commit_hash
             if stim in ('opto', 'optotagging'):
