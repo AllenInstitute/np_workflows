@@ -6,7 +6,7 @@ groups = ["default"]
 cross_platform = true
 static_urls = false
 lock_version = "4.3"
-content_hash = "sha256:54b09d2e01f795d4ec46bac2b7698c2db05efcf8f9a122f5d41b6d502a177f93"
+content_hash = "sha256:63b7b1154492e48775ba23805b0582ed13b8df4d7f9ab6d1dfda4bfdf5911b69"
 
 [[package]]
 name = "aiobotocore"
@@ -2827,35 +2827,6 @@ files = [
 ]
 
 [[package]]
-name = "npc-session"
-version = "0.1.21"
-requires_python = ">=3.9"
-summary = "Basic tools for parsing subject, session, date and time associated with data from the Mindscope Neuropixels team, in the cloud."
-dependencies = [
-    "typing-extensions>=4.7.1",
-]
-files = [
-    {file = "npc_session-0.1.21-py3-none-any.whl", hash = "sha256:acdf96aa61e9a9d0dac7e8dbe818c442b72fa3bb0c59704934536c12a2953211"},
-    {file = "npc_session-0.1.21.tar.gz", hash = "sha256:04e3190460947c660061347a109ddae1e516f2105812d86308b86a59ad04c307"},
-]
-
-[[package]]
-name = "npc-sessions"
-version = "0.0.2"
-requires_python = ">=3.9"
-summary = "Tools and interfaces for working with behavior and epyhys sessions from the Mindscope Neuropixels team, in the cloud."
-dependencies = [
-    "npc-session>=0.1.1",
-    "pyyaml>=6.0.1",
-    "types-PyYAML>=6.0.12.11",
-    "typing-extensions>=4.7.1",
-]
-files = [
-    {file = "npc_sessions-0.0.2-py3-none-any.whl", hash = "sha256:2c2a9f89c4657671b55e80370457335175077fb110b9564d04592037ebec3b91"},
-    {file = "npc_sessions-0.0.2.tar.gz", hash = "sha256:e50212eff6b842fca51d8e3fb50dfb2582343206f18cce14a47c0425528d9480"},
-]
-
-[[package]]
 name = "numexpr"
 version = "2.8.4"
 requires_python = ">=3.7"
@@ -4353,15 +4324,6 @@ summary = "Traitlets Python configuration system"
 files = [
     {file = "traitlets-5.9.0-py3-none-any.whl", hash = "sha256:9e6ec080259b9a5940c797d58b613b5e31441c2257b87c2e795c5228ae80d2d8"},
     {file = "traitlets-5.9.0.tar.gz", hash = "sha256:f6cde21a9c68cf756af02035f72d5a723bf607e862e7be33ece505abf4a3bad9"},
-]
-
-[[package]]
-name = "types-pyyaml"
-version = "6.0.12.11"
-summary = "Typing stubs for PyYAML"
-files = [
-    {file = "types-PyYAML-6.0.12.11.tar.gz", hash = "sha256:7d340b19ca28cddfdba438ee638cd4084bde213e501a3978738543e27094775b"},
-    {file = "types_PyYAML-6.0.12.11-py3-none-any.whl", hash = "sha256:a461508f3096d1d5810ec5ab95d7eeecb651f3a15b71959999988942063bf01d"},
 ]
 
 [[package]]

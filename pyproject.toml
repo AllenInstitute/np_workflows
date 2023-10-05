@@ -1,6 +1,6 @@
 [project]
 name = "np-workflows"
-version = "1.6.39"
+version = "1.6.40"
 description = "Ecephys and behavior workflows for the Mindscope Neuropixels team."
 authors = [
     { name = "Ben Hardcastle", email = "ben.hardcastle@alleninstitute.org" },
@@ -23,7 +23,6 @@ dependencies = [
     "np-jobs>=0.0.3",
     "universal-pathlib>=0.1.0",
     "s3fs>=2023.6.0",
-    # "npc-sessions>=0.0.2", # removed until wavpack install fixed
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
