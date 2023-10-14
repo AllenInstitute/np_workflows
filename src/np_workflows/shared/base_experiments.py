@@ -564,7 +564,7 @@ class DynamicRoutingExperiment(WithSession):
         """For sending to runTask.py"""
         return dict(
                 rigName = str(self.rig).replace('.',''),
-                subjectName = str(self.mouse) if not self.is_pretest else 'test',
+                subjectName = str(self.mouse),
                 taskScript = 'DynamicRouting1.py',
                 taskVersion = self.task_name,
                 saveSoundArray = True,
@@ -575,7 +575,7 @@ class DynamicRoutingExperiment(WithSession):
         """For sending to runTask.py"""
         return dict(
                 rigName = str(self.rig).replace('.',''),
-                subjectName = str(self.mouse) if not self.is_pretest else 'test',
+                subjectName = str(self.mouse),
                 taskScript = 'TaskControl.py',
                 taskVersion = 'spontaneous',
         )
@@ -585,7 +585,7 @@ class DynamicRoutingExperiment(WithSession):
         """For sending to runTask.py"""
         return dict(
                 rigName = str(self.rig).replace('.',''),
-                subjectName = str(self.mouse) if not self.is_pretest else 'test',
+                subjectName = str(self.mouse),
                 taskScript = 'TaskControl.py',
                 taskVersion = 'spontaneous rewards',
                 rewardSound = "device",
@@ -608,7 +608,7 @@ class DynamicRoutingExperiment(WithSession):
         """For sending to runTask.py"""
         return dict(
                 rigName = str(self.rig).replace('.',''),
-                subjectName = str(self.mouse) if not self.is_pretest else 'test',
+                subjectName = str(self.mouse),
                 taskScript = 'OptoTagging.py',
                 optoTaggingLocs = self.get_latest_optogui_txt('optotagging').as_posix(),
         )
@@ -621,7 +621,7 @@ class DynamicRoutingExperiment(WithSession):
         _ = self.get_latest_optogui_txt('opto') # raises FileNotFoundError if not found
         return dict(
                 rigName = str(self.rig).replace('.',''),
-                subjectName = str(self.mouse) if not self.is_pretest else 'test',
+                subjectName = str(self.mouse),
                 taskScript = 'DynamicRouting1.py',
                 saveSoundArray = True,
             )
@@ -631,7 +631,7 @@ class DynamicRoutingExperiment(WithSession):
         """For sending to runTask.py"""
         return dict(
                 rigName = str(self.rig).replace('.',''),
-                subjectName = str(self.mouse) if not self.is_pretest else 'test',
+                subjectName = str(self.mouse),
                 taskScript = 'RFMapping.py',
                 saveSoundArray = True,
             )
@@ -641,7 +641,7 @@ class DynamicRoutingExperiment(WithSession):
         """For sending to runTask.py"""
         return dict(
                 rigName = str(self.rig).replace('.',''),
-                subjectName = 'sound' if not self.is_pretest else 'test',
+                subjectName = 'sound',
                 taskScript = 'TaskControl.py',
                 taskVersion = 'sound test',
         )
