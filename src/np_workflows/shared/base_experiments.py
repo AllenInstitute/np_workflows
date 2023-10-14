@@ -669,7 +669,7 @@ class DynamicRoutingExperiment(WithSession):
         params['taskScript'] = (self.task_script_base / script).as_posix()
         
         if self.is_pretest:
-            params['maxFrames'] = 60 * 30
+            params['maxFrames'] = 60 * 15
             params['maxTrials'] = 3
         
         if self.use_github:
