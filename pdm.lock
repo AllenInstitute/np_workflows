@@ -3,10 +3,9 @@
 
 [metadata]
 groups = ["default"]
-cross_platform = true
-static_urls = false
-lock_version = "4.3"
-content_hash = "sha256:63b7b1154492e48775ba23805b0582ed13b8df4d7f9ab6d1dfda4bfdf5911b69"
+strategy = ["cross_platform"]
+lock_version = "4.4"
+content_hash = "sha256:d3fba60a66d03909a402f75c1e463286709f887712431614311516811a2ac076"
 
 [[package]]
 name = "aiobotocore"
