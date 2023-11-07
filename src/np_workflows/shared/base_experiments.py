@@ -764,7 +764,7 @@ class DynamicRoutingExperiment(WithSession):
                 case "np_services.open_ephys":
                     continue # copy ephys after other files
                 case "NewScaleCoordinateRecorder":
-                    files = np_services.NewScaleCoordinateRecorder.data_root.glob('*')
+                    files = tuple(service.data_root.glob('*')) + tuple(self.rig.paths['NewScaleCoordinateRecorder'].glob('*'))
                 case _:
                     files: Iterable[pathlib.Path] = service.data_files or service.get_latest_data('*')
             if not files:
