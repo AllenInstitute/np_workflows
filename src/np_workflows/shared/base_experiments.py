@@ -220,7 +220,7 @@ class WithSession(abc.ABC):
             time.sleep(5)
         for stoppable in (_ for _ in recorders if isinstance(_, Stoppable)):
             stoppable.stop()
-            if issubclass(stoppable, np_services.MVR) or 'MVR' in stoppable.__class__.__name__:
+            if 'mvr' in stoppable.__class__.__name__.lower():
                 time.sleep(v := 3)
                 logger.info(f'Waiting additional {v}s for MVR to finish writing...')
                     
