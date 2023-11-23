@@ -5,7 +5,7 @@
 groups = ["default"]
 strategy = ["cross_platform"]
 lock_version = "4.4"
-content_hash = "sha256:d3fba60a66d03909a402f75c1e463286709f887712431614311516811a2ac076"
+content_hash = "sha256:5cb6bafacaec9da846b8e1e161b2940db744863025bebed41d6ec21516f79a89"
 
 [[package]]
 name = "aiobotocore"
@@ -2751,15 +2751,15 @@ files = [
 
 [[package]]
 name = "np-probe-targets"
-version = "0.0.12"
+version = "0.0.13"
 requires_python = ">=3.8"
 summary = "Tools for Neuropixels probe insertion: providing suggested targets, recording actual insertions, storing notes."
 dependencies = [
     "ipywidgets>=7",
 ]
 files = [
-    {file = "np_probe_targets-0.0.12-py3-none-any.whl", hash = "sha256:07a39df5f6da96d601f0fb508d1212e5e11ea4d9865e47772922141dfb48da73"},
-    {file = "np_probe_targets-0.0.12.tar.gz", hash = "sha256:9f772fed70d5ac65e2a50150fba52277233a56d59e49431d1815b2e1669c4270"},
+    {file = "np_probe_targets-0.0.13-py3-none-any.whl", hash = "sha256:e69d8244aac6997f1107f2f3db81631f110a46129fbe3d0ab2d0e14b90e7bf78"},
+    {file = "np_probe_targets-0.0.13.tar.gz", hash = "sha256:dfcb81dbcea486cd618c5a112e663e0e908ea7e9c471b6d626713af9e79a080c"},
 ]
 
 [[package]]
