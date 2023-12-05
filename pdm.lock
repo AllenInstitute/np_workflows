@@ -3,9 +3,10 @@
 
 [metadata]
 groups = ["default"]
-strategy = ["cross_platform"]
-lock_version = "4.4"
-content_hash = "sha256:5cb6bafacaec9da846b8e1e161b2940db744863025bebed41d6ec21516f79a89"
+cross_platform = true
+static_urls = false
+lock_version = "4.3"
+content_hash = "sha256:b7111e93cc4f4242389f1f8c794e3dbeb6547b4cd2cd2d2c82888936954bb493"
 
 [[package]]
 name = "aiobotocore"
@@ -2750,19 +2751,6 @@ files = [
 ]
 
 [[package]]
-name = "np-probe-targets"
-version = "0.0.13"
-requires_python = ">=3.8"
-summary = "Tools for Neuropixels probe insertion: providing suggested targets, recording actual insertions, storing notes."
-dependencies = [
-    "ipywidgets>=7",
-]
-files = [
-    {file = "np_probe_targets-0.0.13-py3-none-any.whl", hash = "sha256:e69d8244aac6997f1107f2f3db81631f110a46129fbe3d0ab2d0e14b90e7bf78"},
-    {file = "np_probe_targets-0.0.13.tar.gz", hash = "sha256:dfcb81dbcea486cd618c5a112e663e0e908ea7e9c471b6d626713af9e79a080c"},
-]
-
-[[package]]
 name = "np-services"
 version = "0.1.53"
 requires_python = ">=3.11,<4.0"
@@ -2823,6 +2811,33 @@ dependencies = [
 files = [
     {file = "np_tools-0.1.20-py3-none-any.whl", hash = "sha256:db5f185e04310f93a2b16dfd183ed6c4e74fe5cbd0b8d8c9da5d66b4a8aee8f2"},
     {file = "np_tools-0.1.20.tar.gz", hash = "sha256:ac420e11dcbf1a9f231f6a026645b8feb2c65807a87f28a2d11209e802f21f7c"},
+]
+
+[[package]]
+name = "npc-session"
+version = "0.1.30"
+requires_python = ">=3.9"
+summary = "Basic tools for parsing subject, session, date and time associated with data from the Mindscope Neuropixels team, in the cloud."
+dependencies = [
+    "typing-extensions>=4.7.1",
+]
+files = [
+    {file = "npc_session-0.1.30-py3-none-any.whl", hash = "sha256:922dc69683e84b7c96bc378d675c1422bf7b2f01494925fe3333ff889ae21654"},
+    {file = "npc_session-0.1.30.tar.gz", hash = "sha256:64f8f9993138a338f7d0485b5a24fd0f96d240287e94f5c0fe411b822150df98"},
+]
+
+[[package]]
+name = "npc-shields"
+version = "0.1.4"
+requires_python = ">=3.9"
+summary = "Tools for Neuropixels probe insertion: providing suggested targets, recording actual insertions, storing notes."
+dependencies = [
+    "ipywidgets>=7",
+    "npc-session>=0.1.30",
+]
+files = [
+    {file = "npc_shields-0.1.4-py3-none-any.whl", hash = "sha256:38f60cd3b00f53d85c0e5d0d11c1adad0be58ea396f74a675ffc17f93b5a5f1d"},
+    {file = "npc_shields-0.1.4.tar.gz", hash = "sha256:cae70e814c64af51822c463a4f9d58b380e8a2ab858d6239495842d5a2893d3f"},
 ]
 
 [[package]]
