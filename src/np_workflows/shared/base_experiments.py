@@ -513,6 +513,10 @@ class DynamicRoutingExperiment(WithSession):
         return 'opto' in self.task_name
     
     @property
+    def is_optotagging(self) -> bool:
+        return self.is_ephys and 'AI32' in str(self.mouse.lims['full_genotype']).upper()
+    
+    @property
     def is_ephys(self) -> bool:
         return 'EPHYS' in self.workflow.name
     
