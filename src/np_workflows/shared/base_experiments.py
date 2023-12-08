@@ -29,7 +29,7 @@ from np_services import (
     Validatable,
     Verifiable,
 )
-
+import np_services.resources.zro
 import np_workflows.shared.npxc as npxc
 
 logger = np_logging.getLogger(__name__)
@@ -694,13 +694,14 @@ class DynamicRoutingExperiment(WithSession):
         self.log(f"{stim} started")
 
         np_services.ScriptCamstim.start()
-
-        while not np_services.ScriptCamstim.is_ready_to_start():
-            time.sleep(1)
+        with contextlib.suppress(np_services.resources.zro.ZroError):
+            while not np_services.ScriptCamstim.is_ready_to_start():
+                time.sleep(1)
             
         self.log(f"{stim} complete")
 
-        np_services.ScriptCamstim.finalize()
+        with contextlib.suppress(np_services.resources.zro.ZroError):
+            np_services.ScriptCamstim.finalize()
         
     run_mapping = functools.partialmethod(run_script, 'mapping')
     run_sound_test = functools.partialmethod(run_script, 'sound_test')
