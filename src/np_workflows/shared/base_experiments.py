@@ -740,6 +740,8 @@ class DynamicRoutingExperiment(WithSession):
         password = np_config.fetch('/logins')['svc_neuropix']['password']
         ssh = fabric.Connection(host=np_services.OpenEphys.host, user='svc_neuropix', connect_kwargs=dict(password=password))
         for ephys_folder in np_services.OpenEphys.data_files:
+            if '__temp__' in ephys_folder.name:
+                continue
             if isinstance(self.session, np_session.TempletonPilotSession):
                 ephys_folder = next(ephys_folder.glob('Record Node*'))
             with ssh, contextlib.suppress(invoke.UnexpectedExit):
