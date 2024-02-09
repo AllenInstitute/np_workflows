@@ -5,7 +5,7 @@
 groups = ["default"]
 strategy = ["cross_platform"]
 lock_version = "4.4.1"
-content_hash = "sha256:4c1427edf1ac28d4035d0a98d4bce8a1374803e5109898b86977111a963ec264"
+content_hash = "sha256:4b2183b696bfa5644458bf020b1eea735d7a4396fd5aab430f7f7e1cd8c2a5c3"
 
 [[package]]
 name = "aind-codeocean-api"
@@ -2472,7 +2472,7 @@ files = [
 
 [[package]]
 name = "np-services"
-version = "0.1.59"
+version = "0.1.60"
 requires_python = "<4.0,>=3.11"
 summary = "Tools for interfacing with devices and services used in Mindscope Neuropixels experiments at the Allen Institute."
 dependencies = [
@@ -2490,8 +2490,8 @@ dependencies = [
     "tables<4.0.0,>=3.8.0",
 ]
 files = [
-    {file = "np_services-0.1.59-py3-none-any.whl", hash = "sha256:0404350d6c1e72dc094747926b214049cfdd7026a791bbef0e0100479488d2c0"},
-    {file = "np_services-0.1.59.tar.gz", hash = "sha256:0274477d544bfd895e7447d4c3a13e0bc81a240db07756d7129bf74f50d0f26b"},
+    {file = "np_services-0.1.60-py3-none-any.whl", hash = "sha256:673112b2239584cceb5c2fa33789bbcb0c3000fd5224e200328038a48dc6a62b"},
+    {file = "np_services-0.1.60.tar.gz", hash = "sha256:5a1bfa51237d31a5e34ba8f44b60e4f0ca083f9197042f0b509db46053908ad4"},
 ]
 
 [[package]]
