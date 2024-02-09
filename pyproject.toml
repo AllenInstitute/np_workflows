@@ -8,7 +8,7 @@ authors = [
 readme = "README.md"
 requires-python = "==3.11.*"
 dependencies = [
-    "np-services>=0.1.59",
+    "np-services>=0.1.60",
     "np-session>=0.6.40",
     "np-config >=0.4.20",
     "ipywidgets>=7",
