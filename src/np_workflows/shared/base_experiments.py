@@ -538,7 +538,6 @@ class DynamicRoutingExperiment(WithSession):
     services = (
         np_services.Sync,
         np_services.VideoMVR,
-        np_services.ImageMVR,
         np_services.OpenEphys, 
         np_services.NewScaleCoordinateRecorder,
         np_services.ScriptCamstim, 
