@@ -781,6 +781,18 @@ class DynamicRoutingExperiment(WithSession):
                 shutil.copy2(file, self.session.npexp_path)
                 npxc.validate_or_overwrite(self.session.npexp_path / file.name, file)
     
+    def copy_mpe_configs(self) -> None:
+        for path in (
+                self.rig.mvr_config,
+                self.rig.sync_config,
+                self.rig.camstim_config):
+            shutil.copy2(path, self.session.npexp_path)
+
+    def copy_files(self) -> None:
+        """Copy files from raw data storage to session folder for all services."""
+        super().copy_files()
+        self.copy_mpe_configs()
+
     #TODO move this to a dedicated np_service class instead of using ScriptCamstim
     def run_stim_desktop_theme_script(self, selection: str) -> None:     
         np_services.ScriptCamstim.script = '//allen/programs/mindscope/workgroups/dynamicrouting/ben/change_desktop.py'
