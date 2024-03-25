@@ -263,6 +263,7 @@ class WithSession(abc.ABC):
         """Copy files from raw data storage to session folder for all services."""
         self.copy_data_files()
         self.copy_workflow_files()
+        self.copy_mpe_configs()
         if self.session_type != 'hab':
             self.copy_ephys()
     
@@ -293,7 +294,15 @@ class WithSession(abc.ABC):
         
         for _ in (lock, pyproject):
             shutil.copy2(_, dest)
-        
+
+    def copy_mpe_configs(self) -> None:
+        """Copy MPE config files to session folder."""
+        for path in (
+                self.rig.mvr_config,
+                self.rig.sync_config,
+                self.rig.camstim_config):
+            shutil.copy2(path, self.session.npexp_path)
+
     def save_current_notebook(self) -> None:
         app = ipylab.JupyterFrontEnd()
         app.commands.execute('docmanager:save')
@@ -783,7 +792,7 @@ class DynamicRoutingExperiment(WithSession):
             for file in files:
                 shutil.copy2(file, self.session.npexp_path)
                 npxc.validate_or_overwrite(self.session.npexp_path / file.name, file)
-    
+
     #TODO move this to a dedicated np_service class instead of using ScriptCamstim
     def run_stim_desktop_theme_script(self, selection: str) -> None:     
         np_services.ScriptCamstim.script = '//allen/programs/mindscope/workgroups/dynamicrouting/ben/change_desktop.py'

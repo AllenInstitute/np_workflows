@@ -10,7 +10,7 @@ requires-python = "==3.11.*"
 dependencies = [
     "np-services>=0.1.63",
     "np-session>=0.6.40",
-    "np-config>=0.4.26",
+    "np-config>=0.4.27",
     "ipywidgets>=7",
     "pydantic>=2",
     "jupyterlab >= 3.6",
