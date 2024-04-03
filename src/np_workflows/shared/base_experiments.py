@@ -546,24 +546,35 @@ class DynamicRoutingExperiment(WithSession):
             print(f"{task_name = !r} doesn't correspond to a preset value, but the attribute is updated anyway!")
         else:
             print(f"Updated {self.__class__.__name__}.{task_name = !r}")
-
-    services = (
-        np_services.Sync,
-        np_services.VideoMVR,
-        np_services.OpenEphys, 
-        np_services.NewScaleCoordinateRecorder,
-        np_services.ScriptCamstim, 
-        np_services.MouseDirector,
-        )
     
     stims = (np_services.ScriptCamstim,)
     
     @property
     def recorders(self) -> tuple[Service, ...]:
         """Services to be started before stimuli run, and stopped after. Session-dependent."""
-        if self.is_hab:
-            return (np_services.Sync, np_services.VideoMVR)
-        return (np_services.Sync, np_services.VideoMVR, np_services.OpenEphys)
+        if self.is_ephys:
+            return (np_services.Sync, np_services.VideoMVR, np_services.OpenEphys)
+        return (np_services.Sync, np_services.VideoMVR)
+    
+    @property
+    def services(self) -> tuple[Service, ...]:
+        """All services"""
+        if self.is_ephys:
+            return (
+                np_services.Sync,
+                np_services.VideoMVR,
+                np_services.OpenEphys, 
+                np_services.NewScaleCoordinateRecorder,
+                np_services.ScriptCamstim, 
+                np_services.MouseDirector,
+            )
+        return (
+            np_services.Sync,
+            np_services.VideoMVR,
+            np_services.ScriptCamstim, 
+            np_services.MouseDirector,
+        )
+
     
     @property
     def hdf5_dir(self) -> pathlib.Path:
