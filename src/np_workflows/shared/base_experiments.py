@@ -555,25 +555,6 @@ class DynamicRoutingExperiment(WithSession):
         if self.is_ephys:
             return (np_services.Sync, np_services.VideoMVR, np_services.OpenEphys)
         return (np_services.Sync, np_services.VideoMVR)
-    
-    @property
-    def services(self) -> tuple[Service, ...]:
-        """All services"""
-        if self.is_ephys:
-            return (
-                np_services.Sync,
-                np_services.VideoMVR,
-                np_services.OpenEphys, 
-                np_services.NewScaleCoordinateRecorder,
-                np_services.ScriptCamstim, 
-                np_services.MouseDirector,
-            )
-        return (
-            np_services.Sync,
-            np_services.VideoMVR,
-            np_services.ScriptCamstim, 
-            np_services.MouseDirector,
-        )
 
     
     @property
@@ -620,7 +601,7 @@ class DynamicRoutingExperiment(WithSession):
         dirname = dict(opto='optoParams', optotagging='optotagging')[opto_or_optotagging]
         file_prefix = dirname
         
-        rig = str(self.rig).replace('.', '')
+        rig = str(self.rig).replace('.', '')def
         locs_root = self.base_path / 'OptoGui' / f'{dirname}'
         available_locs = sorted(tuple(locs_root.glob(f"{file_prefix}_{self.mouse.id}_{rig}_*")), reverse=True)
         if not available_locs:

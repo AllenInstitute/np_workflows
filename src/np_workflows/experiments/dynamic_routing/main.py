@@ -77,8 +77,6 @@ class Hab(DRTask):
             MouseDirector,
             Sync,
             VideoMVR,
-            self.imager,
-            NewScaleCoordinateRecorder,
             ScriptCamstim,
         )
         super().__init__(*args, **kwargs)
@@ -89,8 +87,6 @@ class Opto(DRTask):
             MouseDirector,
             Sync,
             VideoMVR,
-            self.imager,
-            NewScaleCoordinateRecorder,
             ScriptCamstim,
         )
         super().__init__(*args, **kwargs)
@@ -102,7 +98,6 @@ class Ephys(DRTask):
             MouseDirector,
             Sync,
             VideoMVR,
-            self.imager,
             NewScaleCoordinateRecorder,
             ScriptCamstim,
             OpenEphys,
