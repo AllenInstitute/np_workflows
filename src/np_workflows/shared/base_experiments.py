@@ -601,7 +601,7 @@ class DynamicRoutingExperiment(WithSession):
         dirname = dict(opto='optoParams', optotagging='optotagging')[opto_or_optotagging]
         file_prefix = dirname
         
-        rig = str(self.rig).replace('.', '')def
+        rig = str(self.rig).replace('.', '')
         locs_root = self.base_path / 'OptoGui' / f'{dirname}'
         available_locs = sorted(tuple(locs_root.glob(f"{file_prefix}_{self.mouse.id}_{rig}_*")), reverse=True)
         if not available_locs:
