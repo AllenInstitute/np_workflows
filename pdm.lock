@@ -4,8 +4,8 @@
 [metadata]
 groups = ["default"]
 strategy = ["cross_platform"]
-lock_version = "4.4"
-content_hash = "sha256:bd534fcabb0cbfe36cbc76aae0c2cc8dca461a7b7ccc1fe8cc6d3ab8b18751f5"
+lock_version = "4.4.1"
+content_hash = "sha256:5afc2ca031569a460a28baccc5964c7a3fa650bfe308177fff2942c9d27ff491"
 
 [[package]]
 name = "aind-codeocean-api"
@@ -21,6 +21,23 @@ dependencies = [
 files = [
     {file = "aind_codeocean_api-0.4.2-py3-none-any.whl", hash = "sha256:d188f81379b13f22f3fb0877a214a2de511713d489998e45dbf11a8ec578a05d"},
     {file = "aind_codeocean_api-0.4.2.tar.gz", hash = "sha256:9979cdff0742bc27b286899536927cc7de1bd116baeb62b54dc57c6656007c97"},
+]
+
+[[package]]
+name = "aind-data-schema"
+version = "0.33.6"
+requires_python = ">=3.8"
+summary = "A library that defines AIND data schema and validates JSON files."
+dependencies = [
+    "dictdiffer",
+    "inflection",
+    "jsonschema",
+    "pydantic>2.0",
+    "semver",
+]
+files = [
+    {file = "aind-data-schema-0.33.6.tar.gz", hash = "sha256:bb8e740025383fd8dcb37270442b2e0ae45a3207895b1394110b0d30c698de36"},
+    {file = "aind_data_schema-0.33.6-py3-none-any.whl", hash = "sha256:1b96a638b82938dadf3a829005ee6542d698555d46ea0aa49c94518a96ffbcd4"},
 ]
 
 [[package]]
@@ -630,6 +647,15 @@ files = [
 ]
 
 [[package]]
+name = "dictdiffer"
+version = "0.9.0"
+summary = "Dictdiffer is a library that helps you to diff and patch dictionaries."
+files = [
+    {file = "dictdiffer-0.9.0-py2.py3-none-any.whl", hash = "sha256:442bfc693cfcadaf46674575d2eba1c53b42f5e404218ca2c2ff549f2df56595"},
+    {file = "dictdiffer-0.9.0.tar.gz", hash = "sha256:17bacf5fbfe613ccf1b6d512bd766e6b21fb798822a133aa86098b8ac9997578"},
+]
+
+[[package]]
 name = "dynamicroutingtask"
 version = "0.1.92"
 requires_python = ">=3.9"
@@ -772,12 +798,12 @@ files = [
 
 [[package]]
 name = "fsspec"
-version = "2024.2.0"
+version = "2024.3.1"
 requires_python = ">=3.8"
 summary = "File-system specification"
 files = [
-    {file = "fsspec-2024.2.0-py3-none-any.whl", hash = "sha256:817f969556fa5916bc682e02ca2045f96ff7f586d45110fcb76022063ad2c7d8"},
-    {file = "fsspec-2024.2.0.tar.gz", hash = "sha256:b6ad1a679f760dda52b1168c859d01b7b80648ea6f7f7c7f5a8a91dc3f3ecb84"},
+    {file = "fsspec-2024.3.1-py3-none-any.whl", hash = "sha256:918d18d41bf73f0e2b261824baeb1b124bcf771767e3a26425cd7dec3332f512"},
+    {file = "fsspec-2024.3.1.tar.gz", hash = "sha256:f39780e282d7d117ffb42bb96992f8a90795e4d0fb0f661a70ca39fe9c43ded9"},
 ]
 
 [[package]]
@@ -1129,6 +1155,16 @@ files = [
 ]
 
 [[package]]
+name = "inflection"
+version = "0.5.1"
+requires_python = ">=3.5"
+summary = "A port of Ruby on Rails inflector to Python"
+files = [
+    {file = "inflection-0.5.1-py2.py3-none-any.whl", hash = "sha256:f38b2b640938a4f35ade69ac3d053042959b62a0f1076a5bbaa1b9526605a8a2"},
+    {file = "inflection-0.5.1.tar.gz", hash = "sha256:1a29730d366e996aaacffb2f1f1cb9593dc38e2ddd30c91250c6dde09ea9b417"},
+]
+
+[[package]]
 name = "invoke"
 version = "1.7.3"
 summary = "Pythonic task execution"
@@ -1471,13 +1507,13 @@ files = [
 
 [[package]]
 name = "jupyterlab"
-version = "4.1.5"
+version = "4.1.6"
 requires_python = ">=3.8"
 summary = "JupyterLab computational environment"
 dependencies = [
     "async-lru>=1.0.0",
     "httpx>=0.25.0",
-    "ipykernel",
+    "ipykernel>=6.5.0",
     "jinja2>=3.0.3",
     "jupyter-core",
     "jupyter-lsp>=2.0.0",
@@ -1489,8 +1525,8 @@ dependencies = [
     "traitlets",
 ]
 files = [
-    {file = "jupyterlab-4.1.5-py3-none-any.whl", hash = "sha256:3bc843382a25e1ab7bc31d9e39295a9f0463626692b7995597709c0ab236ab2c"},
-    {file = "jupyterlab-4.1.5.tar.gz", hash = "sha256:c9ad75290cb10bfaff3624bf3fbb852319b4cce4c456613f8ebbaa98d03524db"},
+    {file = "jupyterlab-4.1.6-py3-none-any.whl", hash = "sha256:cf3e862bc10dbf4331e4eb37438634f813c238cfc62c71c640b3b3b2caa089a8"},
+    {file = "jupyterlab-4.1.6.tar.gz", hash = "sha256:7935f36ba26eb615183a4f5c2bbca5791b5108ce2a00b5505f8cfd100d53648e"},
 ]
 
 [[package]]
@@ -1920,7 +1956,7 @@ files = [
 
 [[package]]
 name = "np-services"
-version = "0.1.63"
+version = "0.1.67"
 requires_python = "<4.0,>=3.11"
 summary = "Tools for interfacing with devices and services used in Mindscope Neuropixels experiments at the Allen Institute."
 dependencies = [
@@ -1938,13 +1974,13 @@ dependencies = [
     "tables<4.0.0,>=3.8.0",
 ]
 files = [
-    {file = "np_services-0.1.63-py3-none-any.whl", hash = "sha256:1c63467642136561f7e2c15c722a5a42830cb9e2a35a675d935461f52b5e2db3"},
-    {file = "np_services-0.1.63.tar.gz", hash = "sha256:1cb7961379bfde04efafbc38cbbffc39463459a1b539badd872bffdaa67be759"},
+    {file = "np_services-0.1.67-py3-none-any.whl", hash = "sha256:d8f2d96f3b0f88e11baeb106ca3a816991bf01d59ae00f818e4ccf8350d349c2"},
+    {file = "np_services-0.1.67.tar.gz", hash = "sha256:283d4e59f1d75b092c096bd6b0617a28f16d3fd3854877849688c73a0947275a"},
 ]
 
 [[package]]
 name = "np-session"
-version = "0.6.40"
+version = "0.6.42"
 requires_python = ">=3.7"
 summary = "Tools for accessing data, metadata, and jobs related to ecephys and behavior sessions for the Mindscope Neuropixels team."
 dependencies = [
@@ -1960,8 +1996,8 @@ dependencies = [
     "typing-extensions>=4",
 ]
 files = [
-    {file = "np-session-0.6.40.tar.gz", hash = "sha256:355392a4bc5d899088fabc108b7e12825ab59858102fc381f6e753d950a808f1"},
-    {file = "np_session-0.6.40-py3-none-any.whl", hash = "sha256:c8c0c6a2f61228d35e1376e03809664b1271a184344537bde37a469ae6d302bd"},
+    {file = "np-session-0.6.42.tar.gz", hash = "sha256:a0ac48f7a53582f38cc6f32dcf64bdb3f959e3e253c9aedef48fbc39a898581d"},
+    {file = "np_session-0.6.42-py3-none-any.whl", hash = "sha256:62e4b542cfca6c1bf6e62ffa9cdf4dd2ad47ffbaf8a9fe76eb0f7b57b216d516"},
 ]
 
 [[package]]
@@ -1985,26 +2021,26 @@ files = [
 
 [[package]]
 name = "npc-ephys"
-version = "0.1.10"
+version = "0.1.13"
 requires_python = ">=3.9"
 summary = "Tools for accessing and processing raw ephys data, compatible with data in the cloud."
 dependencies = [
-    "npc-io>=0.1.23",
-    "npc-lims>=0.1.115",
-    "npc-sync>=0.1.5",
+    "npc-io>=0.1.26",
+    "npc-lims>=0.1.134",
+    "npc-sync>=0.1.9",
     "pandas>=2.2.0",
     "tqdm>=4.66.1",
     "wavpack-numcodecs>=0.1.5",
     "zarr>=2.16.1",
 ]
 files = [
-    {file = "npc-ephys-0.1.10.tar.gz", hash = "sha256:c3ceb35b14db39db321d4bf79a0292e23ecdab3e7796a07d479c64826106c5e7"},
-    {file = "npc_ephys-0.1.10-py3-none-any.whl", hash = "sha256:e6c726c7d18c19e25d1d785c8e4e6a86f0364983a4610c7a582206805d488a6e"},
+    {file = "npc-ephys-0.1.13.tar.gz", hash = "sha256:859cfe105bc10089597e7757935baedf0da7678d13b51b857c8f767b51bcac4e"},
+    {file = "npc_ephys-0.1.13-py3-none-any.whl", hash = "sha256:77b75c7f098210567f530b07b3dc2aad443a383e41b4ea6966cbdeb9d1c451a2"},
 ]
 
 [[package]]
 name = "npc-io"
-version = "0.1.24"
+version = "0.1.26"
 requires_python = ">=3.9"
 summary = "File IO tools for MindScope Neuropixels projects in the cloud."
 dependencies = [
@@ -2016,13 +2052,13 @@ dependencies = [
     "universal-pathlib<0.2.0",
 ]
 files = [
-    {file = "npc-io-0.1.24.tar.gz", hash = "sha256:0fb08f8a69eb82df217e56ec4603b081b661824f47962a42247b0ad82c788d2e"},
-    {file = "npc_io-0.1.24-py3-none-any.whl", hash = "sha256:56d4adf1c934097d96396fc32646a2b566be0f6448f33972463fa99793a00e1c"},
+    {file = "npc-io-0.1.26.tar.gz", hash = "sha256:009b1b870e8a85ac54e379789e2ec1f6ea413d82fabfd7d7908b88f575177402"},
+    {file = "npc_io-0.1.26-py3-none-any.whl", hash = "sha256:c03f506268480997703d31a2790680ec32140f07a5711e669997669c62fe8241"},
 ]
 
 [[package]]
 name = "npc-lims"
-version = "0.1.134"
+version = "0.1.141"
 requires_python = ">=3.9"
 summary = "Tools to fetch and update paths, metadata and state for Mindscope Neuropixels sessions, in the cloud."
 dependencies = [
@@ -2039,13 +2075,13 @@ dependencies = [
     "types-requests>=2.31.0.6",
 ]
 files = [
-    {file = "npc_lims-0.1.134-py3-none-any.whl", hash = "sha256:ad4cb67c6a8cde3c9ca1140953e4681599e8250353848ade0bd6d445f703a8d5"},
-    {file = "npc_lims-0.1.134.tar.gz", hash = "sha256:bfc8bc0db5d6436b3060b4fabb4d68479ce67f30ae0838a3cc9364cd38fb165b"},
+    {file = "npc_lims-0.1.141-py3-none-any.whl", hash = "sha256:c20229b3409201cecb48da763108a93d5c55fafc319d90330bef05b69fe50ebb"},
+    {file = "npc_lims-0.1.141.tar.gz", hash = "sha256:32342270beb57d0cf27a66d02df16610c1de3ff95719c936a50fd0d638fa8913"},
 ]
 
 [[package]]
 name = "npc-mvr"
-version = "0.1.2"
+version = "0.1.3"
 requires_python = ">=3.9"
 summary = "Tools for reading raw video data from MindScope Neuropixels experiments, compatible with data in the cloud."
 dependencies = [
@@ -2055,13 +2091,13 @@ dependencies = [
     "typing-extensions>=4.9.0",
 ]
 files = [
-    {file = "npc-mvr-0.1.2.tar.gz", hash = "sha256:053e4d1b2894bae5bfe97701ea9f9baeca1efd826872a24bd9ed80ba1689f82a"},
-    {file = "npc_mvr-0.1.2-py3-none-any.whl", hash = "sha256:379f742233021826ba83baa08dfa7815ad93c8160870d8160a114d6bb83489bd"},
+    {file = "npc-mvr-0.1.3.tar.gz", hash = "sha256:0b796e4bb05acad36f6a9d8c358dac8e1c9ff97d652be2e316ccd3a8b9326e84"},
+    {file = "npc_mvr-0.1.3-py3-none-any.whl", hash = "sha256:a62d9b04d9fa3ae78198c69bb865784eee789e40d6bf0d08aa72522241de6fd5"},
 ]
 
 [[package]]
 name = "npc-samstim"
-version = "0.1.2"
+version = "0.1.4"
 requires_python = ">=3.9"
 summary = "Tools for processing stim data from Sam's DynamicRoutingTask, compatible with data in the cloud."
 dependencies = [
@@ -2072,8 +2108,8 @@ dependencies = [
     "numba>=0.59.0",
 ]
 files = [
-    {file = "npc-samstim-0.1.2.tar.gz", hash = "sha256:0371d5e324a44ff48e996d886e3aede185ab9bef0af6558517d86e1726d3ecb2"},
-    {file = "npc_samstim-0.1.2-py3-none-any.whl", hash = "sha256:30095428689e097d48ed1091258f1e0c386b184110845af3ba8409dd8ceae185"},
+    {file = "npc-samstim-0.1.4.tar.gz", hash = "sha256:74de6fe149386f0ed857e531b4e0670457f27984267b6820c1ec1f869f77ff86"},
+    {file = "npc_samstim-0.1.4-py3-none-any.whl", hash = "sha256:9c0536bf8bd07e249ca117851074d6b9c2962005044255ed8d1302a0e2ecb9b3"},
 ]
 
 [[package]]
@@ -2091,12 +2127,13 @@ files = [
 
 [[package]]
 name = "npc-sessions"
-version = "0.0.203"
+version = "0.0.209"
 requires_python = ">=3.9"
 summary = "Tools and interfaces for working with behavior and epyhys sessions from the Mindscope Neuropixels team, in the cloud."
 dependencies = [
     "DynamicRoutingTask>=0.1.14",
     "SimpleITK>=2.2.1",
+    "aind-data-schema>=0.31.16",
     "h5py>=3.9.0",
     "hdmf-zarr>=0.5.0",
     "hdmf>=3.9.0",
@@ -2107,12 +2144,14 @@ dependencies = [
     "nbconvert>=7.9.2",
     "ndx-events>=0.2.0",
     "ndx-pose>=0.1.1",
-    "npc-utils>=0.1.6",
+    "npc-lims>=0.1.137",
+    "npc-utils>=0.1.12",
     "numba>=0.57.1",
     "opencv-python-headless>=4.8.0.76",
     "pandas>=2.0",
     "polars>=0.20.4",
     "pyarrow>=14.0",
+    "pydantic>=2.6.4",
     "pynwb",
     "python-dotenv>=1.0.0",
     "rich>=13.5.2",
@@ -2123,8 +2162,8 @@ dependencies = [
     "zarr>=2.16.1",
 ]
 files = [
-    {file = "npc_sessions-0.0.203-py3-none-any.whl", hash = "sha256:b808a37b98d318530fc132a7485e10b0092334bd2a5a28d8c089cb8e511f8c74"},
-    {file = "npc_sessions-0.0.203.tar.gz", hash = "sha256:7f7c29c6182cd9c951ddf166fbe9f9bcfaf45736c787adaf7d72089eb365166c"},
+    {file = "npc_sessions-0.0.209-py3-none-any.whl", hash = "sha256:185b7c4e9c10e4e655791aab1f76b2f26bc535ad965f6ba487f3d83d321ceb94"},
+    {file = "npc_sessions-0.0.209.tar.gz", hash = "sha256:3eaa022ffa8378c83c81ad3c2100c7fb4df0f52a8376738771ab4b0feb3223e7"},
 ]
 
 [[package]]
@@ -2143,55 +2182,56 @@ files = [
 
 [[package]]
 name = "npc-stim"
-version = "0.1.5"
+version = "0.1.6"
 requires_python = ">=3.9"
 summary = "Tools for accessing and processing stim data, compatible with data in the cloud."
 dependencies = [
+    "npc-io>=0.1.26",
     "npc-session>=0.1.33",
     "npc-sync>=0.1.3",
     "scipy>=1.12.0",
 ]
 files = [
-    {file = "npc-stim-0.1.5.tar.gz", hash = "sha256:860cb76dcc80965ddb24998e03ee432222de7d0095b2cfc2bfdaf26f5bc04651"},
-    {file = "npc_stim-0.1.5-py3-none-any.whl", hash = "sha256:b06287059917807bb9923f522e86db748b45e5073a97f6e6a123a93f55ee762c"},
+    {file = "npc-stim-0.1.6.tar.gz", hash = "sha256:747f1d5feeaecbed4772d28fcfb97cbf90c2793f4b4c8190c6f24ffded7a2d02"},
+    {file = "npc_stim-0.1.6-py3-none-any.whl", hash = "sha256:2cf7e6bdc8ba23ef29c3f920d7da560675e5b317a429f40914c3b59c7da3dd3d"},
 ]
 
 [[package]]
 name = "npc-sync"
-version = "0.1.7"
+version = "0.1.9"
 requires_python = ">=3.9"
 summary = "Repackaging of AllenSDK.SyncDataset with extra functionality, compatible with data in the cloud."
 dependencies = [
     "h5py>=3.10.0",
     "matplotlib>=3.8.2",
-    "npc-io>=0.1.20",
+    "npc-io>=0.1.26",
     "npc-session>=0.1.33",
     "numpy>=1.26.3",
     "typing-extensions>=4.9.0",
 ]
 files = [
-    {file = "npc-sync-0.1.7.tar.gz", hash = "sha256:9e1669abddc7d493088406d42c4e8b55cef09825a659d7b99bfe12cbbe7c58dd"},
-    {file = "npc_sync-0.1.7-py3-none-any.whl", hash = "sha256:be004e6c4de4332966d66911187c4b7e2f20c2ad2a50137a8bd1267ddd8a7009"},
+    {file = "npc-sync-0.1.9.tar.gz", hash = "sha256:c45b63aebb1a451f26b87b44eeae64910993ad31c04ca699a28ffae74596f99e"},
+    {file = "npc_sync-0.1.9-py3-none-any.whl", hash = "sha256:8be2d4b7e1ecf88b728509de1cef361e4c5629a4843347af3f30dea4394e79cb"},
 ]
 
 [[package]]
 name = "npc-utils"
-version = "0.1.6"
+version = "0.1.13"
 requires_python = ">=3.9"
 summary = "Collection of MindScope Neuropixels packages, simplifying installation and keeping versions updated."
 dependencies = [
-    "npc-ephys>=0.1.10",
-    "npc-io>=0.1.24",
-    "npc-lims>=0.1.133",
-    "npc-mvr>=0.1.2",
-    "npc-samstim>=0.1.2",
-    "npc-session>=0.1.33",
-    "npc-stim>=0.1.5",
-    "npc-sync>=0.1.6",
+    "npc-ephys>=0.1.11",
+    "npc-io>=0.1.26",
+    "npc-lims>=0.1.135",
+    "npc-mvr>=0.1.3",
+    "npc-samstim>=0.1.4",
+    "npc-session>=0.1.34",
+    "npc-stim>=0.1.6",
+    "npc-sync>=0.1.9",
 ]
 files = [
-    {file = "npc-utils-0.1.6.tar.gz", hash = "sha256:1c31f1b4581202b86a7c3797c2e9ecad506baf45114abd991c7904e1ff318baf"},
-    {file = "npc_utils-0.1.6-py3-none-any.whl", hash = "sha256:df0f687eaa02e3394426cffe0e6d5855d9cfbbe5c4b33a67c06b62cee2428878"},
+    {file = "npc-utils-0.1.13.tar.gz", hash = "sha256:bae3d571c132b92d5263660b6e304f98e7665b792dfe7bb4c930679ac62dffd2"},
+    {file = "npc_utils-0.1.13-py3-none-any.whl", hash = "sha256:728126a7d4fb9a77134632b8c7ece7584f0fb3e5ec4eaafe18a67e9cece9ab0c"},
 ]
 
 [[package]]
@@ -3140,17 +3180,17 @@ files = [
 
 [[package]]
 name = "s3fs"
-version = "2024.2.0"
+version = "2024.3.1"
 requires_python = ">= 3.8"
 summary = "Convenient Filesystem interface over S3"
 dependencies = [
     "aiobotocore<3.0.0,>=2.5.4",
     "aiohttp!=4.0.0a0,!=4.0.0a1",
-    "fsspec==2024.2.0",
+    "fsspec==2024.3.1",
 ]
 files = [
-    {file = "s3fs-2024.2.0-py3-none-any.whl", hash = "sha256:c140de37175c157cb662aa6ad7423365df732ac5f10ef5bf7b76078c6333a942"},
-    {file = "s3fs-2024.2.0.tar.gz", hash = "sha256:f8064f522ad088b56b043047c825734847c0269df19f2613c956d4c20de15b62"},
+    {file = "s3fs-2024.3.1-py3-none-any.whl", hash = "sha256:f4566a5446c473740d272ec08e0b4aae8db1aa05f662c42ff0aa2c89bb5060ea"},
+    {file = "s3fs-2024.3.1.tar.gz", hash = "sha256:1b8bc8dbd65e7b60f5487378f6eeffe1de59aa72caa9efca6dad6ab877405487"},
 ]
 
 [[package]]
@@ -3182,6 +3222,16 @@ files = [
     {file = "scipy-1.12.0-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:8bee4993817e204d761dba10dbab0774ba5a8612e57e81319ea04d84945375ba"},
     {file = "scipy-1.12.0-cp311-cp311-win_amd64.whl", hash = "sha256:a24024d45ce9a675c1fb8494e8e5244efea1c7a09c60beb1eeb80373d0fecc70"},
     {file = "scipy-1.12.0.tar.gz", hash = "sha256:4bf5abab8a36d20193c698b0f1fc282c1d083c94723902c447e5d2f1780936a3"},
+]
+
+[[package]]
+name = "semver"
+version = "3.0.2"
+requires_python = ">=3.7"
+summary = "Python helper for Semantic Versioning (https://semver.org)"
+files = [
+    {file = "semver-3.0.2-py3-none-any.whl", hash = "sha256:b1ea4686fe70b981f85359eda33199d60c53964284e0cfb4977d243e37cf4bf4"},
+    {file = "semver-3.0.2.tar.gz", hash = "sha256:6253adb39c70f6e51afed2fa7152bcd414c411286088fb4b9effb133885ab4cc"},
 ]
 
 [[package]]
