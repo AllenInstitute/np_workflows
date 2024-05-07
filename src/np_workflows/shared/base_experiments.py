@@ -610,15 +610,27 @@ class DynamicRoutingExperiment(WithSession):
         
         
     @property
-    def optotagging_params(self) -> dict[str, str]:
+    def optotagging_params(self):
         """For sending to runTask.py"""
-        return dict(
+        if hasattr(self, '_optotagging_params'): 
+            return self._optotagging_params 
+        
+        else:
+            #set to defaults through setter
+            self.optotagging_params = {}
+            return self._optotagging_params
+    
+    @optotagging_params.setter
+    def optotagging_params(self, paramsdict):
+        
+        self._optotagging_params = dict(
                 rigName = str(self.rig).replace('.',''),
                 subjectName = str(self.mouse),
                 taskScript = 'OptoTagging.py',
                 optoTaggingLocs = self.get_latest_optogui_txt('optotagging').as_posix(),
-        )
-
+                )
+        self._optotagging_params.update(paramsdict)
+    
     @property
     def opto_params(self) -> dict[str, str | bool]:
         """Opto params are handled by runTask.py and don't need to be passed from
