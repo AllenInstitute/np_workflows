@@ -21,6 +21,7 @@ dependencies = [
     "s3fs>=2023.6.0",
     "npc-shields>=0.1.4",
     "npc-sessions>=0.0.201",
+    "np-codeocean>=0.1.8",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",

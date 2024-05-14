@@ -5,7 +5,7 @@
 groups = ["default"]
 strategy = ["cross_platform"]
 lock_version = "4.4.1"
-content_hash = "sha256:5afc2ca031569a460a28baccc5964c7a3fa650bfe308177fff2942c9d27ff491"
+content_hash = "sha256:8df1be4dc52c493a6a18dd3230ff3a44dc4caaff7ecc3d55e512099878c01209"
 
 [[package]]
 name = "aind-codeocean-api"
@@ -1905,6 +1905,24 @@ files = [
 ]
 
 [[package]]
+name = "np-codeocean"
+version = "0.2.0"
+requires_python = ">=3.9"
+summary = "Tools for uploading and interacting with Mindscope Neuropixels experiments on Code Ocean"
+dependencies = [
+    "np-config>=0.4.24",
+    "np-session>=0.6.4",
+    "np-tools>=0.1.21",
+    "npc-session>=0.1.34",
+    "polars>=0.20.16",
+    "requests>=2.31.0",
+]
+files = [
+    {file = "np_codeocean-0.2.0-py3-none-any.whl", hash = "sha256:fd708302b7f43e8c114fdf6df30c9a8f5816af38dd526fa7452973137fd2147f"},
+    {file = "np_codeocean-0.2.0.tar.gz", hash = "sha256:1c4e99891db2d502f01fb987370d2a4ed9052dad23cc8b1729c92e89092c8d73"},
+]
+
+[[package]]
 name = "np-config"
 version = "0.4.27"
 requires_python = ">=3.7,<4.0"
@@ -2490,16 +2508,16 @@ files = [
 
 [[package]]
 name = "polars"
-version = "0.20.15"
+version = "0.20.26"
 requires_python = ">=3.8"
 summary = "Blazingly fast DataFrame library"
 files = [
-    {file = "polars-0.20.15-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:d528acc0b0900cb8363f065cbf65325571eeb4b245e4b68679beae75287451c9"},
-    {file = "polars-0.20.15-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:3adc68bd1400c651da826e66ad735c07dafd5f1811f369f394f8d8fb71f1178b"},
-    {file = "polars-0.20.15-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:be613e4640a607040e3361622a254f88ac99bd92b212d6f580a3f4b74b6617ed"},
-    {file = "polars-0.20.15-cp38-abi3-manylinux_2_24_aarch64.whl", hash = "sha256:a1936ec8de4262ce68dd5c4f43b74c996184a36012bdd0ff9454c33132bd4d28"},
-    {file = "polars-0.20.15-cp38-abi3-win_amd64.whl", hash = "sha256:00b5687d1fdcb09f7c2babdf88f63b3238284bf9f6cddd2ea60aea07b711172e"},
-    {file = "polars-0.20.15.tar.gz", hash = "sha256:88ad0c3e1f92185b86041d68783f9862ec21adc92a33001818697644dd0794ee"},
+    {file = "polars-0.20.26-cp38-abi3-macosx_10_12_x86_64.whl", hash = "sha256:97d0e4b6ab6b47fa07798b447189ee9505d2085ec1a64a6aa8a65fdd429cd49f"},
+    {file = "polars-0.20.26-cp38-abi3-macosx_11_0_arm64.whl", hash = "sha256:c270e366b4d8b672b204e7d48e39d255641d3d2b7bdc3a0ccd968cf53934657f"},
+    {file = "polars-0.20.26-cp38-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:db35d6eed508256a797c7f1b8e9dec4aae9c11b891797b2d38fac5627d072d34"},
+    {file = "polars-0.20.26-cp38-abi3-manylinux_2_24_aarch64.whl", hash = "sha256:25b00bd5cf44929722aa6389706559c5e8cedd6db2cfc38b27b706ed37e1b2af"},
+    {file = "polars-0.20.26-cp38-abi3-win_amd64.whl", hash = "sha256:b22063acc815bc5c6d2e24292ff771ca0df306ecf97e8f6899924a1ec6d3f136"},
+    {file = "polars-0.20.26.tar.gz", hash = "sha256:fa83d130562a5180a47f8763a7bb9f408dbbf51eafc1380e8a2951be8ce05a2c"},
 ]
 
 [[package]]
