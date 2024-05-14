@@ -1,6 +1,6 @@
 [project]
 name = "np-workflows"
-version = "1.6.70"
+version = "1.6.69"
 description = "Ecephys and behavior workflows for the Mindscope Neuropixels team."
 authors = [
     { name = "Ben Hardcastle", email = "ben.hardcastle@alleninstitute.org" },
@@ -21,7 +21,7 @@ dependencies = [
     "s3fs>=2023.6.0",
     "npc-shields>=0.1.4",
     "npc-sessions>=0.0.201",
-    "np-codeocean>=0.1.8",
+    "np-codeocean>=0.1.9",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
