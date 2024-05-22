@@ -684,7 +684,7 @@ class DynamicRoutingExperiment(WithSession):
         params['mouse_id'] = str(self.mouse.id)
         params['user_id'] = self.user.id if self.user else 'ben.hardcastle'
         
-        if self.task_script_base not in params['taskScript']:
+        if self.task_script_base.as_posix() not in params['taskScript']:
             params['taskScript'] = (self.task_script_base / params['taskScript']).as_posix()
         
         if self.is_pretest:
