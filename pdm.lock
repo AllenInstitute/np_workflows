@@ -5,7 +5,7 @@
 groups = ["default"]
 strategy = ["cross_platform"]
 lock_version = "4.4.1"
-content_hash = "sha256:c068986078e92895ef469c87b411e3e362d951783f1b0f69a6fa90ddf091d1e3"
+content_hash = "sha256:a5465f55c8c5513dd7710448ea74ce3fee6b1177451fc9cb28392b2ef5aa932b"
 
 [[package]]
 name = "aind-codeocean-api"
@@ -25,7 +25,7 @@ files = [
 
 [[package]]
 name = "aind-data-schema"
-version = "0.33.6"
+version = "0.33.3"
 requires_python = ">=3.8"
 summary = "A library that defines AIND data schema and validates JSON files."
 dependencies = [
@@ -36,8 +36,8 @@ dependencies = [
     "semver",
 ]
 files = [
-    {file = "aind-data-schema-0.33.6.tar.gz", hash = "sha256:bb8e740025383fd8dcb37270442b2e0ae45a3207895b1394110b0d30c698de36"},
-    {file = "aind_data_schema-0.33.6-py3-none-any.whl", hash = "sha256:1b96a638b82938dadf3a829005ee6542d698555d46ea0aa49c94518a96ffbcd4"},
+    {file = "aind-data-schema-0.33.3.tar.gz", hash = "sha256:8c8484df938e4757d2d9d21a57e343d6ef59a698ea0602a27f5d6584b9c3e2e6"},
+    {file = "aind_data_schema-0.33.3-py3-none-any.whl", hash = "sha256:da4993ca2744ac700b7a8f0bedb00db41c52a72b370f7386238138f34c01b0f4"},
 ]
 
 [[package]]
@@ -657,7 +657,7 @@ files = [
 
 [[package]]
 name = "dynamicroutingtask"
-version = "0.1.92"
+version = "0.1.102"
 requires_python = ">=3.9"
 summary = ""
 dependencies = [
@@ -668,8 +668,8 @@ dependencies = [
     "scipy",
 ]
 files = [
-    {file = "DynamicRoutingTask-0.1.92-py3-none-any.whl", hash = "sha256:79e767b6a983f196926dc286d207ee260bb0741581ed3940a8401002828238ef"},
-    {file = "DynamicRoutingTask-0.1.92.tar.gz", hash = "sha256:13ad63e784b7b85b4b2a4ead65eb714af5ace14ba7c0e00fb8eb38e9e6578f6d"},
+    {file = "DynamicRoutingTask-0.1.102-py3-none-any.whl", hash = "sha256:432687f5f62cbaf3ad2467a19184aa7c1130be8e710999e73f2aa9d9fecdf2cb"},
+    {file = "dynamicroutingtask-0.1.102.tar.gz", hash = "sha256:9e0c76197f8ee5cee1bd17b6eb5797abfda03c06d0b999ccde7f116684f4e9c6"},
 ]
 
 [[package]]
@@ -680,6 +680,16 @@ summary = "An implementation of lxml.xmlfile for the standard library"
 files = [
     {file = "et_xmlfile-1.1.0-py3-none-any.whl", hash = "sha256:a2ba85d1d6a74ef63837eed693bcb89c3f752169b0e3e7ae5b16ca5e1b3deada"},
     {file = "et_xmlfile-1.1.0.tar.gz", hash = "sha256:8eb9e2bc2f8c97e37a2dc85a09ecdcdec9d8a396530a6d5a33b30b9a92da0c5c"},
+]
+
+[[package]]
+name = "eval-type-backport"
+version = "0.2.0"
+requires_python = ">=3.8"
+summary = "Like `typing._eval_type`, but lets older Python versions use newer typing features."
+files = [
+    {file = "eval_type_backport-0.2.0-py3-none-any.whl", hash = "sha256:ac2f73d30d40c5a30a80b8739a789d6bb5e49fdffa66d7912667e2015d9c9933"},
+    {file = "eval_type_backport-0.2.0.tar.gz", hash = "sha256:68796cfbc7371ebf923f03bdf7bef415f3ec098aeced24e054b253a0e78f7b37"},
 ]
 
 [[package]]
@@ -1056,38 +1066,38 @@ files = [
 
 [[package]]
 name = "hdmf"
-version = "3.12.2"
+version = "3.14.1"
 requires_python = ">=3.8"
 summary = "A hierarchical data modeling framework for modern science data standards"
 dependencies = [
     "h5py>=2.10",
     "jsonschema>=2.6.0",
-    "numpy>=1.18",
+    "numpy<2.0,>=1.18",
     "pandas>=1.0.5",
     "ruamel-yaml>=0.16",
     "scipy>=1.4",
 ]
 files = [
-    {file = "hdmf-3.12.2-py3-none-any.whl", hash = "sha256:c98fffa7ad37e22c920c4c6ea99b754c13279418eeda9f0914ff15c6b73a3ec8"},
-    {file = "hdmf-3.12.2.tar.gz", hash = "sha256:05f33144c268b7e5b7e768b641ae58759fee9fe41a8c3b49e60e89a124b61bdb"},
+    {file = "hdmf-3.14.1-py3-none-any.whl", hash = "sha256:b7ccd72a006950feab4c77e577f567383f4a669254634f6887be8118e3dae2df"},
+    {file = "hdmf-3.14.1.tar.gz", hash = "sha256:e84779e6e22f7888552e4fed4508d4d4825e21e5a59c8e2b42a6dbf3efb0595b"},
 ]
 
 [[package]]
 name = "hdmf-zarr"
-version = "0.6.0"
+version = "0.8.0"
 requires_python = ">=3.8"
 summary = "A package defining a Zarr I/O backend for HDMF"
 dependencies = [
     "hdmf>=3.9.0",
     "numcodecs>=0.9.1",
-    "numpy>=1.24",
+    "numpy<2.0,>=1.24",
     "pynwb>=2.5.0",
     "threadpoolctl>=3.1.0",
     "zarr>=2.11.0",
 ]
 files = [
-    {file = "hdmf_zarr-0.6.0-py3-none-any.whl", hash = "sha256:7bf60affefd19d64d724f2c55f12befd81fb34ad88f78421f182b5bbef9cc524"},
-    {file = "hdmf_zarr-0.6.0.tar.gz", hash = "sha256:e45db2888868a19567b8af6320df5faf5c0e3af21bcd2d3cb9919bb900a5e8c9"},
+    {file = "hdmf_zarr-0.8.0-py3-none-any.whl", hash = "sha256:684e1a097af75081752aa7752ebfc4b65c8ea84d77fa90522e5af7e84b4287fe"},
+    {file = "hdmf_zarr-0.8.0.tar.gz", hash = "sha256:30db643668e09e690e6ae553f23f4f73f9552db8d9322321316f9bf073ab1408"},
 ]
 
 [[package]]
@@ -1212,24 +1222,6 @@ files = [
 ]
 
 [[package]]
-name = "ipympl"
-version = "0.9.3"
-summary = "Matplotlib Jupyter Extension"
-dependencies = [
-    "ipython-genutils",
-    "ipython<9",
-    "ipywidgets<9,>=7.6.0",
-    "matplotlib<4,>=3.4.0",
-    "numpy",
-    "pillow",
-    "traitlets<6",
-]
-files = [
-    {file = "ipympl-0.9.3-py2.py3-none-any.whl", hash = "sha256:d113cd55891bafe9b27ef99b6dd111a87beb6bb2ae550c404292272103be8013"},
-    {file = "ipympl-0.9.3.tar.gz", hash = "sha256:49bab75c05673a6881d1aaec5d8ac81d4624f73d292d154c5fb7096f10236a2b"},
-]
-
-[[package]]
 name = "ipython"
 version = "8.21.0"
 requires_python = ">=3.10"
@@ -1248,15 +1240,6 @@ dependencies = [
 files = [
     {file = "ipython-8.21.0-py3-none-any.whl", hash = "sha256:1050a3ab8473488d7eee163796b02e511d0735cf43a04ba2a8348bd0f2eaf8a5"},
     {file = "ipython-8.21.0.tar.gz", hash = "sha256:48fbc236fbe0e138b88773fa0437751f14c3645fb483f1d4c5dee58b37e5ce73"},
-]
-
-[[package]]
-name = "ipython-genutils"
-version = "0.2.0"
-summary = "Vestigial utilities from IPython"
-files = [
-    {file = "ipython_genutils-0.2.0-py2.py3-none-any.whl", hash = "sha256:72dd37233799e619666c9f639a9da83c34013a73e8bbc79a7a6348d93c61fab8"},
-    {file = "ipython_genutils-0.2.0.tar.gz", hash = "sha256:eb2e116e75ecef9d4d228fdc66af54269afa26ab4463042e33785b887c628ba8"},
 ]
 
 [[package]]
@@ -1924,12 +1907,12 @@ files = [
 
 [[package]]
 name = "np-config"
-version = "0.4.27"
-requires_python = ">=3.7,<4.0"
+version = "0.4.33"
+requires_python = "<4.0,>=3.7"
 summary = "Config fetching from file or Zookeeper - with local backup - repackaging code from AIBS mpeconfig."
 dependencies = [
     "backports-cached-property",
-    "kazoo<2.9,>=2.8",
+    "kazoo~=2.8",
     "platformdirs<4.0.0,>=3.11.0",
     "pyyaml<7,>=5",
     "requests<3,>=2",
@@ -1938,8 +1921,8 @@ dependencies = [
     "typing-extensions>=4",
 ]
 files = [
-    {file = "np_config-0.4.27-py3-none-any.whl", hash = "sha256:317a13486df52a718fc642cf4933436fdf66ced454e3c469fcab534637d3604b"},
-    {file = "np_config-0.4.27.tar.gz", hash = "sha256:b50ea245974c44b2d65a2ce8296df706ec286aa4cee4289e71e3761b15bd2b3c"},
+    {file = "np_config-0.4.33-py3-none-any.whl", hash = "sha256:e71a35c4e6423b75153790078338d8e3f1812641079842a38eaa1cf84882cf30"},
+    {file = "np_config-0.4.33.tar.gz", hash = "sha256:524cc5fae089db28433d883ed23089a0e89b2b808370891e1293cb583e2dbbbb"},
 ]
 
 [[package]]
@@ -1998,13 +1981,13 @@ files = [
 
 [[package]]
 name = "np-session"
-version = "0.6.42"
+version = "0.6.45"
 requires_python = ">=3.7"
 summary = "Tools for accessing data, metadata, and jobs related to ecephys and behavior sessions for the Mindscope Neuropixels team."
 dependencies = [
     "backports-cached-property",
     "firebase-admin>=6.1.0",
-    "np-config>=0.4.17",
+    "np-config>=0.4.32",
     "np-logging>=0.3.8",
     "np-tools>=0.1.6",
     "psycopg2-binary>=2",
@@ -2014,8 +1997,8 @@ dependencies = [
     "typing-extensions>=4",
 ]
 files = [
-    {file = "np-session-0.6.42.tar.gz", hash = "sha256:a0ac48f7a53582f38cc6f32dcf64bdb3f959e3e253c9aedef48fbc39a898581d"},
-    {file = "np_session-0.6.42-py3-none-any.whl", hash = "sha256:62e4b542cfca6c1bf6e62ffa9cdf4dd2ad47ffbaf8a9fe76eb0f7b57b216d516"},
+    {file = "np-session-0.6.45.tar.gz", hash = "sha256:d6c1eee60acbbdb2741287118101f5f11e6d39659d76d8e7a55d20114167f875"},
+    {file = "np_session-0.6.45-py3-none-any.whl", hash = "sha256:2e074d7b2116f8bdd7f4529c169f28bf53393aee19b8bc5ae9d8bd2f96933a27"},
 ]
 
 [[package]]
@@ -2039,21 +2022,21 @@ files = [
 
 [[package]]
 name = "npc-ephys"
-version = "0.1.13"
+version = "0.1.15"
 requires_python = ">=3.9"
 summary = "Tools for accessing and processing raw ephys data, compatible with data in the cloud."
 dependencies = [
     "npc-io>=0.1.26",
-    "npc-lims>=0.1.134",
-    "npc-sync>=0.1.9",
+    "npc-lims>=0.1.147",
+    "npc-sync>=0.1.12",
     "pandas>=2.2.0",
     "tqdm>=4.66.1",
     "wavpack-numcodecs>=0.1.5",
     "zarr>=2.16.1",
 ]
 files = [
-    {file = "npc-ephys-0.1.13.tar.gz", hash = "sha256:859cfe105bc10089597e7757935baedf0da7678d13b51b857c8f767b51bcac4e"},
-    {file = "npc_ephys-0.1.13-py3-none-any.whl", hash = "sha256:77b75c7f098210567f530b07b3dc2aad443a383e41b4ea6966cbdeb9d1c451a2"},
+    {file = "npc_ephys-0.1.15-py3-none-any.whl", hash = "sha256:b013adb9b02606bc78670ca4725c901b772aa59e6a66130489d4d353fef8f73f"},
+    {file = "npc_ephys-0.1.15.tar.gz", hash = "sha256:b19353fcdc5339822382bbffe7ce8cd13a3b8feda4ed8956b89b29c565fb8f7b"},
 ]
 
 [[package]]
@@ -2076,7 +2059,7 @@ files = [
 
 [[package]]
 name = "npc-lims"
-version = "0.1.141"
+version = "0.1.155"
 requires_python = ">=3.9"
 summary = "Tools to fetch and update paths, metadata and state for Mindscope Neuropixels sessions, in the cloud."
 dependencies = [
@@ -2093,13 +2076,13 @@ dependencies = [
     "types-requests>=2.31.0.6",
 ]
 files = [
-    {file = "npc_lims-0.1.141-py3-none-any.whl", hash = "sha256:c20229b3409201cecb48da763108a93d5c55fafc319d90330bef05b69fe50ebb"},
-    {file = "npc_lims-0.1.141.tar.gz", hash = "sha256:32342270beb57d0cf27a66d02df16610c1de3ff95719c936a50fd0d638fa8913"},
+    {file = "npc_lims-0.1.155-py3-none-any.whl", hash = "sha256:a3318f41716a913d8aec5e34253551d204b796e86526e3ba445c383395686d27"},
+    {file = "npc_lims-0.1.155.tar.gz", hash = "sha256:1a2aecf36f23d599286ea16136572d30ceb91cfb7e3df8d9307824266077d3de"},
 ]
 
 [[package]]
 name = "npc-mvr"
-version = "0.1.3"
+version = "0.1.6"
 requires_python = ">=3.9"
 summary = "Tools for reading raw video data from MindScope Neuropixels experiments, compatible with data in the cloud."
 dependencies = [
@@ -2109,8 +2092,8 @@ dependencies = [
     "typing-extensions>=4.9.0",
 ]
 files = [
-    {file = "npc-mvr-0.1.3.tar.gz", hash = "sha256:0b796e4bb05acad36f6a9d8c358dac8e1c9ff97d652be2e316ccd3a8b9326e84"},
-    {file = "npc_mvr-0.1.3-py3-none-any.whl", hash = "sha256:a62d9b04d9fa3ae78198c69bb865784eee789e40d6bf0d08aa72522241de6fd5"},
+    {file = "npc_mvr-0.1.6-py3-none-any.whl", hash = "sha256:e9c1f62c341011fbec08b08ee95cbb08fd2d8f0f51610571cf9c53dd2a2402b3"},
+    {file = "npc_mvr-0.1.6.tar.gz", hash = "sha256:2ec119b6fbec2799885838138c03eee15e4a52553a5e49b9971bd8df198c0cb4"},
 ]
 
 [[package]]
@@ -2145,62 +2128,64 @@ files = [
 
 [[package]]
 name = "npc-sessions"
-version = "0.0.209"
+version = "0.0.225"
 requires_python = ">=3.9"
-summary = "Tools and interfaces for working with behavior and epyhys sessions from the Mindscope Neuropixels team, in the cloud."
+summary = "NWB-conversion for behavior and epyhys sessions from the Mindscope Neuropixels team, in the cloud."
 dependencies = [
-    "DynamicRoutingTask>=0.1.14",
-    "SimpleITK>=2.2.1",
-    "aind-data-schema>=0.31.16",
+    "DynamicRoutingTask>=0.1.94",
+    "aind-data-schema==0.33.3",
     "h5py>=3.9.0",
-    "hdmf-zarr>=0.5.0",
-    "hdmf>=3.9.0",
-    "ipykernel>=6.25.2",
-    "ipympl>=0.9.3",
-    "ipywidgets>=8.1.0",
+    "hdmf-zarr>=0.7.0",
+    "hdmf>=3.14.0",
     "matplotlib>=3.7.2",
-    "nbconvert>=7.9.2",
     "ndx-events>=0.2.0",
     "ndx-pose>=0.1.1",
-    "npc-lims>=0.1.137",
-    "npc-utils>=0.1.12",
+    "npc-ephys>=0.1.15",
+    "npc-io>=0.1.26",
+    "npc-lims>=0.1.150",
+    "npc-mvr>=0.1.6",
+    "npc-samstim>=0.1.4",
+    "npc-session>=0.1.34",
+    "npc-stim>=0.1.8",
+    "npc-sync>=0.1.12",
     "numba>=0.57.1",
     "opencv-python-headless>=4.8.0.76",
     "pandas>=2.0",
-    "polars>=0.20.4",
+    "polars<=0.20.26",
     "pyarrow>=14.0",
     "pydantic>=2.6.4",
-    "pynwb",
+    "pynwb>=2.7.0",
     "python-dotenv>=1.0.0",
     "rich>=13.5.2",
     "scipy>=1.9.3",
     "spikeinterface>=0.98.2",
     "tables>=3.9.2",
-    "traitlets<=5.9.0",
-    "zarr>=2.16.1",
+    "zarr<2.18.1",
 ]
 files = [
-    {file = "npc_sessions-0.0.209-py3-none-any.whl", hash = "sha256:185b7c4e9c10e4e655791aab1f76b2f26bc535ad965f6ba487f3d83d321ceb94"},
-    {file = "npc_sessions-0.0.209.tar.gz", hash = "sha256:3eaa022ffa8378c83c81ad3c2100c7fb4df0f52a8376738771ab4b0feb3223e7"},
+    {file = "npc_sessions-0.0.225-py3-none-any.whl", hash = "sha256:59e8a813c124a04b7f3af5a2d37a73d1fd3cfe06133af2f8c1ecab8f7114b54e"},
+    {file = "npc_sessions-0.0.225.tar.gz", hash = "sha256:12ee9d0e99305f48ce1b0c1c57869de2398db7fcf14ac426286b136b2361601b"},
 ]
 
 [[package]]
 name = "npc-shields"
-version = "0.1.5"
+version = "0.1.10"
 requires_python = ">=3.9"
 summary = "Tools for Neuropixels probe insertion: providing suggested targets, recording actual insertions, storing notes."
 dependencies = [
+    "eval-type-backport>=0.2.0",
     "ipywidgets>=7",
     "npc-session>=0.1.30",
+    "pydantic>=2.7.1",
 ]
 files = [
-    {file = "npc_shields-0.1.5-py3-none-any.whl", hash = "sha256:eee4a9cba3c7e69a2f83cbcc5e4c21c3ccb500616ebbe0bbc7941ae421523bdc"},
-    {file = "npc_shields-0.1.5.tar.gz", hash = "sha256:5210c07c825b895b596bbbd43406538b6cfb5cae3a13f06aced01d2a1c124531"},
+    {file = "npc_shields-0.1.10-py3-none-any.whl", hash = "sha256:0892c1505454215c836c2183ef4c3381aeca720bb17eca8f1e44b26831b6957c"},
+    {file = "npc_shields-0.1.10.tar.gz", hash = "sha256:dba989e9a3d67732c8a296cf71a0e14810f2ffc9a8f2332d75225d28b3a4a394"},
 ]
 
 [[package]]
 name = "npc-stim"
-version = "0.1.6"
+version = "0.1.8"
 requires_python = ">=3.9"
 summary = "Tools for accessing and processing stim data, compatible with data in the cloud."
 dependencies = [
@@ -2210,8 +2195,8 @@ dependencies = [
     "scipy>=1.12.0",
 ]
 files = [
-    {file = "npc-stim-0.1.6.tar.gz", hash = "sha256:747f1d5feeaecbed4772d28fcfb97cbf90c2793f4b4c8190c6f24ffded7a2d02"},
-    {file = "npc_stim-0.1.6-py3-none-any.whl", hash = "sha256:2cf7e6bdc8ba23ef29c3f920d7da560675e5b317a429f40914c3b59c7da3dd3d"},
+    {file = "npc_stim-0.1.8-py3-none-any.whl", hash = "sha256:0c46fe0ff5f520ee6d54bf0f2ac31887a305202b328c7bc72cbbc4d4f72fc9d0"},
+    {file = "npc_stim-0.1.8.tar.gz", hash = "sha256:1ffc00bf616e5236e16ed806d9f479eef97f9bfa989b63894d9e757be1b9bf2c"},
 ]
 
 [[package]]
@@ -2230,26 +2215,6 @@ dependencies = [
 files = [
     {file = "npc_sync-0.1.13-py3-none-any.whl", hash = "sha256:5fa6c49dabf7708f435a685915fc3b1294f28a02c86560e1882c7755f31c0df2"},
     {file = "npc_sync-0.1.13.tar.gz", hash = "sha256:183a63f2c4d033e41ddc0d7bc7268199a837ea607333cfe6f1517f765edf6288"},
-]
-
-[[package]]
-name = "npc-utils"
-version = "0.1.13"
-requires_python = ">=3.9"
-summary = "Collection of MindScope Neuropixels packages, simplifying installation and keeping versions updated."
-dependencies = [
-    "npc-ephys>=0.1.11",
-    "npc-io>=0.1.26",
-    "npc-lims>=0.1.135",
-    "npc-mvr>=0.1.3",
-    "npc-samstim>=0.1.4",
-    "npc-session>=0.1.34",
-    "npc-stim>=0.1.6",
-    "npc-sync>=0.1.9",
-]
-files = [
-    {file = "npc-utils-0.1.13.tar.gz", hash = "sha256:bae3d571c132b92d5263660b6e304f98e7665b792dfe7bb4c930679ac62dffd2"},
-    {file = "npc_utils-0.1.13-py3-none-any.whl", hash = "sha256:728126a7d4fb9a77134632b8c7ece7584f0fb3e5ec4eaafe18a67e9cece9ab0c"},
 ]
 
 [[package]]
@@ -2701,58 +2666,58 @@ files = [
 
 [[package]]
 name = "pydantic"
-version = "2.6.4"
+version = "2.7.4"
 requires_python = ">=3.8"
 summary = "Data validation using Python type hints"
 dependencies = [
     "annotated-types>=0.4.0",
-    "pydantic-core==2.16.3",
+    "pydantic-core==2.18.4",
     "typing-extensions>=4.6.1",
 ]
 files = [
-    {file = "pydantic-2.6.4-py3-none-any.whl", hash = "sha256:cc46fce86607580867bdc3361ad462bab9c222ef042d3da86f2fb333e1d916c5"},
-    {file = "pydantic-2.6.4.tar.gz", hash = "sha256:b1704e0847db01817624a6b86766967f552dd9dbf3afba4004409f908dcc84e6"},
+    {file = "pydantic-2.7.4-py3-none-any.whl", hash = "sha256:ee8538d41ccb9c0a9ad3e0e5f07bf15ed8015b481ced539a1759d8cc89ae90d0"},
+    {file = "pydantic-2.7.4.tar.gz", hash = "sha256:0c84efd9548d545f63ac0060c1e4d39bb9b14db8b3c0652338aecc07b5adec52"},
 ]
 
 [[package]]
 name = "pydantic-core"
-version = "2.16.3"
+version = "2.18.4"
 requires_python = ">=3.8"
-summary = ""
+summary = "Core functionality for Pydantic validation and serialization"
 dependencies = [
     "typing-extensions!=4.7.0,>=4.6.0",
 ]
 files = [
-    {file = "pydantic_core-2.16.3-cp311-cp311-macosx_10_12_x86_64.whl", hash = "sha256:519ae0312616026bf4cedc0fe459e982734f3ca82ee8c7246c19b650b60a5ee4"},
-    {file = "pydantic_core-2.16.3-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:b3992a322a5617ded0a9f23fd06dbc1e4bd7cf39bc4ccf344b10f80af58beacd"},
-    {file = "pydantic_core-2.16.3-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:8d62da299c6ecb04df729e4b5c52dc0d53f4f8430b4492b93aa8de1f541c4aac"},
-    {file = "pydantic_core-2.16.3-cp311-cp311-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:2acca2be4bb2f2147ada8cac612f8a98fc09f41c89f87add7256ad27332c2fda"},
-    {file = "pydantic_core-2.16.3-cp311-cp311-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:1b662180108c55dfbf1280d865b2d116633d436cfc0bba82323554873967b340"},
-    {file = "pydantic_core-2.16.3-cp311-cp311-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:e7c6ed0dc9d8e65f24f5824291550139fe6f37fac03788d4580da0d33bc00c97"},
-    {file = "pydantic_core-2.16.3-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:a6b1bb0827f56654b4437955555dc3aeeebeddc47c2d7ed575477f082622c49e"},
-    {file = "pydantic_core-2.16.3-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:e56f8186d6210ac7ece503193ec84104da7ceb98f68ce18c07282fcc2452e76f"},
-    {file = "pydantic_core-2.16.3-cp311-cp311-musllinux_1_1_aarch64.whl", hash = "sha256:936e5db01dd49476fa8f4383c259b8b1303d5dd5fb34c97de194560698cc2c5e"},
-    {file = "pydantic_core-2.16.3-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:33809aebac276089b78db106ee692bdc9044710e26f24a9a2eaa35a0f9fa70ba"},
-    {file = "pydantic_core-2.16.3-cp311-none-win32.whl", hash = "sha256:ded1c35f15c9dea16ead9bffcde9bb5c7c031bff076355dc58dcb1cb436c4721"},
-    {file = "pydantic_core-2.16.3-cp311-none-win_amd64.whl", hash = "sha256:d89ca19cdd0dd5f31606a9329e309d4fcbb3df860960acec32630297d61820df"},
-    {file = "pydantic_core-2.16.3-cp311-none-win_arm64.whl", hash = "sha256:6162f8d2dc27ba21027f261e4fa26f8bcb3cf9784b7f9499466a311ac284b5b9"},
-    {file = "pydantic_core-2.16.3-pp310-pypy310_pp73-macosx_10_12_x86_64.whl", hash = "sha256:36fa178aacbc277bc6b62a2c3da95226520da4f4e9e206fdf076484363895d2c"},
-    {file = "pydantic_core-2.16.3-pp310-pypy310_pp73-macosx_11_0_arm64.whl", hash = "sha256:dcca5d2bf65c6fb591fff92da03f94cd4f315972f97c21975398bd4bd046854a"},
-    {file = "pydantic_core-2.16.3-pp310-pypy310_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:2a72fb9963cba4cd5793854fd12f4cfee731e86df140f59ff52a49b3552db241"},
-    {file = "pydantic_core-2.16.3-pp310-pypy310_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b60cc1a081f80a2105a59385b92d82278b15d80ebb3adb200542ae165cd7d183"},
-    {file = "pydantic_core-2.16.3-pp310-pypy310_pp73-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:cbcc558401de90a746d02ef330c528f2e668c83350f045833543cd57ecead1ad"},
-    {file = "pydantic_core-2.16.3-pp310-pypy310_pp73-musllinux_1_1_aarch64.whl", hash = "sha256:fee427241c2d9fb7192b658190f9f5fd6dfe41e02f3c1489d2ec1e6a5ab1e04a"},
-    {file = "pydantic_core-2.16.3-pp310-pypy310_pp73-musllinux_1_1_x86_64.whl", hash = "sha256:f4cb85f693044e0f71f394ff76c98ddc1bc0953e48c061725e540396d5c8a2e1"},
-    {file = "pydantic_core-2.16.3-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:b29eeb887aa931c2fcef5aa515d9d176d25006794610c264ddc114c053bf96fe"},
-    {file = "pydantic_core-2.16.3-pp39-pypy39_pp73-macosx_10_12_x86_64.whl", hash = "sha256:a425479ee40ff021f8216c9d07a6a3b54b31c8267c6e17aa88b70d7ebd0e5e5b"},
-    {file = "pydantic_core-2.16.3-pp39-pypy39_pp73-macosx_11_0_arm64.whl", hash = "sha256:5c5cbc703168d1b7a838668998308018a2718c2130595e8e190220238addc96f"},
-    {file = "pydantic_core-2.16.3-pp39-pypy39_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:99b6add4c0b39a513d323d3b93bc173dac663c27b99860dd5bf491b240d26137"},
-    {file = "pydantic_core-2.16.3-pp39-pypy39_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:75f76ee558751746d6a38f89d60b6228fa174e5172d143886af0f85aa306fd89"},
-    {file = "pydantic_core-2.16.3-pp39-pypy39_pp73-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:00ee1c97b5364b84cb0bd82e9bbf645d5e2871fb8c58059d158412fee2d33d8a"},
-    {file = "pydantic_core-2.16.3-pp39-pypy39_pp73-musllinux_1_1_aarch64.whl", hash = "sha256:287073c66748f624be4cef893ef9174e3eb88fe0b8a78dc22e88eca4bc357ca6"},
-    {file = "pydantic_core-2.16.3-pp39-pypy39_pp73-musllinux_1_1_x86_64.whl", hash = "sha256:ed25e1835c00a332cb10c683cd39da96a719ab1dfc08427d476bce41b92531fc"},
-    {file = "pydantic_core-2.16.3-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:86b3d0033580bd6bbe07590152007275bd7af95f98eaa5bd36f3da219dcd93da"},
-    {file = "pydantic_core-2.16.3.tar.gz", hash = "sha256:1cac689f80a3abab2d3c0048b29eea5751114054f032a941a32de4c852c59cad"},
+    {file = "pydantic_core-2.18.4-cp311-cp311-macosx_10_12_x86_64.whl", hash = "sha256:942ba11e7dfb66dc70f9ae66b33452f51ac7bb90676da39a7345e99ffb55402d"},
+    {file = "pydantic_core-2.18.4-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:b2ebef0e0b4454320274f5e83a41844c63438fdc874ea40a8b5b4ecb7693f1c4"},
+    {file = "pydantic_core-2.18.4-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:a642295cd0c8df1b86fc3dced1d067874c353a188dc8e0f744626d49e9aa51c4"},
+    {file = "pydantic_core-2.18.4-cp311-cp311-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:5f09baa656c904807e832cf9cce799c6460c450c4ad80803517032da0cd062e2"},
+    {file = "pydantic_core-2.18.4-cp311-cp311-manylinux_2_17_ppc64le.manylinux2014_ppc64le.whl", hash = "sha256:98906207f29bc2c459ff64fa007afd10a8c8ac080f7e4d5beff4c97086a3dabd"},
+    {file = "pydantic_core-2.18.4-cp311-cp311-manylinux_2_17_s390x.manylinux2014_s390x.whl", hash = "sha256:19894b95aacfa98e7cb093cd7881a0c76f55731efad31073db4521e2b6ff5b7d"},
+    {file = "pydantic_core-2.18.4-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0fbbdc827fe5e42e4d196c746b890b3d72876bdbf160b0eafe9f0334525119c8"},
+    {file = "pydantic_core-2.18.4-cp311-cp311-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:f85d05aa0918283cf29a30b547b4df2fbb56b45b135f9e35b6807cb28bc47951"},
+    {file = "pydantic_core-2.18.4-cp311-cp311-musllinux_1_1_aarch64.whl", hash = "sha256:e85637bc8fe81ddb73fda9e56bab24560bdddfa98aa64f87aaa4e4b6730c23d2"},
+    {file = "pydantic_core-2.18.4-cp311-cp311-musllinux_1_1_x86_64.whl", hash = "sha256:2f5966897e5461f818e136b8451d0551a2e77259eb0f73a837027b47dc95dab9"},
+    {file = "pydantic_core-2.18.4-cp311-none-win32.whl", hash = "sha256:44c7486a4228413c317952e9d89598bcdfb06399735e49e0f8df643e1ccd0558"},
+    {file = "pydantic_core-2.18.4-cp311-none-win_amd64.whl", hash = "sha256:8a7164fe2005d03c64fd3b85649891cd4953a8de53107940bf272500ba8a788b"},
+    {file = "pydantic_core-2.18.4-cp311-none-win_arm64.whl", hash = "sha256:4e99bc050fe65c450344421017f98298a97cefc18c53bb2f7b3531eb39bc7805"},
+    {file = "pydantic_core-2.18.4-pp310-pypy310_pp73-macosx_10_12_x86_64.whl", hash = "sha256:574d92eac874f7f4db0ca653514d823a0d22e2354359d0759e3f6a406db5d55d"},
+    {file = "pydantic_core-2.18.4-pp310-pypy310_pp73-macosx_11_0_arm64.whl", hash = "sha256:1f4d26ceb5eb9eed4af91bebeae4b06c3fb28966ca3a8fb765208cf6b51102ab"},
+    {file = "pydantic_core-2.18.4-pp310-pypy310_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:77450e6d20016ec41f43ca4a6c63e9fdde03f0ae3fe90e7c27bdbeaece8b1ed4"},
+    {file = "pydantic_core-2.18.4-pp310-pypy310_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d323a01da91851a4f17bf592faf46149c9169d68430b3146dcba2bb5e5719abc"},
+    {file = "pydantic_core-2.18.4-pp310-pypy310_pp73-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:43d447dd2ae072a0065389092a231283f62d960030ecd27565672bd40746c507"},
+    {file = "pydantic_core-2.18.4-pp310-pypy310_pp73-musllinux_1_1_aarch64.whl", hash = "sha256:578e24f761f3b425834f297b9935e1ce2e30f51400964ce4801002435a1b41ef"},
+    {file = "pydantic_core-2.18.4-pp310-pypy310_pp73-musllinux_1_1_x86_64.whl", hash = "sha256:81b5efb2f126454586d0f40c4d834010979cb80785173d1586df845a632e4e6d"},
+    {file = "pydantic_core-2.18.4-pp310-pypy310_pp73-win_amd64.whl", hash = "sha256:ab86ce7c8f9bea87b9d12c7f0af71102acbf5ecbc66c17796cff45dae54ef9a5"},
+    {file = "pydantic_core-2.18.4-pp39-pypy39_pp73-macosx_10_12_x86_64.whl", hash = "sha256:90afc12421df2b1b4dcc975f814e21bc1754640d502a2fbcc6d41e77af5ec312"},
+    {file = "pydantic_core-2.18.4-pp39-pypy39_pp73-macosx_11_0_arm64.whl", hash = "sha256:51991a89639a912c17bef4b45c87bd83593aee0437d8102556af4885811d59f5"},
+    {file = "pydantic_core-2.18.4-pp39-pypy39_pp73-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:293afe532740370aba8c060882f7d26cfd00c94cae32fd2e212a3a6e3b7bc15e"},
+    {file = "pydantic_core-2.18.4-pp39-pypy39_pp73-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:b48ece5bde2e768197a2d0f6e925f9d7e3e826f0ad2271120f8144a9db18d5c8"},
+    {file = "pydantic_core-2.18.4-pp39-pypy39_pp73-manylinux_2_5_i686.manylinux1_i686.whl", hash = "sha256:eae237477a873ab46e8dd748e515c72c0c804fb380fbe6c85533c7de51f23a8f"},
+    {file = "pydantic_core-2.18.4-pp39-pypy39_pp73-musllinux_1_1_aarch64.whl", hash = "sha256:834b5230b5dfc0c1ec37b2fda433b271cbbc0e507560b5d1588e2cc1148cf1ce"},
+    {file = "pydantic_core-2.18.4-pp39-pypy39_pp73-musllinux_1_1_x86_64.whl", hash = "sha256:e858ac0a25074ba4bce653f9b5d0a85b7456eaddadc0ce82d3878c22489fa4ee"},
+    {file = "pydantic_core-2.18.4-pp39-pypy39_pp73-win_amd64.whl", hash = "sha256:2fd41f6eff4c20778d717af1cc50eca52f5afe7805ee530a4fbd0bae284f16e9"},
+    {file = "pydantic_core-2.18.4.tar.gz", hash = "sha256:ec3beeada09ff865c344ff3bc2f427f5e6c26401cc6113d77e372c3fdac73864"},
 ]
 
 [[package]]
@@ -2842,20 +2807,19 @@ files = [
 
 [[package]]
 name = "pynwb"
-version = "2.6.0"
+version = "2.8.0"
 requires_python = ">=3.8"
-summary = "Package for working with Neurodata stored in the NWB format"
+summary = "Package for working with Neurodata stored in the NWB format."
 dependencies = [
     "h5py>=2.10",
-    "hdmf>=3.12.2",
-    "numpy>=1.16",
+    "hdmf>=3.14.0",
+    "numpy<2.0,>=1.18",
     "pandas>=1.1.5",
     "python-dateutil>=2.7.3",
-    "setuptools",
 ]
 files = [
-    {file = "pynwb-2.6.0-py3-none-any.whl", hash = "sha256:568555a8692bb632a0a01dbd8822b7d1677220c9765acaec12ac0b0227de5e57"},
-    {file = "pynwb-2.6.0.tar.gz", hash = "sha256:0c0c98712328aecb767b783e960758dfbaae08e5480e1ebc075a392e4b06b727"},
+    {file = "pynwb-2.8.0-py3-none-any.whl", hash = "sha256:70892d24d3eb4931b6994688124d1e8bcf541db301dbe32b5ef07bd951d2fb61"},
+    {file = "pynwb-2.8.0.tar.gz", hash = "sha256:08edeabb615404deff4582404c0564b419d84667d57f851f77c51442e30f065e"},
 ]
 
 [[package]]
@@ -3260,28 +3224,6 @@ summary = "Send file to trash natively under Mac OS X, Windows and Linux"
 files = [
     {file = "Send2Trash-1.8.2-py3-none-any.whl", hash = "sha256:a384719d99c07ce1eefd6905d2decb6f8b7ed054025bb0e618919f945de4f679"},
     {file = "Send2Trash-1.8.2.tar.gz", hash = "sha256:c132d59fa44b9ca2b1699af5c86f57ce9f4c5eb56629d5d55fbb7a35f84e2312"},
-]
-
-[[package]]
-name = "setuptools"
-version = "69.2.0"
-requires_python = ">=3.8"
-summary = "Easily download, build, install, upgrade, and uninstall Python packages"
-files = [
-    {file = "setuptools-69.2.0-py3-none-any.whl", hash = "sha256:c21c49fb1042386df081cb5d86759792ab89efca84cf114889191cd09aacc80c"},
-    {file = "setuptools-69.2.0.tar.gz", hash = "sha256:0ff4183f8f42cd8fa3acea16c45205521a4ef28f73c6391d8a25e92893134f2e"},
-]
-
-[[package]]
-name = "simpleitk"
-version = "2.3.1"
-summary = "SimpleITK is a simplified interface to the Insight Toolkit (ITK) for image registration and segmentation"
-files = [
-    {file = "SimpleITK-2.3.1-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:df43581c6984af5353730834a95116cdd8dcaef1dc13e4e9a326f608f8fba74a"},
-    {file = "SimpleITK-2.3.1-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:bd1c3d7f65bf5855013121bd9f2a683f4c429b746f5cc41f84af08dd28c92573"},
-    {file = "SimpleITK-2.3.1-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5d088fbfbbd639aebe99aed0d9cf69364e2e8e7f4771fa2acc1017f1126a497c"},
-    {file = "SimpleITK-2.3.1-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:39cd45cf257e1a4469576e90fd0c476685b3b66d1f471d34677dd7f3876601b6"},
-    {file = "SimpleITK-2.3.1-cp311-cp311-win_amd64.whl", hash = "sha256:2aec554a4656dc84195711a8ebfe89477aa66dce2d8c2fd81890ea96ecb725fb"},
 ]
 
 [[package]]

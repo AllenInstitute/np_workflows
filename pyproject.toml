@@ -1,6 +1,6 @@
 [project]
 name = "np-workflows"
-version = "1.6.74"
+version = "1.6.75"
 description = "Ecephys and behavior workflows for the Mindscope Neuropixels team."
 authors = [
     { name = "Ben Hardcastle", email = "ben.hardcastle@alleninstitute.org" },
@@ -9,8 +9,8 @@ readme = "README.md"
 requires-python = "==3.11.*"
 dependencies = [
     "np-services>=0.1.69",
-    "np-session>=0.6.40",
-    "np-config>=0.4.27",
+    "np-session>=0.6.45",
+    "np-config>=0.4.33",
     "ipywidgets>=7",
     "pydantic>=2",
     "jupyterlab >= 3.6",
@@ -19,9 +19,9 @@ dependencies = [
     "np-jobs>=0.0.3",
     "universal-pathlib>=0.1.0",
     "s3fs>=2023.6.0",
-    "npc-shields>=0.1.4",
-    "npc-sessions>=0.0.201",
-    "np-codeocean>=0.1.9",
+    "npc-shields>=0.1.10",
+    "npc-sessions>=0.0.225",
+    "np-codeocean>=0.2.0",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
