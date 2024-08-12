@@ -56,6 +56,8 @@ def new_experiment(
         experiment = Hab(mouse, user)
     elif 'OPTO' in workflow.name:
         experiment = Opto(mouse, user)
+    elif 'TRAINING' in workflow.name:
+        experiment = Training(mouse, user)
     else:
         raise ValueError(f"Unknown {workflow = }. Create an experiment with e.g.\n\n\texperiment = Ephys(mouse, user)\nexperiment.session.npexp_path.mkdir()")
     experiment.workflow = workflow
@@ -101,5 +103,15 @@ class Ephys(DRTask):
             NewScaleCoordinateRecorder,
             ScriptCamstim,
             OpenEphys,
+        )
+        super().__init__(*args, **kwargs)
+
+class Training(DRTask):
+    def __init__(self, *args, **kwargs):
+        self.services = (
+            MouseDirector,
+            Sync,
+            VideoMVR,
+            ScriptCamstim,
         )
         super().__init__(*args, **kwargs)

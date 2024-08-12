@@ -475,7 +475,7 @@ class DynamicRoutingExperiment(WithSession):
         HAB = "EPHYS minus probes"
         EPHYS = "opto in task optional"
         OPTO = "opto in task, no ephys"
-    
+        TRAINING = "task only, with sync + video"
     workflow: Workflow
     
     @property
