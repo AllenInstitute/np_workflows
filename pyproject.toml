@@ -21,7 +21,10 @@ dependencies = [
     "s3fs>=2023.6.0",
     "npc-shields>=0.1.10",
     "npc-sessions>=0.0.225",
-    "np-codeocean>=0.2.0",
+    "np-codeocean[dynamic-routing-metadata]>=0.2.1",
+    "panel>=1.4.5",
+    "aind-session>=0.1.20",
+    "jupyter-bokeh>=4.0.5",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",
