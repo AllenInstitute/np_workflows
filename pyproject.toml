@@ -22,6 +22,7 @@ dependencies = [
     "npc-shields>=0.1.10",
     "npc-sessions>=0.0.225",
     "np-codeocean>=0.2.0",
+    "aind-slims-api>=0.1.7",
 ]
 classifiers = [
     "Programming Language :: Python :: 3",

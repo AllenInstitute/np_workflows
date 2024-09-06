@@ -16,6 +16,7 @@ import np_services
 import np_session
 import PIL.Image
 import PIL.ImageDraw
+from aind_slims_api import SlimsClient, exceptions, models
 
 import np_workflows.shared.npxc as npxc
 
@@ -702,4 +703,144 @@ def task_select_widget(
     task_input_box.observe(update, names='value')
 
     IPython.display.display(ipw.VBox([ipw.HBox([task_dropdown, task_input_box]), console]))
-    
+
+
+def slims_waterlog_widget(
+    client: SlimsClient,
+    mouse: int | str | np_session.Mouse,
+    aibs_comp_id: str,
+) -> None:
+    """SLIMS waterlog widget .
+    """
+    if not isinstance(mouse, np_session.Mouse):
+        mouse = np_session.Mouse(mouse)
+
+    try:
+        slims_mouse = client.fetch_model(
+            models.SlimsMouseContent,
+            barcode=mouse.id,
+        )
+    except exceptions.SlimsRecordNotFound:
+        IPython.display.display(
+            ipw.Label(
+                f"Mouse {mouse.id} not found in SLIMS.",
+                style={"text_color": "red"},
+            )
+        )
+        return
+
+    try:
+        water_restriction_event = client.fetch_model(
+            models.SlimsWaterRestrictionEvent,
+            mouse_pk=slims_mouse.pk,
+        )
+    except exceptions.SlimsRecordNotFound:
+        water_restriction_event = None
+
+    watering_date = ipw.DatePicker(
+        value=datetime.date.today(),
+        description='Watering date',
+        style=dict(description_width='initial')
+    )
+    weight = ipw.FloatText(
+        value=slims_mouse.baseline_weight_g,
+        step=0.1,
+        description='Weight (g)',
+        style=dict(description_width='initial')
+    )
+    water_earned_ml = ipw.FloatText(
+        value=None,
+        step=0.1,
+        description='Water earned (mL)',
+        style=dict(description_width='initial')
+    )
+
+    def calculate_suggested_water(
+        baseline_weight_g: float,
+        current_weight_g: float,
+        weight_fraction: float,
+    ) -> float:
+        return (weight_fraction * baseline_weight_g) - current_weight_g
+
+    water_suggested_label_template = \
+        "Water supplement suggested (mL): {}"
+    if water_restriction_event is None:
+        water_suggested_ml_label = ipw.Label(
+            "Mouse not water restricted.",
+            style={"text_color": "grey"},
+        )
+    else:
+        water_suggested_ml = calculate_suggested_water(
+            slims_mouse.baseline_weight_g,
+            weight.value,
+            water_restriction_event.target_weight_fraction,
+        )
+        water_suggested_ml_label = ipw.Label(
+            water_suggested_label_template.format(water_suggested_ml),
+            style={"text_color": "blue"},
+        )
+
+    water_delivered_ml = ipw.FloatText(
+        value=None,
+        step=0.1,
+        description='Water supplement delivered (mL)',
+        style=dict(description_width='initial')
+    )
+    notes = ipw.Textarea(
+        description='Notes',
+        style=dict(description_width='initial')
+    )
+
+    def update_suggestion(change):
+        if water_restriction_event is None:
+            return
+
+        if change["old"] != change["new"]:
+            water_suggested_ml_label.value = \
+                water_suggested_label_template.format(change["new"])
+
+    submit_button = ipw.Button(
+        description='Submit',
+        button_style='primary',
+    )
+
+    def submit():
+        test_pk = client.fetch_pk(
+            "Test",
+            test_name="test_waterlog"
+        )  # TODO: Explain why SLIMS needs this
+        added = client.add_model(
+            models.SlimsWaterlogResult(
+                mouse_pk=slims_mouse.pk,
+                date=watering_date.value,
+                weight_g=weight.value,
+                water_earned_ml=water_earned_ml.value,
+                water_supplement_delivered_ml=water_delivered_ml.value,
+                water_supplement_recommended_ml=water_suggested_ml,
+                comments=notes.value,
+                workstation_name=aibs_comp_id,
+                test_pk=test_pk,
+            )
+        )
+        logger.debug(
+            "Added waterlog result: %s", added.model_dump_json(indent=2))
+        submit_button.disabled = True
+        submit_button.description = 'Submitted'
+
+    submit_button.on_click(submit)
+
+    weight.observe(
+        update_suggestion, names='value')
+
+    IPython.display.display(
+        ipw.VBox([
+                ipw.Label(f"Mouse: {mouse.id}"),
+                watering_date,
+                weight,
+                water_earned_ml,
+                water_suggested_ml_label,
+                water_delivered_ml,
+                notes,
+                submit_button,
+        ]),
+    )
