@@ -823,6 +823,7 @@ def slims_waterlog_widget(
                 water_earned_ml=water_earned_ml.value,
                 water_supplement_delivered_ml=water_delivered_ml.value,
                 water_supplement_recommended_ml=water_suggested_ml,
+                total_water_ml=water_earned_ml.value + water_delivered_ml.value,
                 comments=notes.value,
                 workstation_name=aibs_comp_id,
                 test_pk=test_pk,
