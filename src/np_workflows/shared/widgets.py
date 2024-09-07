@@ -746,7 +746,8 @@ def slims_waterlog_widget(
         value=slims_mouse.baseline_weight_g,
         step=0.1,
         description='Weight (g)',
-        style=dict(description_width='initial')
+        style=dict(description_width='initial'),
+        continuous_update=True,
     )
     water_earned_ml = ipw.FloatText(
         value=None,
@@ -815,6 +816,8 @@ def slims_waterlog_widget(
             "Test",
             test_name="test_waterlog"
         )  # TODO: Explain why SLIMS needs this
+        submit_button.disabled = True
+        submit_button.description = 'Submitting...'
         added = client.add_model(
             models.SlimsWaterlogResult(
                 mouse_pk=slims_mouse.pk,
@@ -831,7 +834,6 @@ def slims_waterlog_widget(
         )
         logger.debug(
             "Added waterlog result: %s", added.model_dump_json(indent=2))
-        submit_button.disabled = True
         submit_button.description = 'Submitted'
 
     submit_button.on_click(submit)
