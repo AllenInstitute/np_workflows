@@ -797,7 +797,13 @@ def slims_waterlog_widget(
 
         if change["old"] != change["new"]:
             water_suggested_ml_label.value = \
-                water_suggested_label_template.format(change["new"])
+                water_suggested_label_template.format(
+                    calculate_suggested_water(
+                        slims_mouse.baseline_weight_g,
+                        change["new"],
+                        water_restriction_event.target_weight_fraction,
+                    )
+                )
 
     submit_button = ipw.Button(
         description='Submit',
