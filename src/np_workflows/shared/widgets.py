@@ -804,7 +804,7 @@ def slims_waterlog_widget(
         button_style='primary',
     )
 
-    def submit():
+    def submit(arg):
         test_pk = client.fetch_pk(
             "Test",
             test_name="test_waterlog"
