@@ -5,7 +5,7 @@ import pathlib
 import re
 import threading
 import time
-from typing import Literal, NoReturn
+from typing import Literal, NoReturn, Optional
 
 import IPython
 import IPython.display
@@ -706,12 +706,20 @@ def task_select_widget(
 
 
 def slims_waterlog_widget(
-    client: SlimsClient,
     mouse: int | str | np_session.Mouse,
     aibs_comp_id: str,
+    client: Optional[SlimsClient] = None,
 ) -> None:
-    """SLIMS waterlog widget .
+    """SLIMS waterlog widget.
     """
+    if client is None:
+        slims_config = np_config.from_zk('/slims')
+        client = SlimsClient(
+            url=slims_config['url'],
+            username=slims_config["username"],
+            password=slims_config["password"],
+        )
+
     if not isinstance(mouse, np_session.Mouse):
         mouse = np_session.Mouse(mouse)
 
@@ -769,6 +777,10 @@ def slims_waterlog_widget(
     water_suggested_label_template = \
         "Water supplement suggested (mL): {}"
     if water_restriction_event is None:
+        water_suggestion_meta_label = ipw.Label(
+            "Mouse not water restricted.",
+            style={"text_color": "grey"},
+        )
         water_suggested_ml_label = ipw.Label(
             "Mouse not water restricted.",
             style={"text_color": "grey"},
@@ -778,6 +790,14 @@ def slims_waterlog_widget(
             slims_mouse.baseline_weight_g,
             weight.value,
             water_restriction_event.target_weight_fraction,
+        )
+        water_suggestion_meta_label = ipw.Label(
+            (
+                f"baseline weight: {slims_mouse.baseline_weight_g}g"
+                f" | target weight: {water_restriction_event.target_weight_fraction * slims_mouse.baseline_weight_g}g"
+                f" ({water_restriction_event.target_weight_fraction * 100}%)"
+            ),
+            style={"text_color": "grey"},
         )
         water_suggested_ml_label = ipw.Label(
             water_suggested_label_template.format(water_suggested_ml),
@@ -847,6 +867,7 @@ def slims_waterlog_widget(
     IPython.display.display(
         ipw.VBox([
                 ipw.Label(f"Mouse: {mouse.id}"),
+                water_suggestion_meta_label,
                 watering_date,
                 weight,
                 water_earned_ml,
