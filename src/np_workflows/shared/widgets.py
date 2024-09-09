@@ -761,7 +761,10 @@ def slims_waterlog_widget(
         current_weight_g: float,
         weight_fraction: float,
     ) -> float:
-        return (weight_fraction * baseline_weight_g) - current_weight_g
+        suggestion = (weight_fraction * baseline_weight_g) - current_weight_g
+        if suggestion < 0:
+            return 0
+        return suggestion
 
     water_suggested_label_template = \
         "Water supplement suggested (mL): {}"
@@ -832,9 +835,9 @@ def slims_waterlog_widget(
                 test_pk=test_pk,
             )
         )
+        submit_button.description = 'Submitted'
         logger.debug(
             "Added waterlog result: %s", added.model_dump_json(indent=2))
-        submit_button.description = 'Submitted'
 
     submit_button.on_click(submit)
 
