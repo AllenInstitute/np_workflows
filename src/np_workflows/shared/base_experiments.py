@@ -219,14 +219,12 @@ class WithSession(abc.ABC):
             stims = self.stims
         while not all(_.is_ready_to_start() for _ in stims):
             time.sleep(5)
-        is_first_mvr_file = True
         for stoppable in (_ for _ in recorders if isinstance(_, Stoppable)):
-            if is_first_mvr_file and 'mvr' in stoppable.__name__.lower():
+            stoppable.stop()
+            if 'videomvr' in stoppable.__name__.lower():
                 sleep_s = 4
                 time.sleep(sleep_s)
                 logger.warning(f'Waiting additional {sleep_s} s for MVR to finish writing...')
-                is_first_mvr_file = False
-            stoppable.stop()
                     
     def start_services(self, *services: Service) -> None:
         if not services:
