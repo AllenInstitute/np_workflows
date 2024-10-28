@@ -5,7 +5,7 @@
 groups = ["default"]
 strategy = []
 lock_version = "4.5.0"
-content_hash = "sha256:3af21101d50d2607aa21236aa6a55e386e0cd555ae6486a52a58d6314e354080"
+content_hash = "sha256:72dc0afc6c628b9adf0c8dd475298d4769891aab1108951b1f0427ffb4fcc470"
 
 [[metadata.targets]]
 requires_python = "==3.11.*"
@@ -125,18 +125,18 @@ files = [
 
 [[package]]
 name = "aind-session"
-version = "0.1.20"
-requires_python = "<3.12,>=3.9"
+version = "0.3.8"
+requires_python = ">=3.9"
 summary = "User-friendly tools for accessing paths, metadata and assets related to AIND sessions."
 dependencies = [
     "aind-data-access-api[docdb]>=0.14.0",
     "codeocean>=0.1.5",
-    "npc-io>=0.1.29",
+    "npc-io>=0.1.30",
     "npc-session>=0.1.39",
 ]
 files = [
-    {file = "aind_session-0.1.20-py3-none-any.whl", hash = "sha256:e2314dc2ec7960017b483082a49bd1bc5c9204489484bdefe43f41b5fad5740c"},
-    {file = "aind_session-0.1.20.tar.gz", hash = "sha256:e281f365efcebd91a340d68ab88f44b46928f91f48f9c19b5087182542611a34"},
+    {file = "aind_session-0.3.8-py3-none-any.whl", hash = "sha256:8e7fab834af11c9a03d318af26d94c7445e486251f2a91ad8a1074e4bffd8fa3"},
+    {file = "aind_session-0.3.8.tar.gz", hash = "sha256:6b8a7a2d91e0226900d0caf54680ea248623b5a325c79f2e96b0d81dc74decf3"},
 ]
 
 [[package]]
@@ -2344,7 +2344,7 @@ files = [
 
 [[package]]
 name = "np-session"
-version = "0.6.45"
+version = "0.6.48"
 requires_python = ">=3.7"
 summary = "Tools for accessing data, metadata, and jobs related to ecephys and behavior sessions for the Mindscope Neuropixels team."
 dependencies = [
@@ -2360,8 +2360,8 @@ dependencies = [
     "typing-extensions>=4",
 ]
 files = [
-    {file = "np-session-0.6.45.tar.gz", hash = "sha256:d6c1eee60acbbdb2741287118101f5f11e6d39659d76d8e7a55d20114167f875"},
-    {file = "np_session-0.6.45-py3-none-any.whl", hash = "sha256:2e074d7b2116f8bdd7f4529c169f28bf53393aee19b8bc5ae9d8bd2f96933a27"},
+    {file = "np-session-0.6.48.tar.gz", hash = "sha256:631aebf71aad0da680d1bc6b7f4c2d411dc6f83be4dfc86f3e117eed7f3804f5"},
+    {file = "np_session-0.6.48-py3-none-any.whl", hash = "sha256:aa7169aaa6a8c8a8dbfae7ed9f3d77888e438330068e595e5a7d0d62f3c5924f"},
 ]
 
 [[package]]
@@ -2406,7 +2406,7 @@ files = [
 
 [[package]]
 name = "npc-io"
-version = "0.1.29"
+version = "0.1.31"
 requires_python = ">=3.9"
 summary = "File IO tools for MindScope Neuropixels projects in the cloud."
 dependencies = [
@@ -2418,16 +2418,17 @@ dependencies = [
     "universal-pathlib<0.2.0",
 ]
 files = [
-    {file = "npc_io-0.1.29-py3-none-any.whl", hash = "sha256:2f119de10ba3093ab891b5e1bc062a40d7ca885e99ae2cfe9f88a3dd9ead20c4"},
-    {file = "npc_io-0.1.29.tar.gz", hash = "sha256:d0cc19c05f2af18352ac2e7fa0f3387c2d2ca40244f37d8618995ed5ae2c778c"},
+    {file = "npc_io-0.1.31-py3-none-any.whl", hash = "sha256:54ac4ec26a0474332658f72f805f77fa305fdc583fc7e2fdf005f3f6dddd9e54"},
+    {file = "npc_io-0.1.31.tar.gz", hash = "sha256:d8fd8a941d0885ed06bd6eab9addedf33a706e7b4647e1f82bd573cb8e849d81"},
 ]
 
 [[package]]
 name = "npc-lims"
-version = "0.1.173"
+version = "0.1.183"
 requires_python = ">=3.9"
 summary = "Tools to fetch and update paths, metadata and state for Mindscope Neuropixels sessions, in the cloud."
 dependencies = [
+    "aind-session>=0.3.4",
     "codeocean>=0.1.5",
     "npc-io>=0.1.24",
     "npc-session>=0.1.36",
@@ -2441,8 +2442,8 @@ dependencies = [
     "types-requests>=2.31.0.6",
 ]
 files = [
-    {file = "npc_lims-0.1.173-py3-none-any.whl", hash = "sha256:aa852670a08e02c3df6e274c4f5f3d1b43f9c917b11b2f17d28071b0a796188c"},
-    {file = "npc_lims-0.1.173.tar.gz", hash = "sha256:a9be2dbc01397f6e229b0fd957d495807c89d614024537c9016a8f1933407501"},
+    {file = "npc_lims-0.1.183-py3-none-any.whl", hash = "sha256:3a985c6791e6a4b6ec0294e715911d8195b3a7fdade5400b33e0558982e0e79d"},
+    {file = "npc_lims-0.1.183.tar.gz", hash = "sha256:7c13fc6aa9a5f69323551fe67099567ee87342485ed7e1f584920a5dda03d36f"},
 ]
 
 [[package]]
