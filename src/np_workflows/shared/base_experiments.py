@@ -402,7 +402,7 @@ class PipelineExperiment(WithSession):
                         if file.suffix == '.h5':
                             renamed = f'{self.session.folder}.sync'
                         elif file.suffix == '.pkl':
-                            for _ in ('opto', 'main', 'mapping'):
+                            for _ in ('opto', 'main', 'mapping', 'behavior'):
                                 if _ in file.name:
                                     renamed = f'{self.session.folder}.{"stim" if _ == "main" else _}.pkl'
                         elif file.suffix in ('.json', '.mp4') and (cam_label := re.match('Behavior|Eye|Face',file.name)):
