@@ -382,6 +382,12 @@ class PipelineExperiment(WithSession):
                 renamed_folders.append(renamed)
             logger.info('Renamed split ephys folders %r', split_folders)
         np_services.OpenEphys.data_files = renamed_folders
+
+    @staticmethod
+    def contains_uuid(text: str) -> bool:
+        hexchars = '[0-9a-fA-F]'
+        pattern = rf"{hexchars}{{8}}-{hexchars}{{4}}-{hexchars}{{4}}-{hexchars}{{4}}-{hexchars}{{12}}"
+        return re.search(pattern, text) is not None
         
     def copy_data_files(self) -> None:
         """Copy data files from raw data storage to session folder for all services."""
@@ -405,6 +411,8 @@ class PipelineExperiment(WithSession):
                             for _ in ('opto', 'main', 'mapping', 'behavior'):
                                 if _ in file.name:
                                     renamed = f'{self.session.folder}.{"stim" if _ == "main" else _}.pkl'
+                                elif self.contains_uuid(file.name):
+                                    renamed = f'{self.session.folder}.behavior.pkl'
                         elif file.suffix in ('.json', '.mp4') and (cam_label := re.match('Behavior|Eye|Face',file.name)):
                             renamed = f'{self.session.folder}.{cam_label.group().lower()}{file.suffix}'
                         elif file.suffix in ('.json', '.mp4') and (cam_label := re.match('BEH|EYE|FACE',file.name)):
