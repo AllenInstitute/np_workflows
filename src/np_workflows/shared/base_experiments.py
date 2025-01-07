@@ -411,7 +411,9 @@ class PipelineExperiment(WithSession):
                             for _ in ('opto', 'main', 'mapping', 'behavior'):
                                 if _ in file.name:
                                     renamed = f'{self.session.folder}.{"stim" if _ == "main" else _}.pkl'
-                                elif self.contains_uuid(file.name):
+                                    break
+                            else:
+                                if self.contains_uuid(file.name):
                                     renamed = f'{self.session.folder}.behavior.pkl'
                         elif file.suffix in ('.json', '.mp4') and (cam_label := re.match('Behavior|Eye|Face',file.name)):
                             renamed = f'{self.session.folder}.{cam_label.group().lower()}{file.suffix}'
