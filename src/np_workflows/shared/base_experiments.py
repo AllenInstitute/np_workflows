@@ -8,7 +8,7 @@ import pathlib
 import re
 import shutil
 import time
-from typing import Any, ClassVar, Iterable, Literal, Optional, Protocol, Sequence, Type
+from typing import Any, ClassVar, Iterable, Literal, Mapping, Optional, Protocol, Sequence, Type
 
 import fabric
 import invoke
@@ -702,7 +702,13 @@ class DynamicRoutingExperiment(WithSession):
         else:
             np_services.ScriptCamstim.script = self.camstim_script.as_posix()
         
-        np_services.ScriptCamstim.params = params
+        if (script_override_params := getattr(self, 'script_override_params', None)) is not None:
+            if not isinstance(script_override_params, Mapping):
+                raise TypeError(f"script_override_params must be a dict/Mapping, got {type(script_override_params)}")
+        else:
+            script_override_params = {}
+            
+        np_services.ScriptCamstim.params = params | script_override_params
         
         self.update_state()
         self.log(f"{stim} started")
