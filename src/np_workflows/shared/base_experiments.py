@@ -288,7 +288,7 @@ class WithSession(abc.ABC):
 
         shutil.copytree(cwd, dest, dirs_exist_ok=True)
 
-        lock = cwd.parent / 'pdm.lock'
+        lock = cwd.parent / 'uv.lock'
         pyproject = cwd.parent / 'pyproject.toml'
         
         for _ in (lock, pyproject):
