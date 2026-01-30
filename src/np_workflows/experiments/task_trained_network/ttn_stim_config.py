@@ -3,15 +3,11 @@ import contextlib
 import copy
 import enum
 import functools
-from typing import ClassVar, Literal, NamedTuple, NoReturn, Optional, TypedDict
+from typing import Any, Literal
 
-import IPython.display
-import ipywidgets as ipw
 import np_config
 import np_logging
 import np_session
-import np_workflows
-from typing import Any
 
 logger = np_logging.getLogger(__name__)
 
@@ -29,9 +25,10 @@ class TTNSession(enum.Enum):
 # setup parameters ---------------------------------------------------------------------
 default_ttn_params = {}
 
+
 def camstim_defaults() -> dict:
     """Try to load defaults from camstim config file on the Stim computer.
-    
+
     May encounter permission error if not running as svc_neuropix.
     """
     with contextlib.suppress(OSError):
@@ -56,6 +53,7 @@ def camstim_defaults() -> dict:
     logger.warning("Could not load camstim defaults from config file on Stim computer.")
     return {}
 
+
 ## no longer added to default_ttn_params:
 # default_ttn_params.update(**camstim_defaults())
 
@@ -64,14 +62,13 @@ def camstim_defaults() -> dict:
 default_ttn_params["main"] = {}
 
 default_ttn_params["main"]["sweepstim"] = {
-    "trigger_delay_sec": 5.0,           #! does it matter?
-    'sync_sqr_loc': (870, 525),         # for Window.warp=Warp.Disabled 
-    'sync_sqr_loc_warp': (540, 329),    # for Window.warp=Warp.Spherical
+    "trigger_delay_sec": 5.0,  #! does it matter?
+    "sync_sqr_loc": (870, 525),  # for Window.warp=Warp.Disabled
+    "sync_sqr_loc_warp": (540, 329),  # for Window.warp=Warp.Spherical
 }
 # default_ttn_params["main"]["movie_path"] = "C:/ProgramData/StimulusFiles/dev/"
-default_ttn_params["main"][
-    "monitor"
-] = 'Gamma1.Luminance50'
+default_ttn_params["main"]["monitor"] = "Gamma1.Luminance50"
+
 
 # other parameters that vary depending on session type (pretest, hab, ephys):
 def per_session_main_stim_params(session: TTNSession) -> dict[str, Any]:
@@ -105,7 +102,7 @@ def per_session_main_stim_params(session: TTNSession) -> dict[str, Any]:
     def main_blank_screen(session: TTNSession) -> dict[str, float | int]:
         match session:
             case TTNSession.PRETEST:
-                return {"pre_blank_screen_sec": .5, "post_blank_screen_sec": .5}
+                return {"pre_blank_screen_sec": 0.5, "post_blank_screen_sec": 0.5}
             case _:
                 return {"pre_blank_screen_sec": 2, "post_blank_screen_sec": 2}
 
@@ -121,6 +118,7 @@ def per_session_main_stim_params(session: TTNSession) -> dict[str, Any]:
 default_ttn_params["opto"] = {}
 
 # all parameters depend on session type (pretest, hab, ephys):
+
 
 def per_session_opto_params(
     session: TTNSession, mouse: str | int | np_session.Mouse
@@ -169,14 +167,20 @@ def per_session_opto_params(
 default_ttn_params["mapping"] = {}
 
 default_ttn_params["mapping"]["monitor"] = "Gamma1.Luminance50"
-default_ttn_params["mapping"]["gabor_path"] = "gabor_20_deg_250ms.stim" 
-default_ttn_params["mapping"]["flash_path"] = "flash_250ms.stim" # relpath in StimulusFiles dir (for _v2 objects)
+default_ttn_params["mapping"]["gabor_path"] = "gabor_20_deg_250ms.stim"
+default_ttn_params["mapping"][
+    "flash_path"
+] = "flash_250ms.stim"  # relpath in StimulusFiles dir (for _v2 objects)
 default_ttn_params["mapping"]["default_gabor_duration_seconds"] = 1200
-default_ttn_params["mapping"]["default_flash_duration_seconds"] = 300 # may be overriden by 'max_total_duration_minutes'
+default_ttn_params["mapping"][
+    "default_flash_duration_seconds"
+] = 300  # may be overriden by 'max_total_duration_minutes'
 
 default_ttn_params["mapping"]["sweepstim"] = {
-    'sync_sqr_loc_warp': (540, 329),     # for Window.warp=Warp.Spherical
-} 
+    "sync_sqr_loc_warp": (540, 329),  # for Window.warp=Warp.Spherical
+}
+
+
 # trigger_delay_sec not specified
 # all stim parameters depend on session type (pretest, hab, ephys):
 def per_session_mapping_params(session: TTNSession) -> dict[str, dict[str, int]]:
@@ -195,7 +199,7 @@ def per_session_mapping_params(session: TTNSession) -> dict[str, dict[str, int]]
     def mapping_blank_screen(session: TTNSession) -> dict[str, float | int]:
         match session:
             case TTNSession.PRETEST:
-                return {"pre_blank_screen_sec": .5, "post_blank_screen_sec": .5}
+                return {"pre_blank_screen_sec": 0.5, "post_blank_screen_sec": 0.5}
             case TTNSession.EPHYS | TTNSession.HAB_120:
                 return {"pre_blank_screen_sec": 2, "post_blank_screen_sec": 2}
             case _:

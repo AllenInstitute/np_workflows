@@ -5,16 +5,8 @@ May '23 OpenScope: Barcode stimuli
 import argparse
 import json
 import logging
-import os
-import time
 
-import numpy as np
-from psychopy import visual
-from camstim import Foraging
-from camstim import Stimulus_v2
-from camstim import SweepStim_v2
-from camstim import Warp, Window
-
+from camstim import Foraging, Stimulus_v2, SweepStim_v2, Warp, Window
 
 # get params ------------------------------------------------------------------
 # stored in json file -
@@ -29,7 +21,7 @@ parser.add_argument(
 )
 args, _ = parser.parse_known_args()
 
-with open(args.params_path, "r") as f:
+with open(args.params_path) as f:
     json_params = json.load(f)
 
 # Create display window
@@ -40,6 +32,7 @@ window = Window(
     screen=0,
     warp=Warp.Spherical,
 )
+
 
 # patch the Stimulus_v2 class to allow for serializing without large arrays
 # ----------------------------------------------------------------------------
@@ -56,11 +49,12 @@ class Stimulus_v2_MinusFrameArrays(Stimulus_v2):
             self.sweep_table = None
             self.sweep_params = self.sweep_params.keys()
         self_dict = self.__dict__
-        del self_dict['sweep_frames']
-        del self_dict['sweep_order']
-        self_dict['stim'] = str(self_dict['stim'])
+        del self_dict["sweep_frames"]
+        del self_dict["sweep_order"]
+        self_dict["stim"] = str(self_dict["stim"])
         return wecanpicklethat(self_dict)
-    
+
+
 # ----------------------------------------------------------------------------
 # setup mapping stim
 """from mapping_script_v2.py"""

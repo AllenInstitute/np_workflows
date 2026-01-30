@@ -4,18 +4,9 @@ Oct'22 task-trained ephys stimuli
 
 import argparse
 import json
-import logging
-import os
-import time
 
-import numpy as np
-from psychopy import visual
-from camstim import Foraging
-from camstim import Stimulus_v2
-from camstim import SweepStim_v2, MovieStim
-from camstim import Warp, Window
+from camstim import Foraging, MovieStim, Stimulus_v2, SweepStim_v2, Warp, Window
 from camstim.misc import wecanpicklethat
-
 
 # get params ------------------------------------------------------------------
 # stored in json file -
@@ -30,7 +21,7 @@ parser.add_argument(
 )
 args, _ = parser.parse_known_args()
 
-with open(args.params_path, "r") as f:
+with open(args.params_path) as f:
     json_params = json.load(f)
 
 # Create display window
@@ -45,6 +36,7 @@ window = Window(
 # monkey-patch MovieStim to serialize without large redundant arrays
 # ----------------------------------------------------------------------------
 
+
 def package(self):
     """
     Package for serializing - minus large arrays of frame timing/order.
@@ -53,11 +45,12 @@ def package(self):
         self.sweep_table = None
         self.sweep_params = self.sweep_params.keys()
     self_dict = self.__dict__
-    del self_dict['sweep_frames']
-    del self_dict['sweep_order']
-    del self_dict['frame_list']
-    self_dict['stim'] = str(self_dict['stim'])
+    del self_dict["sweep_frames"]
+    del self_dict["sweep_order"]
+    del self_dict["frame_list"]
+    self_dict["stim"] = str(self_dict["stim"])
     return wecanpicklethat(self_dict)
+
 
 MovieStim.package = package
 
@@ -80,7 +73,8 @@ segment_stim_secs = (
         ("shuffle_reversed.stim", reversed_sec),
         ("shuffle_reversed_1st.stim", reversed_sec),
         ("shuffle_reversed_2nd.stim", reversed_sec),
-    ] * reversed_repeats
+    ]
+    * reversed_repeats
     + [("densely_annotated_%02d.stim" % i, annotated_sec) for i in range(19)]
     * annotated_repeats
     + [("old_stim.stim", old_sec)] * old_repeats
@@ -88,15 +82,18 @@ segment_stim_secs = (
         ("shuffle_reversed.stim", reversed_sec),
         ("shuffle_reversed_1st.stim", reversed_sec),
         ("shuffle_reversed_2nd.stim", reversed_sec),
-    ] * reversed_repeats
+    ]
+    * reversed_repeats
 )
 
 # setup stim list and timing
-cumulative_duration_sec = (
-    main_sequence_start_sec
-) = 0  # if stims are daisy-chained within one script, this should be the end of the prev stim
+cumulative_duration_sec = main_sequence_start_sec = (
+    0  # if stims are daisy-chained within one script, this should be the end of the prev stim
+)
 for stim_file, duration_sec in segment_stim_secs:
-    segment = Stimulus_v2.from_file(stim_file, window) # stim file actually instantiates MovieStim
+    segment = Stimulus_v2.from_file(
+        stim_file, window
+    )  # stim file actually instantiates MovieStim
     segment_ds = [(cumulative_duration_sec, cumulative_duration_sec + duration_sec)]
     segment.set_display_sequence(segment_ds)
 

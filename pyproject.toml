@@ -1,6 +1,6 @@
 [project]
 name = "np-workflows"
-version = "1.6.89"
+version = "1.6.90"
 description = "Ecephys and behavior workflows for the Mindscope Neuropixels team."
 authors = [
     { name = "Ben Hardcastle", email = "ben.hardcastle@alleninstitute.org" },

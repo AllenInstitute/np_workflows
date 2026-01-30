@@ -1,17 +1,6 @@
-import configparser
-import contextlib
-import copy
-import enum
-import functools
-from typing import ClassVar, Literal, NamedTuple, NoReturn, Optional, TypedDict
-
 import IPython.display
 import ipywidgets as ipw
-import np_config
-import np_logging
 import np_session
-import np_workflows
-from pyparsing import Any
 
 from np_workflows.experiments.openscope_psycode.main_psycode_pilot import PsyCodeSession
 
@@ -20,8 +9,11 @@ global_state = {}
 
 # for widget, before creating a experiment --------------------------------------------- #
 
+
 class SelectedSession:
-    def __init__(self, session: str | PsyCodeSession, mouse: str | int | np_session.Mouse):
+    def __init__(
+        self, session: str | PsyCodeSession, mouse: str | int | np_session.Mouse
+    ):
         if isinstance(session, str):
             session = PsyCodeSession(session)
         self.session = session
@@ -48,17 +40,19 @@ def PsyCode_workflow_widget(
         options=tuple(_.value for _ in PsyCodeSession),
         description="Session",
     )
-    
+
     def update_selection():
         selection.__init__(str(session_dropdown.value), str(mouse))
-        
-    if (previously_selected_value := global_state.get('selected_session')):
+
+    if previously_selected_value := global_state.get("selected_session"):
         session_dropdown.value = previously_selected_value
         update_selection()
-        
+
     console = ipw.Output()
     with console:
-        if last_session := np_session.Mouse(selection.mouse).state.get('last_PsyCode_session'):
+        if last_session := np_session.Mouse(selection.mouse).state.get(
+            "last_PsyCode_session"
+        ):
             print(f"{mouse} last session: {last_session}")
         print(f"Selected: {selection.session}")
 
@@ -74,9 +68,9 @@ def PsyCode_workflow_widget(
         update_selection()
         with console:
             print(f"Selected: {selection.session}")
-        global_state['selected_session'] = selection.session.value
-        
-    session_dropdown.observe(update, names='value')
+        global_state["selected_session"] = selection.session.value
+
+    session_dropdown.observe(update, names="value")
 
     IPython.display.display(ipw.VBox([session_dropdown, console]))
 
