@@ -8,22 +8,17 @@ authors = [
 readme = "README.md"
 requires-python = "==3.11.*"
 dependencies = [
+    "ipykernel",
     "np-services>=0.1.69",
     "np-session>=0.6.48",
     "np-config>=0.4.33",
     "ipywidgets>=7",
     "pydantic>=2",
-    "jupyterlab >= 3.6",
-    "ipylab >= 0.6.0",
     "np-tools>=0.1.24",
     "np-jobs>=0.0.3",
     "universal-pathlib>=0.1.0",
     "s3fs>=2023.6.0",
     "npc-shields>=0.1.10",
-    "npc-sessions>=0.0.225",
-    "np-codeocean[dynamic-routing-metadata]>=0.2.1",
-    "panel>=1.4.5",
-    "aind-session>=0.1.20",
     "jupyter-bokeh>=4.0.5",
 ]
 classifiers = [
@@ -52,7 +47,7 @@ task = "poethepoet:main"
 [dependency-groups]
 task_runner = ["poethepoet>=0.33.1"]
 linting = ["black>=25.1.0", "isort>=6.0.1", "ruff>=0.11.2"]
-testing = ["pytest>=7.4.0", "mypy>=1.4.1", "pytest-cov>=4.1.0"]
+testing = ["mypy>=1.4.1"]
 bump = [
     "bump-my-version>=1.1.1",
     "git-changelog>=2.5.3",
@@ -85,8 +80,7 @@ post_commit_hooks = [
 
 [tool.poe.tasks]
 mypy = "mypy src --install-types --non-interactive"
-pytest = "pytest --cov-report term-missing:skip-covered --cov-report=html"
-test = ["pytest"]
+test = ["mypy"]
 ruff = "ruff check src --fix-only"
 black = "black src"
 format = ["ruff", "black"]
@@ -156,25 +150,6 @@ exclude_also = [
     "@(abc.)?abstractmethod",
     "@typing.runtime_checkable",
 ]
-
-[tool.pytest.ini_options]
-addopts = [
-    "--import-mode=importlib",
-    # "--doctest-modules",
-    "--ignore-glob=*scripts*,*examples*,*docs*",
-    "--cov",
-    "--cov-report=html",
-    "--cov-config=pyproject.toml",
-    "--doctest-glob=*README.md",
-    "-x",
-    # "-n=auto", for use with pytest-xdist
-]
-doctest_optionflags = [
-    "NORMALIZE_WHITESPACE",
-    "IGNORE_EXCEPTION_DETAIL",
-    "ELLIPSIS",
-]
-testpaths = ["src", "tests"]
 
 [tool.mypy]
 check_untyped_defs = false
