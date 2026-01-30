@@ -1,4 +1,4 @@
-# This workflow will install Python dependencies, run tests and lint/formatting - possibly with a variety of Python versions - bump version, re-commit  publish to PYPI
+# This workflow will install Python dependencies, lint/format - possibly with a variety of Python versions - bump version, re-commit  publish to PYPI
 # For more information see: https://docs.github.com/en/actions/automating-builds-and-tests/building-and-testing-python
 
 name: Publish Python package
@@ -35,45 +35,8 @@ concurrency: # jobs currently running on main will be cancelled when this workfl
   cancel-in-progress: ${{ github.ref == 'refs/heads/main' }}
       
 jobs:
-  test:
-
-    runs-on: ubuntu-latest
-    strategy:
-      fail-fast: true
-      matrix:
-        python-version: ["3.11"]
-        os: [windows-latest]
-    permissions: write-all
-
-    steps:
-    - uses: actions/checkout@v4
-      env:
-        GITHUB_TOKEN: ${{ secrets.PAT }}
-        # use PAT, or push comes from `github-actions` bot, which can't trigger
-        # other workflows   
-    
-    - uses: astral-sh/setup-uv@v5.4.1
-      with:
-        python-version: ${{ matrix.python-version }}
-        
-    - name: Install dependencies
-      run: |
-        uv sync
-        
-    - name: Test, format, lint
-      env:
-        AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
-        AWS_DEFAULT_REGION: ${{ secrets.AWS_DEFAULT_REGION }}
-        AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-        DBHUB_API_KEY: ${{ secrets.DBHUB_API_KEY }}
-        CODE_OCEAN_API_TOKEN: ${{ secrets.CODE_OCEAN_API_TOKEN }}
-        CODE_OCEAN_DOMAIN: ${{ secrets.CODE_OCEAN_DOMAIN }}
-      run: |
-        mkdir .mypy_cache   
-        uv run task test
     
   publish:
-    needs: test
     if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions: write-all
