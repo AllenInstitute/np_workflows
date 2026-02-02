@@ -889,16 +889,7 @@ class DynamicRoutingExperiment(WithSession):
         """Copy files from raw data storage to session folder for all services
         except Open Ephys."""
 
-        # copy vimba files:
-        for file in pathlib.Path(
-            np_config.local_to_unc(
-                self.rig.mon, np_services.config_from_zk()["ImageVimba"]["data"]
-            )
-        ).glob(f"{self.session.npexp_path.name}*"):
-            shutil.copy2(file, self.session.npexp_path)
-            npxc.validate_or_overwrite(self.session.npexp_path / file.name, file)
-            print(file)
-            continue
+        # vimba files are copied automatically on creation
 
         for service in self.services:
             match service.__name__:
