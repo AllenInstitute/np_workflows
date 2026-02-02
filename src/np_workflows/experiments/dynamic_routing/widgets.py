@@ -97,12 +97,12 @@ def photodoc_widget(session: np_session.Session, reminder: str) -> None:
 
     original_file_stats = get_file_stats()
 
+    timeout_s = 300
     print(
-        f"Take an image in Vimba Viewer and save it {vimba_dir} with any name + .png suffix."
-        f"\n\nThis cell will wait for a new file or an existing file to be modified, then copy it as {reminder!r}*"
+        f"Take an image in Vimba Viewer and save it {vimba_dir} with any name and .png suffix."
+        f"\n\nThis cell will wait for a new file or an existing file to be modified ({timeout_s = })*"
     )
     t0 = time.time()
-    timeout_s = 120
     while True:
         time.sleep(1)
         new_files = len(new_file_stats := get_file_stats()) != len(original_file_stats)
@@ -119,8 +119,8 @@ def photodoc_widget(session: np_session.Session, reminder: str) -> None:
                 f"No new image file detected in Vimba folder after {timeout_s} seconds - aborting"
             )
     latest_image = max(new_file_stats, key=lambda k: new_file_stats[k])
-    print(f"New file detected:\n\t{latest_image.name}\nCopying to session folder")
-    new_name = f"{session.npexp_path.name}_{reminder}.png"
-    shutil.copy2(latest_image, session.npexp_path / new_name)
-    npxc.validate_or_overwrite(session.npexp_path / new_name, latest_image)
+    dest = session.npexp_path / f"{session.npexp_path.name}_{reminder}{latest_image.suffix}"
+    print(f"New file detected:\n\t{latest_image.name}\nCopying to:\n\t{dest}")
+    shutil.copy2(latest_image, dest)
+    npxc.validate_or_overwrite(dest, latest_image)
     print("Done!")
