@@ -1,10 +1,11 @@
 import shutil
 import time
+
 import IPython.display
 import ipywidgets as ipw
 import np_config
-import np_session
 import np_services
+import np_session
 
 import np_workflows.shared.npxc as npxc
 from np_workflows.shared.base_experiments import DynamicRoutingExperiment
@@ -100,14 +101,14 @@ def photodoc_widget(session: np_session.Session, reminder: str) -> None:
     while len(files := tuple(vimba_dir.iterdir())) == n_files:
         time.sleep(1)
         if time.time() - t0 > timeout_s:
-            raise TimeoutError(f"No new image file detected in Vimba folder after {timeout_s} seconds - aborting")
+            raise TimeoutError(
+                f"No new image file detected in Vimba folder after {timeout_s} seconds - aborting"
+            )
     latest_image = max(
         (p for p in files if p.is_file()), key=lambda f: f.stat().st_ctime
     )
     print(f"New file detected:\n\t{latest_image.name}\nCopying to session folder")
     new_name = f"{session.npexp_path.name}_{reminder}.png"
-    shutil.copy2(
-        latest_image, session.npexp_path / new_name
-    )
+    shutil.copy2(latest_image, session.npexp_path / new_name)
     npxc.validate_or_overwrite(session.npexp_path / new_name, latest_image)
-    print(f"Done!")
+    print("Done!")
