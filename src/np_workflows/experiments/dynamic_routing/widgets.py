@@ -91,11 +91,12 @@ def photodoc_widget(session: np_session.Session, reminder: str) -> None:
     vimba_dir = np_config.local_to_unc(
         session.rig.mon, np_services.config_from_zk()["ImageVimba"]["data"]
     )
+
     def get_file_stats():
         return {p: p.stat().st_mtime for p in vimba_dir.iterdir() if p.is_file()}
-    
+
     original_file_stats = get_file_stats()
-    
+
     print(
         f"Take an image in Vimba Viewer and save it {vimba_dir} with any name + .png suffix."
         f"\n\nThis cell will wait for a new file or an existing file to be modified, then copy it as {reminder!r}*"
@@ -106,11 +107,13 @@ def photodoc_widget(session: np_session.Session, reminder: str) -> None:
         time.sleep(1)
         new_files = len(new_file_stats := get_file_stats()) != len(original_file_stats)
         modified_files = any(
-            p for p in new_file_stats if new_file_stats[p] > original_file_stats.get(p, 0)
+            p
+            for p in new_file_stats
+            if new_file_stats[p] > original_file_stats.get(p, 0)
         )
         if new_files or modified_files:
             break
-        
+
         if time.time() - t0 > timeout_s:
             raise TimeoutError(
                 f"No new image file detected in Vimba folder after {timeout_s} seconds - aborting"
