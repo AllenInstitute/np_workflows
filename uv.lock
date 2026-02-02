@@ -1676,7 +1676,7 @@ dependencies = [
     { name = "universal-pathlib" },
 ]
 
-[package.dev-dependencies]
+[package.optional-dependencies]
 bump = [
     { name = "bump-my-version" },
     { name = "git-changelog" },
@@ -1699,36 +1699,29 @@ testing = [
 
 [package.metadata]
 requires-dist = [
+    { name = "black", marker = "extra == 'linting'", specifier = ">=25.1.0" },
+    { name = "bump-my-version", marker = "extra == 'bump'", specifier = ">=1.1.1" },
+    { name = "git-changelog", marker = "extra == 'bump'", specifier = ">=2.5.3" },
+    { name = "hdmf-zarr", marker = "extra == 'pynwb'", specifier = "==0.11.0" },
     { name = "ipykernel" },
     { name = "ipywidgets", specifier = ">=7" },
+    { name = "isort", marker = "extra == 'linting'", specifier = ">=6.0.1" },
     { name = "jupyter-bokeh", specifier = ">=4.0.5" },
+    { name = "mypy", marker = "extra == 'testing'", specifier = ">=1.4.1" },
     { name = "np-config", specifier = ">=0.4.33" },
     { name = "np-jobs", specifier = ">=0.0.3" },
     { name = "np-services", specifier = ">=0.1.69" },
     { name = "np-session", specifier = ">=0.6.48" },
     { name = "np-tools", specifier = ">=0.1.24" },
     { name = "npc-shields", specifier = ">=0.1.10" },
+    { name = "poethepoet", marker = "extra == 'task-runner'", specifier = ">=0.33.1" },
     { name = "pydantic", specifier = ">=2" },
+    { name = "pynwb", marker = "extra == 'pynwb'", specifier = "==3.0.0" },
+    { name = "ruff", marker = "extra == 'linting'", specifier = ">=0.11.2" },
     { name = "s3fs", specifier = ">=2023.6.0" },
     { name = "universal-pathlib", specifier = ">=0.1.0" },
 ]
-
-[package.metadata.requires-dev]
-bump = [
-    { name = "bump-my-version", specifier = ">=1.1.1" },
-    { name = "git-changelog", specifier = ">=2.5.3" },
-]
-linting = [
-    { name = "black", specifier = ">=25.1.0" },
-    { name = "isort", specifier = ">=6.0.1" },
-    { name = "ruff", specifier = ">=0.11.2" },
-]
-pynwb = [
-    { name = "hdmf-zarr", specifier = "==0.11.0" },
-    { name = "pynwb", specifier = "==3.0.0" },
-]
-task-runner = [{ name = "poethepoet", specifier = ">=0.33.1" }]
-testing = [{ name = "mypy", specifier = ">=1.4.1" }]
+provides-extras = ["task-runner", "linting", "testing", "bump", "pynwb"]
 
 [[package]]
 name = "npc-ephys"
