@@ -99,8 +99,8 @@ def photodoc_widget(session: np_session.Session, reminder: str) -> None:
 
     timeout_s = 300
     print(
-        f"Take an image in Vimba Viewer and save it {vimba_dir} with any name and .png suffix."
-        f"\n\nThis cell will wait for a new file or an existing file to be modified ({timeout_s = })*"
+        f"Take an image in Vimba Viewer and save it in {vimba_dir} with any name and .png suffix."
+        f"\n\nThis cell will wait for a new file or an existing file to be modified ({timeout_s = })\n"
     )
     t0 = time.time()
     while True:
