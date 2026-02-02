@@ -1,7 +1,12 @@
+import shutil
+import time
 import IPython.display
 import ipywidgets as ipw
+import np_config
 import np_session
+import np_services
 
+import np_workflows.shared.npxc as npxc
 from np_workflows.shared.base_experiments import DynamicRoutingExperiment
 
 # for widget, before creating a experiment --------------------------------------------- #
@@ -82,6 +87,27 @@ def workflow_select_widget(
 
 
 def photodoc_widget(session: np_session.Session, reminder: str) -> None:
-    print(
-        f"Take an image in Vimba Viewer and save as:\n{session.npexp_path.name}_{reminder}.png"
+    vimba_dir = np_config.local_to_unc(
+        session.rig.mon, np_services.config_from_zk()["ImageVimba"]["data"]
     )
+    n_files = len(tuple(vimba_dir.iterdir()))
+    t0 = time.time()
+    print(
+        f"Take an image in Vimba Viewer and save it with the default name (eg should be unique)."
+        f"\n\n*This cell will wait for a new file to be created in {vimba_dir}, then copy it to the session folder with suffix {reminder!r}*"
+    )
+    timeout_s = 120
+    while len(files := tuple(vimba_dir.iterdir())) == n_files:
+        time.sleep(1)
+        if time.time() - t0 > timeout_s:
+            raise TimeoutError(f"No new image file detected in Vimba folder after {timeout_s} seconds - aborting")
+    latest_image = max(
+        (p for p in files if p.is_file()), key=lambda f: f.stat().st_ctime
+    )
+    print(f"New file detected:\n\t{latest_image.name}\nCopying to session folder")
+    new_name = f"{session.npexp_path.name}_{reminder}.png"
+    shutil.copy2(
+        latest_image, session.npexp_path / new_name
+    )
+    npxc.validate_or_overwrite(session.npexp_path / new_name, latest_image)
+    print(f"Done!")
