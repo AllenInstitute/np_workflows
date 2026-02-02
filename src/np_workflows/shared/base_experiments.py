@@ -13,7 +13,6 @@ from typing import Any, ClassVar, Literal, Optional, Protocol, Type
 
 import fabric
 import invoke
-import ipylab
 import np_config
 import np_logging
 import np_services
