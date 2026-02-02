@@ -119,7 +119,10 @@ def photodoc_widget(session: np_session.Session, reminder: str) -> None:
                 f"No new image file detected in Vimba folder after {timeout_s} seconds - aborting"
             )
     latest_image = max(new_file_stats, key=lambda k: new_file_stats[k])
-    dest = session.npexp_path / f"{session.npexp_path.name}_{reminder}{latest_image.suffix}"
+    dest = (
+        session.npexp_path
+        / f"{session.npexp_path.name}_{reminder}{latest_image.suffix}"
+    )
     print(f"New file detected:\n\t{latest_image.name}\nCopying to:\n\t{dest}")
     shutil.copy2(latest_image, dest)
     npxc.validate_or_overwrite(dest, latest_image)
