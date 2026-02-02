@@ -91,22 +91,31 @@ def photodoc_widget(session: np_session.Session, reminder: str) -> None:
     vimba_dir = np_config.local_to_unc(
         session.rig.mon, np_services.config_from_zk()["ImageVimba"]["data"]
     )
-    n_files = len(tuple(vimba_dir.iterdir()))
-    t0 = time.time()
+    def get_file_stats():
+        return {p: p.stat().st_mtime for p in vimba_dir.iterdir() if p.is_file()}
+    
+    original_file_stats = get_file_stats()
+    
     print(
-        f"Take an image in Vimba Viewer and save it with the default name (eg should be unique)."
-        f"\n\n*This cell will wait for a new file to be created in {vimba_dir}, then copy it to the session folder with suffix {reminder!r}*"
+        f"Take an image in Vimba Viewer and save it {vimba_dir} with any name + .png suffix."
+        f"\n\nThis cell will wait for a new file or an existing file to be modified, then copy it as {reminder!r}*"
     )
+    t0 = time.time()
     timeout_s = 120
-    while len(files := tuple(vimba_dir.iterdir())) == n_files:
+    while True:
         time.sleep(1)
+        new_files = len(new_file_stats := get_file_stats()) != len(original_file_stats)
+        modified_files = any(
+            p for p in new_file_stats if new_file_stats[p] > original_file_stats.get(p, 0)
+        )
+        if new_files or modified_files:
+            break
+        
         if time.time() - t0 > timeout_s:
             raise TimeoutError(
                 f"No new image file detected in Vimba folder after {timeout_s} seconds - aborting"
             )
-    latest_image = max(
-        (p for p in files if p.is_file()), key=lambda f: f.stat().st_ctime
-    )
+    latest_image = max(new_file_stats, key=lambda k: new_file_stats[k])
     print(f"New file detected:\n\t{latest_image.name}\nCopying to session folder")
     new_name = f"{session.npexp_path.name}_{reminder}.png"
     shutil.copy2(latest_image, session.npexp_path / new_name)
