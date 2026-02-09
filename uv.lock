@@ -1532,7 +1532,7 @@ wheels = [
 
 [[package]]
 name = "np-workflows"
-version = "1.6.96"
+version = "1.6.97"
 source = { editable = "." }
 dependencies = [
     { name = "ipykernel" },

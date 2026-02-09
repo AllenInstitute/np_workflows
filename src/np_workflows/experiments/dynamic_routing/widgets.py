@@ -9,8 +9,6 @@ import np_services
 import np_session
 from pydantic import BaseModel, Field, field_validator
 
-
-
 import np_workflows.shared.npxc as npxc
 from np_workflows.shared.base_experiments import DynamicRoutingExperiment
 
@@ -131,7 +129,6 @@ def photodoc_widget(experiment: DynamicRoutingExperiment, reminder: str) -> None
     shutil.copy2(latest_image, dest)
     npxc.validate_or_overwrite(dest, latest_image)
     print("Done!")
-
 
 
 class SessionConfigMetadata(BaseModel):
