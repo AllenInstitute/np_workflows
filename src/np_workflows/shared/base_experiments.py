@@ -12,6 +12,7 @@ from collections.abc import Iterable, Mapping
 from typing import Any, ClassVar, Literal, Optional, Protocol, Type
 
 import fabric
+import ipylab
 import invoke
 import np_config
 import np_logging
