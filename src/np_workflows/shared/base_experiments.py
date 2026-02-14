@@ -12,8 +12,8 @@ from collections.abc import Iterable, Mapping
 from typing import Any, ClassVar, Literal, Optional, Protocol, Type
 
 import fabric
-import ipylab
 import invoke
+import ipylab
 import np_config
 import np_logging
 import np_services
