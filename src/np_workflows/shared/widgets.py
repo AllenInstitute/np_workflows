@@ -353,7 +353,7 @@ def di_widget(
     usage_counter = ipw.IntText(
         value=0, min=0, max=99, description="Previous uses", layout=layout
     )
-    dye_dropdown = ipw.Dropdown(options=["CM-DiI 100%", "DiO"], layout=layout)
+    dye_dropdown = ipw.Dropdown(options=["CM-DiI 100%", "DiO", "DiD"], layout=layout)
     save_button = ipw.Button(description="Save", button_style="warning", layout=layout)
 
     def update_di_info():
