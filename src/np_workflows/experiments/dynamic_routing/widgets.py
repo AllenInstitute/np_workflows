@@ -151,7 +151,9 @@ PROJECT_PATHS: dict[str, str] = {
 EPHYS = pathlib.Path(PROJECT_PATHS["DynamicRouting"])
 
 
-def get_session_config_path(folder: str, project: str = "DynamicRouting") -> pathlib.Path:
+def get_session_config_path(
+    folder: str, project: str = "DynamicRouting"
+) -> pathlib.Path:
     return pathlib.Path(PROJECT_PATHS[project]) / folder / "session_config.json"
 
 
@@ -277,7 +279,6 @@ class Config(pydantic.BaseModel):
         )
 
 
-
 class SessionConfigRow:
     """Widget row for a single session's configuration."""
 
@@ -318,7 +319,9 @@ class SessionConfigRow:
             saved = json.loads(config_path.read_text())
             data = {**data, **saved}
         self.config = Config(**data)
-        self.widgets = {}  # field_name -> (input_widget, description_label) or HTML for folder
+        self.widgets = (
+            {}
+        )  # field_name -> (input_widget, description_label) or HTML for folder
 
         for name, field in self.config.model_fields.items():
             if name == "folder":
