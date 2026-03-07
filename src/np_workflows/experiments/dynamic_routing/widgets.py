@@ -1,13 +1,21 @@
+from __future__ import annotations
+
+import json
+import os
+import pathlib
+import re
 import shutil
+import subprocess
 import time
-from typing import Literal
+from typing import Any, Literal, Optional, Union, get_args, get_origin
 
 import IPython.display
 import ipywidgets as ipw
 import np_config
 import np_services
 import np_session
-from pydantic import BaseModel, Field, field_validator
+import pydantic
+import yaml
 
 import np_workflows.shared.npxc as npxc
 from np_workflows.shared.base_experiments import DynamicRoutingExperiment
@@ -131,169 +139,440 @@ def photodoc_widget(experiment: DynamicRoutingExperiment, reminder: str) -> None
     print("Done!")
 
 
-class SessionConfigMetadata(BaseModel):
-    """Container for session configuration metadata."""
+# session config ----------------------------------------------------------------------- #
 
-    is_split_recording: bool = Field(
-        default=False, description="If True, do not upload this recording"
-    )
-    project: Literal["dynamic_routing", "templeton"] = Field(
-        default="dynamic_routing", description="Project name"
-    )
-    ephys_day: int = Field(default=1, ge=1, le=9, description="Ephys day number (1-9)")
-    context_naive: bool = Field(
-        default=False, description="Whether the session is context naive"
-    )
-    probes_to_skip: str = Field(
-        default="", description="Probe letters to skip (all caps, e.g., ABCDEF)"
-    )
-    deep_insertion: bool = Field(
-        default=False, description="Whether this is a deep insertion"
-    )
-    surface_recording_probe_letters_to_skip: str = Field(
-        default="", description="Probe letters to skip for surface recording (all caps)"
-    )
-    prod_dev: Literal["prod", "dev"] = Field(
-        default="prod",
-        description="prod: quality data for datasets; dev: experimental/one-off data",
-    )
+_DR = "//allen/programs/mindscope/workgroups/dynamicrouting/PilotEphys/Task 2 pilot"
+_TEMPLETON = "//allen/programs/mindscope/workgroups/templeton/TTOC/pilot recordings"
+PROJECT_PATHS: dict[str, str] = {
+    "DynamicRouting": _DR,
+    "TempletonPilotSession": _TEMPLETON,
+}
 
-    model_config = {"validate_assignment": True}
-
-    @field_validator("probes_to_skip", "surface_recording_probe_letters_to_skip")
-    @classmethod
-    def validate_uppercase(cls, v: str) -> str:
-        """Ensure probe letters are uppercase."""
-        return v.upper()
+EPHYS = pathlib.Path(PROJECT_PATHS["DynamicRouting"])
 
 
-def session_config_metadata_widget() -> SessionConfigMetadata:
-    """Create a widget for configuring session metadata.
+def get_session_config_path(folder: str, project: str = "DynamicRouting") -> pathlib.Path:
+    return pathlib.Path(PROJECT_PATHS[project]) / folder / "session_config.json"
 
-    Returns an object with mutable attributes that update along with the GUI selections.
-    """
-    # Initialize with defaults
-    config = SessionConfigMetadata()
 
-    # Create widgets
-    is_split_recording_checkbox = ipw.Checkbox(
-        value=False,
-        description="Is split recording",
-        tooltip="Check this if the recording should NOT be uploaded",
-        style={"description_width": "initial"},
+class Config(pydantic.BaseModel):
+    folder: str
+    project: Literal["DynamicRouting", "TempletonPilotSession"] = pydantic.Field(
+        default="DynamicRouting",
+        description="Project name: DynamicRouting or TempletonPilotSession",
     )
-    split_recording_info = ipw.Label(
-        value="(do not upload)", layout=ipw.Layout(margin="0 0 0 20px")
+    session_type: Literal["ephys", "behavior_with_sync"] = pydantic.Field(
+        default="ephys", description="Type of session: ephys or behavior_with_sync"
     )
-
-    project_dropdown = ipw.Dropdown(
-        options=["dynamic_routing", "templeton"],
-        value="dynamic_routing",
-        description="Project:",
-        style={"description_width": "initial"},
+    ephys_day: Optional[int] = pydantic.Field(
+        default=None, description="Day of ephys recording (starting at 1)", gt=0
     )
-
-    ephys_day_slider = ipw.IntSlider(
-        value=1,
-        min=1,
-        max=9,
-        step=1,
-        description="Ephys day:",
-        style={"description_width": "initial"},
+    perturbation_day: Optional[int] = pydantic.Field(
+        default=None,
+        description="Day of opto or injection perturbation (starting at 1)",
+        gt=0,
     )
-
-    context_naive_checkbox = ipw.Checkbox(
-        value=False, description="Context naive", style={"description_width": "initial"}
+    is_production: bool = pydantic.Field(
+        default=True,
+        description="Production quality data; experimental variants are ok (False: dev testing, training operators)",
     )
-
-    probes_to_skip_text = ipw.Text(
-        value="",
-        description="Probes to skip:",
-        placeholder="ABCDEF (all caps)",
-        tooltip="Enter probe letters to skip in all caps (e.g., ABCDEF)",
-        style={"description_width": "initial"},
+    is_split_recording: bool = pydantic.Field(
+        default=False,
+        description="Split recording session: will not be uploaded yet (recordings to be concatenated later)",
     )
-
-    deep_insertion_checkbox = ipw.Checkbox(
-        value=False,
-        description="Deep insertion",
-        style={"description_width": "initial"},
+    is_context_naive: bool = pydantic.Field(
+        default=False,
+        description="Subject was not trained on stage 3 before first experiment",
     )
-
-    surface_recording_text = ipw.Text(
-        value="",
-        description="Surface recording probe letters to skip:",
-        placeholder="ABCDEF (all caps)",
-        tooltip="Enter probe letters to skip for surface recording in all caps",
-        style={"description_width": "initial"},
-        layout=ipw.Layout(width="500px"),
+    is_injection_perturbation: bool = pydantic.Field(
+        default=False, description="Injection perturbation or control session"
+    )
+    is_opto_perturbation: bool = pydantic.Field(
+        default=False, description="Optogenetic perturbation or control session"
+    )
+    is_deep_insertion: bool = pydantic.Field(
+        default=False,
+        description="At least one probe has a surface channel recording",
+    )
+    probe_letters_to_skip: Optional[str] = pydantic.Field(
+        default="",
+        description="Probe letters to skip from upload/processing (e.g. 'ABC', [A-F], max 6 chars). Not necessary to list probes that were disabled in Open Ephys",
+    )
+    surface_recording_probe_letters_to_skip: Optional[str] = pydantic.Field(
+        default="",
+        description="Probe letters to skip from surface channel processing (e.g. 'ABC', [A-F], max 6 chars). Not necessary to list probes that were disabled in Open Ephys",
     )
 
-    prod_dev_dropdown = ipw.Dropdown(
-        options=["prod", "dev"],
-        value="prod",
-        description="Prod/Dev:",
-        tooltip="prod: quality data for datasets | dev: experimental/one-off data",
-        style={"description_width": "initial"},
+    @pydantic.field_validator(
+        "probe_letters_to_skip",
+        "surface_recording_probe_letters_to_skip",
+        mode="before",
     )
-    prod_dev_info = ipw.Label(
-        value="(prod: quality data for datasets; dev: experimental/one-off)",
-        layout=ipw.Layout(margin="0 0 0 20px"),
+    def cast_to_upper_case(cls, v):
+        return v.upper() if isinstance(v, str) else v
+
+    @pydantic.field_validator(
+        "probe_letters_to_skip",
+        "surface_recording_probe_letters_to_skip",
+        mode="after",
     )
+    def validate_probe_letters(cls, v):
+        if v and not re.fullmatch(r"[A-F]{0,6}", v):
+            raise ValueError("Probe letters must be A-F only, up to 6 characters")
+        return v
 
-    console = ipw.Output()
+    def to_dict(self) -> dict[str, Any]:
+        data = self.model_dump()
+        session_type = data.pop("session_type")
+        project = data.pop("project")
+        folder = data.pop("folder")
+        return {
+            session_type: {
+                project: [
+                    {
+                        f"{PROJECT_PATHS[project]}/{folder}": {
+                            "ephys_day": self.ephys_day,
+                            "session_kwargs": {
+                                k: v
+                                for k, v in data.items()
+                                if v is not None
+                                and v != self.model_fields[k].default
+                                and k not in ("ephys_day", "perturbation_day")
+                            },
+                        }
+                    }
+                ]
+            }
+        }
 
-    with console:
-        print(f"Current config: {config}")
-
-    # Update functions
-    def update_config(*args):
-        config.is_split_recording = is_split_recording_checkbox.value
-        config.project = project_dropdown.value
-        config.ephys_day = ephys_day_slider.value
-        config.context_naive = context_naive_checkbox.value
-        config.probes_to_skip = probes_to_skip_text.value.upper()
-        config.deep_insertion = deep_insertion_checkbox.value
-        config.surface_recording_probe_letters_to_skip = (
-            surface_recording_text.value.upper()
+    def to_yaml_text_snippet(self) -> str:
+        d = self.to_dict()
+        indent = " " * 4
+        session_dir_parent = PROJECT_PATHS[self.project] + "/"
+        s = f"\n{indent}- {session_dir_parent}{self.folder}:"
+        for attr in (
+            "ephys_day",
+            "perturbation_day",
+        ):
+            if value := getattr(self, attr, None):
+                s = s + "\n" + indent * 2 + f"{attr}: {value}"
+        session_kwargs = next(
+            iter(next(iter(d[self.session_type][self.project])).values())
+        )["session_kwargs"]
+        if session_kwargs:
+            s = s + "\n" + indent * 2 + "session_kwargs:"
+            for k, v in session_kwargs.items():
+                s = s + "\n" + indent * 3 + f"{k}: {v}"
+        if s.endswith(":"):
+            s = s[:-1]
+        s = s.replace("\n\n", "\n")
+        return (
+            s
+            + "\n"
+            + (
+                indent
+                if (self.project == "DynamicRouting" and self.session_type == "ephys")
+                else ""
+            )
         )
-        config.prod_dev = prod_dev_dropdown.value
 
-        # Update text fields to show uppercase
-        if probes_to_skip_text.value != probes_to_skip_text.value.upper():
-            probes_to_skip_text.value = probes_to_skip_text.value.upper()
-        if surface_recording_text.value != surface_recording_text.value.upper():
-            surface_recording_text.value = surface_recording_text.value.upper()
 
-        with console:
-            console.clear_output()
-            print(f"Updated config: {config}")
 
-    # Attach observers
-    is_split_recording_checkbox.observe(update_config, names="value")
-    project_dropdown.observe(update_config, names="value")
-    ephys_day_slider.observe(update_config, names="value")
-    context_naive_checkbox.observe(update_config, names="value")
-    probes_to_skip_text.observe(update_config, names="value")
-    deep_insertion_checkbox.observe(update_config, names="value")
-    surface_recording_text.observe(update_config, names="value")
-    prod_dev_dropdown.observe(update_config, names="value")
+class SessionConfigRow:
+    """Widget row for a single session's configuration."""
 
-    # Layout
-    widget = ipw.VBox(
-        [
-            ipw.HBox([is_split_recording_checkbox, split_recording_info]),
-            project_dropdown,
-            ephys_day_slider,
-            context_naive_checkbox,
-            probes_to_skip_text,
-            deep_insertion_checkbox,
-            surface_recording_text,
-            ipw.HBox([prod_dev_dropdown, prod_dev_info]),
-            console,
-        ]
-    )
+    placeholders = {
+        "probe_letters_to_skip": "e.g. AF",
+        "surface_recording_probe_letters_to_skip": "e.g. AF",
+        "ephys_day": "starting at 1, or empty if no ephys",
+        "perturbation_day": "starting at 1, or empty if no perturbation",
+    }
 
-    IPython.display.display(widget)
+    @staticmethod
+    def _is_bool_field(field) -> bool:
+        """Check if a pydantic field is a boolean type."""
+        if field.annotation is bool:
+            return True
+        if get_origin(field.annotation) is Union:
+            return bool in get_args(field.annotation)
+        return False
 
-    return config
+    @staticmethod
+    def _is_literal_field(field) -> bool:
+        """Check if a pydantic field is a Literal type."""
+        return get_origin(field.annotation) is Literal
+
+    @staticmethod
+    def _make_description_label(description: str | None) -> ipw.HTML:
+        """Create a small italic caption from a field description."""
+        text = description or ""
+        return ipw.HTML(
+            value=f'<span style="color: #888; font-size: 0.85em; font-style: italic;">{text}</span>',
+            layout=ipw.Layout(margin="0 0 4px 160px"),
+        )
+
+    def __init__(self, data: dict[str, Any]):
+        self.session_folder = data["folder"]
+        config_path = get_session_config_path(self.session_folder)
+        if config_path.exists():
+            saved = json.loads(config_path.read_text())
+            data = {**data, **saved}
+        self.config = Config(**data)
+        self.widgets = {}  # field_name -> (input_widget, description_label) or HTML for folder
+
+        for name, field in self.config.model_fields.items():
+            if name == "folder":
+                self.widgets[name] = (
+                    ipw.HTML(
+                        value=f"<b>{getattr(self.config, name)}</b>",
+                        layout=ipw.Layout(width="400px"),
+                    ),
+                    None,
+                )
+            elif self._is_bool_field(field):
+                current_value = getattr(self.config, name)
+                if current_value is None:
+                    current_value = True
+                self.widgets[name] = (
+                    ipw.Dropdown(
+                        description=name,
+                        options=[("True", True), ("False", False)],
+                        value=current_value,
+                        tooltip=field.description or name,
+                        layout=ipw.Layout(width="500px"),
+                        style={"description_width": "initial"},
+                    ),
+                    self._make_description_label(field.description),
+                )
+            elif self._is_literal_field(field):
+                options = list(getattr(field.annotation, "__args__", []))
+                current_value = getattr(self.config, name)
+                self.widgets[name] = (
+                    ipw.Dropdown(
+                        description=name,
+                        options=options,
+                        value=current_value,
+                        tooltip=field.description or name,
+                        layout=ipw.Layout(width="500px"),
+                        style={"description_width": "initial"},
+                    ),
+                    self._make_description_label(field.description),
+                )
+            else:
+                self.widgets[name] = (
+                    ipw.Text(
+                        description=name,
+                        placeholder=self.placeholders.get(name, ""),
+                        tooltip=field.description or name,
+                        continuous_update=True,
+                        layout=ipw.Layout(width="500px"),
+                        value=(
+                            str(getattr(self.config, name))
+                            if getattr(self.config, name) is not None
+                            else ""
+                        ),
+                        style={"description_width": "initial"},
+                    ),
+                    self._make_description_label(field.description),
+                )
+
+        self._setup_autosave()
+
+    def get_config(self) -> Config:
+        """Get Config object from current widget values."""
+        data = {}
+        for name, (widget, _label) in self.widgets.items():
+            if isinstance(widget, ipw.HTML):
+                data[name] = self.session_folder
+            elif isinstance(widget, ipw.Dropdown):
+                data[name] = widget.value
+            else:
+                data[name] = widget.value if widget.value != "" else None
+        return Config(**data)
+
+    def save_to_session_folder(self) -> pathlib.Path:
+        """Save current config as JSON to the session folder."""
+        config = self.get_config()
+        path = get_session_config_path(self.session_folder)
+        path.write_text(json.dumps(config.model_dump(), indent=2))
+        return path
+
+    def _setup_autosave(self) -> None:
+        """Observe all input widgets and autosave on any change."""
+        self.status_label = ipw.HTML(value="")
+
+        def _autosave(change):
+            try:
+                self.save_to_session_folder()
+                self.status_label.value = ""
+            except pydantic.ValidationError as e:
+                msgs = "; ".join(err["msg"] for err in e.errors())
+                self.status_label.value = f'<span style="color: red;">{msgs}</span>'
+            except FileNotFoundError:
+                self.status_label.value = '<span style="color: orange;">Session folder not found on network drive — config not saved</span>'
+
+        for widget, _label in self.widgets.values():
+            if not isinstance(widget, ipw.HTML):
+                widget.observe(_autosave, names="value")
+
+    def iter_display_widgets(self):
+        """Yield flat sequence of (input_widget, description_label) for display."""
+        for widget, label in self.widgets.values():
+            yield widget
+            if label is not None:
+                yield label
+        yield self.status_label
+
+
+class CombinedConfigWidget(ipw.VBox):
+    """Combined widget for all sessions with a single save button."""
+
+    def __init__(self, session_data_list: list[dict[str, Any]], **vbox_kwargs):
+        self.session_rows = [SessionConfigRow(data) for data in session_data_list]
+        self.console = ipw.Output()
+
+        header = ipw.HTML(value="<h3>Session metadata (auto-saves)</h3>")
+
+        all_widgets = []
+        for row in self.session_rows:
+            all_widgets.append(ipw.HTML(value="<hr>"))
+            all_widgets.extend(row.iter_display_widgets())
+
+        widget_grid = ipw.VBox(all_widgets)
+
+        self.save_to_npc_lims = ipw.Button(
+            description="[upload only] Save & Push to GitHub (double-check!)",
+            button_style="warning",
+            layout=ipw.Layout(width="30%"),
+            tooltip="Save yaml config for all sessions and push to GitHub",
+        )
+
+        def on_save_to_npc_lims_click(widget):
+            widget.disabled = True
+            with self.console:
+                for row in self.session_rows:
+                    path = row.save_to_session_folder()
+                    print(f"Saved {path}")
+            self.save_and_push()
+            widget.button_style = "success"
+            widget.disabled = False
+
+        self.save_to_npc_lims.on_click(on_save_to_npc_lims_click)
+
+        bottom = [] if os.environ.get("AIBS_RIG_ID") else [self.save_to_npc_lims]
+        super().__init__(
+            [header, widget_grid, *bottom, self.console],
+            **vbox_kwargs,
+        )
+
+    def get_existing_sessions(self, yml_path: pathlib.Path) -> set[str]:
+        """Get set of existing session paths from yaml file."""
+        if not yml_path.exists():
+            return set()
+
+        existing = yaml.safe_load(yml_path.read_text()) or {}
+        session_paths = set()
+
+        for session_type, project_data in existing.items():
+            if not isinstance(project_data, dict):
+                continue
+            for project, sessions in project_data.items():
+                if not isinstance(sessions, list):
+                    continue
+                for session in sessions:
+                    if isinstance(session, dict):
+                        for path in session.keys():
+                            session_paths.add(path)
+
+        return session_paths
+
+    def save_and_push(self) -> None:
+        """Save all configs to yaml and push to GitHub."""
+        with self.console:
+            try:
+                root = pathlib.Path().resolve().parent.parent
+                repo_path = root / "npc_lims"
+                yml_path = repo_path / "tracked_sessions.yaml"
+
+                if not yml_path.exists():
+                    raise FileNotFoundError(
+                        f"git clone npc_lims into {root} before trying to update tracked_sessions.yaml"
+                    )
+
+                existing_sessions = self.get_existing_sessions(yml_path)
+                new_configs = [row.get_config() for row in self.session_rows]
+
+                duplicates = [
+                    config.folder
+                    for config in new_configs
+                    if f"{PROJECT_PATHS[config.project]}/{config.folder}"
+                    in existing_sessions
+                ]
+
+                if duplicates:
+                    raise ValueError(
+                        f"The following sessions are already in tracked_sessions.yaml: {', '.join(duplicates)}. "
+                        f"To modify existing sessions, make changes directly in GitHub."
+                    )
+
+                txt = yml_path.read_text()
+
+                for config in new_configs:
+                    if config.session_type == "ephys":
+                        ephys_stop = txt.find("behavior_with_sync:")
+                        if config.project == "TempletonPilotSession":
+                            stop = ephys_stop
+                        else:
+                            stop = txt[:ephys_stop].find("TempletonPilotSession:")
+                    else:
+                        assert config.session_type == "behavior_with_sync"
+                        stop = len(txt)
+
+                    txt = (
+                        txt[:stop]
+                        + "\n"
+                        + config.to_yaml_text_snippet()
+                        + "\n"
+                        + ("  " if config.project == "DynamicRouting" else "")
+                        + (txt[stop:] if stop else "\n")
+                    )
+
+                print("Updating tracked_sessions.yaml...")
+                yml_path.write_text(txt)
+
+                print("Committing changes...")
+                subprocess.run(
+                    ["git", "add", "tracked_sessions.yaml"],
+                    cwd=repo_path,
+                    check=True,
+                    capture_output=True,
+                )
+
+                commit_msg = f"Auto add metadata for {len(new_configs)} session(s)"
+                subprocess.run(
+                    ["git", "commit", "-m", commit_msg],
+                    cwd=repo_path,
+                    check=True,
+                    capture_output=True,
+                )
+
+                print("Pushing to GitHub...")
+                subprocess.run(
+                    ["git", "push"],
+                    cwd=repo_path,
+                    check=True,
+                    capture_output=True,
+                )
+
+                print(
+                    f"✓ Successfully saved and pushed metadata for {len(new_configs)} session(s)!"
+                )
+
+            except subprocess.CalledProcessError as e:
+                print(f"Git error: {e}")
+                if e.stderr:
+                    print(f"Error output: {e.stderr.decode()}")
+                raise
+            except Exception as e:
+                print(f"Error: {e}")
+                raise
