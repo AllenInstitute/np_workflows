@@ -42,6 +42,7 @@ class SelectedWorkflow:
 
 def workflow_select_widget(
     mouse: str | int | np_session.Mouse,
+    single_workflow_override: DynamicRoutingExperiment.Workflow | None = None,
 ) -> SelectedWorkflow:
     """Select a session type to run (hab, pretest, ephys).
 
@@ -49,19 +50,22 @@ def workflow_select_widget(
     updated along with the GUI selection. (Preference would be to return an enum
     directly, and change it's value, but that doesn't seem possible.)
 
+    single_workflow_override: if provided, only this workflow will be available for selection, 
+    and the dropdown will be disabled.
     """
-    # set default
-    selection = SelectedWorkflow(DynamicRoutingExperiment.Workflow.PRETEST, mouse)
-
     workflow_dropdown = ipw.Select(
-        options=tuple(_.name for _ in DynamicRoutingExperiment.Workflow),
+        options=tuple(workflow.name for workflow in DynamicRoutingExperiment.Workflow),
         description="Workflow",
+        disabled=False,
     )
     workflow_descriptions = ipw.Select(
-        options=tuple(_.value for _ in DynamicRoutingExperiment.Workflow),
+        options=tuple(workflow.value for workflow in DynamicRoutingExperiment.Workflow),
         disabled=True,
         value=None,
     )
+    # set default
+    selection = SelectedWorkflow(DynamicRoutingExperiment.Workflow.PRETEST, mouse)
+    
     console = ipw.Output()
     with console:
         if last_workflow := np_session.Mouse(selection.mouse).state.get(
@@ -89,7 +93,13 @@ def workflow_select_widget(
             print(f"Selected: {selection.workflow}")
 
     workflow_dropdown.observe(update, names="value")
-
+    
+    if single_workflow_override is not None:
+        if isinstance(single_workflow_override, str):
+            single_workflow_override = DynamicRoutingExperiment.Workflow[single_workflow_override.upper()]  # in case it's passed as a string   
+        workflow_dropdown.value = single_workflow_override.name
+        workflow_dropdown.disabled = True
+        
     IPython.display.display(
         ipw.VBox([ipw.HBox([workflow_dropdown, workflow_descriptions]), console])
     )
