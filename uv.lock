@@ -1424,7 +1424,7 @@ wheels = [
 
 [[package]]
 name = "np-config"
-version = "0.4.34"
+version = "0.4.37"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "backports-cached-property" },
@@ -1436,9 +1436,9 @@ dependencies = [
     { name = "types-singledispatch" },
     { name = "typing-extensions" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/a5/e4/2fa13dc32a827a0141d53ee323bc81b52505f9b76d0d1960bc73168a3d4f/np_config-0.4.34.tar.gz", hash = "sha256:42fb099dac52958868b1292e6b9bc22120acc238ebe2478dfb4c996d7ac8c547", size = 12775, upload-time = "2024-06-26T18:23:51.953Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/56/03/06e2830a54f4df23860dd0d7ed915f58d38aa5c89a2c3552df0551d90951/np_config-0.4.37.tar.gz", hash = "sha256:300b322094d4e5824c31e4851f802869c324c3b4f960136bb719f1137be48b5e", size = 12998, upload-time = "2026-03-20T01:58:35.322Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/b5/44/51e37b6dfec974c8625e378131472486c21a1667a638c8fef8f6b6140dca/np_config-0.4.34-py3-none-any.whl", hash = "sha256:4c31a855c9444f2c4381e239c240f46e15a6cc65e1088bd7ffb5e03a210f6d95", size = 11867, upload-time = "2024-06-26T18:23:49.891Z" },
+    { url = "https://files.pythonhosted.org/packages/37/61/9528a7fa83a7e8b3e5673498468db0249178c0b9e228c23bfb70c7e90910/np_config-0.4.37-py3-none-any.whl", hash = "sha256:5106f385a538079602c5a5fde176f20ac1f185f81b5c3545e6baa0b98b946d46", size = 12342, upload-time = "2026-03-20T01:58:34.089Z" },
 ]
 
 [[package]]
@@ -1532,7 +1532,7 @@ wheels = [
 
 [[package]]
 name = "np-workflows"
-version = "1.6.102"
+version = "1.6.103"
 source = { editable = "." }
 dependencies = [
     { name = "ipykernel" },
@@ -1578,7 +1578,7 @@ requires-dist = [
     { name = "ipykernel" },
     { name = "ipywidgets", specifier = ">=7" },
     { name = "jupyter-bokeh", specifier = ">=4.0.5" },
-    { name = "np-config", specifier = ">=0.4.33" },
+    { name = "np-config", specifier = ">=0.4.37" },
     { name = "np-jobs", specifier = ">=0.0.3" },
     { name = "np-services", specifier = ">=0.1.74" },
     { name = "np-session", specifier = ">=0.6.48" },
@@ -1853,7 +1853,7 @@ name = "pexpect"
 version = "4.9.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "ptyprocess", marker = "sys_platform != 'emscripten' and sys_platform != 'win32'" },
+    { name = "ptyprocess" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/42/92/cc564bf6381ff43ce1f4d06852fc19a2f11d180f23dc32d9588bee2f149d/pexpect-4.9.0.tar.gz", hash = "sha256:ee7d41123f3c9911050ea2c2dac107568dc43b2d3b0c7557a33212c398ead30f", size = 166450, upload-time = "2023-11-25T09:07:26.339Z" }
 wheels = [
