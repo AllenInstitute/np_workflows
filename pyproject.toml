@@ -11,7 +11,7 @@ dependencies = [
     "ipykernel",
     "np-services>=0.1.74",
     "np-session>=0.6.48",
-    "np-config>=0.4.33",
+    "np-config>=0.4.37",
     "ipywidgets>=7",
     "pydantic>=2",
     "np-tools>=0.1.24",
